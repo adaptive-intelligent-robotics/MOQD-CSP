@@ -47,6 +47,7 @@ from pathos.multiprocessing import ProcessingPool as Pool
 
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
+from numba import jit
 
 from csp_elites.crystal.crytsl_evaluator_parallel import parallel_fitness_func_and_bd_computation
 from csp_elites.map_elites.elites_utils import cvt, save_archive, parallel_eval, evaluate, add_to_archive, \
@@ -65,6 +66,7 @@ class CVT:
         self.crystal_system = crystal_system
         self.crystal_evaluator = crystal_evaluator
 
+    @jit
     def compute(self,
                 number_of_niches,
                 maximum_evaluations,
