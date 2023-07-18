@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import List
 
 import numpy as np
+from numba import jit
 from sklearn.cluster import KMeans
 
 from csp_elites.crystal.crystal_evaluator import MaterialProperties
@@ -109,6 +110,7 @@ def make_hashable(array):
     return tuple(map(float, array))
 
 
+@jit
 def parallel_eval(evaluate_function, to_evaluate, pool, params):
     if params['parallel'] == True:
         s_list = pool.map(evaluate_function, to_evaluate)

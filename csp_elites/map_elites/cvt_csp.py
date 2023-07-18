@@ -66,7 +66,6 @@ class CVT:
         self.crystal_system = crystal_system
         self.crystal_evaluator = crystal_evaluator
 
-    @jit
     def compute(self,
                 number_of_niches,
                 maximum_evaluations,
