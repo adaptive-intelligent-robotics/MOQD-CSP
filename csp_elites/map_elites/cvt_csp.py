@@ -81,8 +81,8 @@ class CVT:
         experiment_directory_path = make_experiment_folder(experiment_label)
         log_file = open(f'{experiment_directory_path}/{experiment_label}.dat', 'w')
 
-        num_cores = multiprocessing.cpu_count()
-        pool = multiprocessing.Pool(num_cores)
+        # num_cores = multiprocessing.cpu_count()
+        # pool = multiprocessing.Pool(num_cores)
 
         # create the CVT
         c = cvt(number_of_niches, self.number_of_bd_dimensions,
@@ -155,7 +155,11 @@ class CVT:
 
 
             # evaluation of the fitness for to_evaluate
-            s_list = parallel_eval(evaluate, to_evaluate, pool, run_parameters) # TODO: what happens when individual killed by me?
+            s_list = []
+            for individual_set in to_evaluate:
+                s = evaluate(individual_set)
+                s_list.append(s)
+            # s_list = parallel_eval(evaluate, to_evaluate, pool, run_parameters) # TODO: what happens when individual killed by me?
 
             # natural selection
 
