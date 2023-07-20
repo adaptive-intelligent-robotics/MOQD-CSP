@@ -41,13 +41,11 @@ from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
 
 import numpy as np
-# import multiprocessing
-import pathos.multiprocessing as multiprocessing
-from pathos.multiprocessing import ProcessingPool as Pool
+import multiprocessing
+
 
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
-from numba import jit
 
 from csp_elites.crystal.crytsl_evaluator_parallel import parallel_fitness_func_and_bd_computation
 from csp_elites.map_elites.elites_utils import cvt, save_archive, parallel_eval, evaluate, add_to_archive, \
@@ -84,8 +82,7 @@ class CVT:
         log_file = open(f'{experiment_directory_path}/{experiment_label}.dat', 'w')
 
         num_cores = multiprocessing.cpu_count()
-        # pool = multiprocessing.Pool(num_cores)
-        pool = Pool(num_cores)
+        pool = multiprocessing.Pool(num_cores)
 
         # create the CVT
         c = cvt(number_of_niches, self.number_of_bd_dimensions,
