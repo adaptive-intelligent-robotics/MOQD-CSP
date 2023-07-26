@@ -39,6 +39,7 @@
 from typing import List, Optional
 
 import numpy as np
+from ase import Atoms
 from pymatgen.io.ase import AseAtomsAdaptor
 # from numba import jit, prange
 from sklearn.neighbors import KDTree
@@ -219,17 +220,19 @@ class CVT:
             population = []
             if random_initialisation:
                 individuals = self.crystal_system.create_n_individuals(
-                    run_parameters['random_init_batch'])
+                    run_parameters['random_init_batch']) # individuals are dict
             #     population += individuals
             #     random_initialisation = False
                 structure_info, known_atoms = get_all_materials_with_formula("TiO2")
                 # individuals = []
-                for atoms in known_atoms:
+                for i, atoms in enumerate(known_atoms):
                     if len(atoms.get_atomic_numbers()) == run_parameters["filter_starting_Structures"]:
                         atoms.rattle()
+                        atoms.info["confid"] = None
+                        atoms = atoms.todict()
                         individuals.append(atoms)
                 # individuals = [AseAtomsAdaptor.get_atoms(structure) for structure in known_structures]
-                population += individuals
+                population += individuals # all individuals are dictionary
 
 
             if random_initialisation:
@@ -263,7 +266,8 @@ class CVT:
                     x = archive[keys[rand1[n]]]
                     y = archive[keys[rand2[n]]]
                     # copy & add variation
-                    z, _ = self.crystal_system.operators.get_new_individual([x.x, y.x])
+                    z, _ = self.crystal_system.operators.get_new_individual([Atoms.fromdict(x.x), Atoms.fromdict(y.x)])
+                    z = z.todict()
                     # z.info["curiosity"] = 0
                     population += [z]
 
@@ -323,7 +327,7 @@ class CVT:
                 if s is None:
                     continue
                 else:
-                    s.x.info["confid"] = configuration_counter
+                    s.x["info"]["confid"] = configuration_counter
                     configuration_counter += 1
                     add_to_archive(s, s.desc, archive, kdt)
                     # individual_added, parent_id_list = add_to_archive(s, s.desc, archive, kdt)

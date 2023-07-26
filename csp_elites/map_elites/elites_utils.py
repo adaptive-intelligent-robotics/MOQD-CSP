@@ -140,8 +140,8 @@ def add_to_archive(s, centroid, archive, kdt) -> Tuple[bool, int]:
     niche = kdt.data[niche_index]
     n = make_hashable(niche)
     s.centroid = n
-    if "data" in s.x.info:
-        parent_id = s.x.info["data"]["parents"]
+    if "data" in s.x["info"]:
+        parent_id = s.x["info"]["data"]["parents"]
     else:
         parent_id = [None]
     if n in archive:
@@ -169,7 +169,7 @@ def evaluate_old(to_evaluate):
 # @jit
 def evaluate(z, cellbounds, behavioural_descriptors, n_relaxation_steps, f) -> Optional[Species]:
     really_relax = True
-    fit, desc, kill = f(z, cellbounds, really_relax, behavioural_descriptors, n_relaxation_steps)
+    z, fit, desc, kill = f(z, cellbounds, really_relax, behavioural_descriptors, n_relaxation_steps)
     if kill:
         return None
     else:

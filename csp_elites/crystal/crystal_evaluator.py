@@ -62,13 +62,18 @@ class CrystalEvaluator:
 
         structure = AseAtomsAdaptor.get_structure(atoms)
         prediction = self.model.predict_structure(structure)
-        traj_observer = TrajectoryObserver(atoms)
-        traj_observer.energies.append(prediction["e"])
-        traj_observer.forces.append(prediction["f"])
-        traj_observer.stresses.append(prediction["s"])
-        relaxation_results ={
+        # traj_observer = TrajectoryObserver(atoms)
+        # traj_observer.energies.append(prediction["e"])
+        # traj_observer.forces.append(prediction["f"])
+        # traj_observer.stresses.append(prediction["s"])
+        self._finalize_atoms(atoms, energy=prediction["e"], forces=prediction["f"], stress=prediction["s"])
+        relaxation_results = {
             "final_structure": structure,
-            "trajectory": traj_observer
+            "trajectory": {
+                "energies": prediction["e"],
+                "forces": prediction["f"],
+                "stresses": prediction["s"],
+            }
         }
         return -prediction["e"], relaxation_results
         # return float(-atoms.get_potential_energy()), relaxation_results
@@ -77,12 +82,15 @@ class CrystalEvaluator:
     #todo: @jit(parallel=True, cache=True)
     # @jit(parallel=True)
     def compute_fitness_and_bd(self,
-                               atoms: Atoms,
+                               atoms: Dict[str, np.ndarray],
                                cellbounds: CellBounds,
                                really_relax: bool,
                                behavioral_descriptor_names: List[MaterialProperties],
                                n_relaxation_steps: int,
                                ) -> Tuple[float, Tuple[float, float], bool]:
+        # convert dictionary to atoms object
+        # print(atoms)
+        atoms = Atoms.fromdict(atoms)
         if not cellbounds.is_within_bounds(atoms.get_cell()):
             niggli_reduce(atoms)
             if not cellbounds.is_within_bounds(atoms.get_cell()):
@@ -107,7 +115,11 @@ class CrystalEvaluator:
             bd_value = self.property_to_function_mapping[behavioral_descriptor_names[i]](relaxed_structure=relaxation_results["final_structure"])
             behavioral_descriptor_values.append(bd_value)
 
-        return fitness_score, behavioral_descriptor_values, kill_individual
+        updated_atoms = AseAtomsAdaptor.get_atoms(relaxation_results["final_structure"])
+        new_atoms_dict = updated_atoms.todict()
+        del relaxation_results
+        new_atoms_dict["info"] = atoms.info
+        return new_atoms_dict, fitness_score, behavioral_descriptor_values, kill_individual
 
     def compute_band_gap(self, relaxed_structure, bandgap_type: Optional[
         BandGapEnum] = BandGapEnum.SCAN):
@@ -294,16 +306,20 @@ class CrystalEvaluator:
         return kill_list
 
     def batch_compute_energy(self, list_of_atoms: Atoms, really_relax, n_steps: int = 10) -> float:
-        trajectories = [TrajectoryObserver(atoms) for atoms in list_of_atoms]
+        # trajectories = [TrajectoryObserver(atoms) for atoms in list_of_atoms]
         forces, energies, stresses = self._evaluate_list_of_atoms(list_of_atoms)
-        trajectories = self._update_trajectories(trajectories, forces, energies, stresses)
+        # trajectories = self._update_trajectories(trajectories, forces, energies, stresses)
 
         final_structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
         reformated_output = []
         for i in range(len(final_structures)):
             reformated_output.append(
                 {"final_structure": final_structures[i],
-                 "trajectory": trajectories[i],
+                 "trajectory": {
+                     "energies": energies[i],
+                     "forces": forces[i],
+                     "stresses": stresses[i],
+                 },
                  }
             )
         return -1 * energies, reformated_output
