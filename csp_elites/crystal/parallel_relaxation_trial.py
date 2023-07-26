@@ -396,15 +396,15 @@ if __name__ == '__main__':
     print(f"atoms 2 parameters {atoms_2.get_cell_lengths_and_angles()}")
 
     list_of_atoms = [copy.deepcopy(atoms_2),
-                     # copy.deepcopy(atoms_2),
-                     # copy.deepcopy(atoms_2),
-                     # copy.deepcopy(atoms_2),
-                     # copy.deepcopy(atoms_2),
-                     # copy.deepcopy(atoms_2),
-                     # copy.deepcopy(atoms_2),
-                     # copy.deepcopy(atoms_2),
-                     # copy.deepcopy(atoms_2),
-                     # copy.deepcopy(atoms_2),
+                     copy.deepcopy(atoms_2),
+                     copy.deepcopy(atoms_2),
+                     copy.deepcopy(atoms_2),
+                     copy.deepcopy(atoms_2),
+                     copy.deepcopy(atoms_2),
+                     copy.deepcopy(atoms_2),
+                     copy.deepcopy(atoms_2),
+                     copy.deepcopy(atoms_2),
+                     copy.deepcopy(atoms_2),
         # AseAtomsAdaptor.get_atoms(structure=one_structure),
         #              AseAtomsAdaptor.get_atoms(structure=one_structure),
         #              AseAtomsAdaptor.get_atoms(structure=one_structure),
@@ -417,104 +417,104 @@ if __name__ == '__main__':
         #              AseAtomsAdaptor.get_atoms(structure=one_structure),
                      ]
 
-    print(f"list_of_atoms[0] parameters {list_of_atoms[0].get_cell_lengths_and_angles()}")
-    assert np.isclose(atoms_2.get_positions(), list_of_atoms[0].get_positions()).all()
-    structure_optimiser = MultiprocessOptimizer(atoms=atoms)
-    relaxation_time_chgnet = []
-    tic = time.time()
-    for i in range(len(list_of_atoms)):
-        relaxation_results = structure_optimiser.relax(atoms_2, steps=2)
-        relaxation_time_chgnet.append(time.time() - tic)
-    # print(atoms_2.get_cell_lengths_and_angles())
-    print(f"Chgnet time {sum(relaxation_time_chgnet)}")
-    toc = time.time()
-    results = structure_optimiser.override_relax(list_of_atoms, n_relaxation_steps=2)
-    print(time.time() - toc)
-
-    print(np.sum(
-        np.isclose(
-            AseAtomsAdaptor.get_atoms(relaxation_results["final_structure"]).get_positions(),
-            AseAtomsAdaptor.get_atoms(results[0]["final_structure"]).get_positions()
-        )
-        )
-    )
-    print(
-        np.sum(
-            AseAtomsAdaptor.get_atoms(relaxation_results["final_structure"]).get_positions()
-            - AseAtomsAdaptor.get_atoms(results[0]["final_structure"]).get_positions()
-        )
-    )
+    # print(f"list_of_atoms[0] parameters {list_of_atoms[0].get_cell_lengths_and_angles()}")
+    # assert np.isclose(atoms_2.get_positions(), list_of_atoms[0].get_positions()).all()
+    # structure_optimiser = MultiprocessOptimizer(atoms=atoms)
+    # relaxation_time_chgnet = []
+    # tic = time.time()
+    # for i in range(len(list_of_atoms)):
+    #     relaxation_results = structure_optimiser.relax(atoms_2, steps=2)
+    #     relaxation_time_chgnet.append(time.time() - tic)
+    # # print(atoms_2.get_cell_lengths_and_angles())
+    # print(f"Chgnet time {sum(relaxation_time_chgnet)}")
+    # toc = time.time()
+    # results = structure_optimiser.override_relax(list_of_atoms, n_relaxation_steps=2)
+    # print(time.time() - toc)
+    #
+    # print(np.sum(
+    #     np.isclose(
+    #         AseAtomsAdaptor.get_atoms(relaxation_results["final_structure"]).get_positions(),
+    #         AseAtomsAdaptor.get_atoms(results[0]["final_structure"]).get_positions()
+    #     )
+    #     )
+    # )
+    # print(
+    #     np.sum(
+    #         AseAtomsAdaptor.get_atoms(relaxation_results["final_structure"]).get_positions()
+    #         - AseAtomsAdaptor.get_atoms(results[0]["final_structure"]).get_positions()
+    #     )
+    # )
     print()
 
    #  # list_of_atoms = 10 * list_of_atoms
-   #  forces, energies, stresses = evaluate_list_of_atoms(list_of_atoms, chgnet)
-   #  list_of_atoms = set_calculators_for_atoms_list(list_of_atoms, forces, energies, stresses)
-   #
+    forces, energies, stresses = evaluate_list_of_atoms(list_of_atoms, chgnet)
+    list_of_atoms = set_calculators_for_atoms_list(list_of_atoms, forces, energies, stresses)
 
-   #
-   #  fire = FIRE(atoms)
-   #  overriden_fire = OverridenFire(atoms_2)
-   #
-   # # intialise all parameters that normally are attributes
-   #  system_size = (len(list_of_atoms), (len(list_of_atoms[0])))
-   #  f = forces
-   #  e = energies
-   #  v = None
-   #  e_last = None
-   #  r_last = None
-   #  v_last = None
-   #  dt = 0.1
-   #  Nsteps = 0
-   #  a = 0.1
-   #  # relaxer = Relaxer()
-   #  # relaxer.relax(steps=0)
-   #
-   #  time_1_structure = []
-   #  time_10_structures = []
-   #  number_steps = 3
-   #  for i in tqdm(range(number_steps)):
-   #      # print(i)
-   #      tic = time.time()
-   #      fire.step(f=prediction["f"])
-   #
-   #      time_1_structure.append(time.time() - tic)
-   #      prediction = chgnet.predict_structure(AseAtomsAdaptor.get_structure(atoms))
-   #      # print(f" 1 step fire {time.time() - tic}")
-   #      # overriden_fire.step(atoms, f=prediction["f"])
-   #      # overriden_fire.step(atoms_2, f=prediction["f"])
-   #      tac = time.time()
-   #
-   #      v, e_last, r_last, v_last, dt, Nsteps, a, dr = \
-   #          overriden_fire.step_override(system_size, f, e, v, e_last, r_last, v_last, dt, Nsteps, a)
-   #      # v, e_last, r_last, v_last, dt, Nsteps, a, dr = \
-   #      #     overriden_fire.step_override(system_size, f, e, v, e_last, r_last, v_last, dt, Nsteps, a)
-   #
-   #      for i in range(len(list_of_atoms)):
-   #          r = list_of_atoms[i].get_positions()
-   #          list_of_atoms[i].set_positions(r + dr[i])
-   #
-   #      time_10_structures.append(time.time() - tac)
-   #      f, e, s = evaluate_list_of_atoms(list_of_atoms, chgnet)
-   #      # print(f" 1 step fire overriden {time.time() - tac}")
-   #
-   #      for i in range(len(list_of_atoms)):
-   #          print(sum(np.isclose(atoms.get_positions(), list_of_atoms[i].get_positions())))
-   #      # print(f"atoms fire difference {np.sum(atoms.get_positions() - atoms_3.get_positions())}")
-   #      # for
-   #      # print(
-   #      #     f"atoms overriden fire difference {np.sum(atoms_2.get_positions() - atoms_3.get_positions())}")
-   #  time_1_structure = len(list_of_atoms) * np.array(time_1_structure)
-   #  time_10_structures = np.array(time_10_structures)
-   #  plt.plot(range(number_steps), time_1_structure, label="1 structure at a time")
-   #  plt.plot(range(number_steps), time_10_structures, label=f"{len(list_of_atoms)} structures at a time")
-   #  plt.legend()
-   #  plt.show()
-   #
-   #  print(f"average time 1 structure at a time {time_1_structure.mean()}, std {time_1_structure.std()}")
-   #  print(
-   #      f"average time 10 structures at a time {time_10_structures.mean()}, std {time_10_structures.std()}")
-   #  # print(f"atoms fire difference {np.sum(atoms.get_positions() - atoms_3.get_positions())}")
-   #  # print(
-   #  #     f"atoms overriden fire difference {np.sum(atoms_2.get_positions() - atoms_3.get_positions())}")
-   #
-   #  print()
+
+
+    fire = FIRE(atoms)
+    overriden_fire = OverridenFire(atoms_2)
+
+   # intialise all parameters that normally are attributes
+    system_size = (len(list_of_atoms), (len(list_of_atoms[0])))
+    f = forces
+    e = energies
+    v = None
+    e_last = None
+    r_last = None
+    v_last = None
+    dt = 0.1
+    Nsteps = 0
+    a = 0.1
+    # relaxer = Relaxer()
+    # relaxer.relax(steps=0)
+
+    time_1_structure = []
+    time_10_structures = []
+    number_steps = 3
+    for i in tqdm(range(number_steps)):
+        # print(i)
+        tic = time.time()
+        fire.step(f=prediction["f"])
+
+        time_1_structure.append(time.time() - tic)
+        prediction = chgnet.predict_structure(AseAtomsAdaptor.get_structure(atoms))
+        # print(f" 1 step fire {time.time() - tic}")
+        # overriden_fire.step(atoms, f=prediction["f"])
+        # overriden_fire.step(atoms_2, f=prediction["f"])
+        tac = time.time()
+
+        v, e_last, r_last, v_last, dt, Nsteps, a, dr = \
+            overriden_fire.step_override(system_size, f, e, v, e_last, r_last, v_last, dt, Nsteps, a)
+        # v, e_last, r_last, v_last, dt, Nsteps, a, dr = \
+        #     overriden_fire.step_override(system_size, f, e, v, e_last, r_last, v_last, dt, Nsteps, a)
+
+        for i in range(len(list_of_atoms)):
+            r = list_of_atoms[i].get_positions()
+            list_of_atoms[i].set_positions(r + dr[i])
+
+        time_10_structures.append(time.time() - tac)
+        f, e, s = evaluate_list_of_atoms(list_of_atoms, chgnet)
+        # print(f" 1 step fire overriden {time.time() - tac}")
+
+        for i in range(len(list_of_atoms)):
+            print(sum(np.isclose(atoms.get_positions(), list_of_atoms[i].get_positions())))
+        # print(f"atoms fire difference {np.sum(atoms.get_positions() - atoms_3.get_positions())}")
+        # for
+        # print(
+        #     f"atoms overriden fire difference {np.sum(atoms_2.get_positions() - atoms_3.get_positions())}")
+    time_1_structure = len(list_of_atoms) * np.array(time_1_structure)
+    time_10_structures = np.array(time_10_structures)
+    plt.plot(range(number_steps), time_1_structure, label="1 structure at a time")
+    plt.plot(range(number_steps), time_10_structures, label=f"{len(list_of_atoms)} structures at a time")
+    plt.legend()
+    plt.show()
+
+    print(f"average time 1 structure at a time {time_1_structure.mean()}, std {time_1_structure.std()}")
+    print(
+        f"average time 10 structures at a time {time_10_structures.mean()}, std {time_10_structures.std()}")
+    # print(f"atoms fire difference {np.sum(atoms.get_positions() - atoms_3.get_positions())}")
+    # print(
+    #     f"atoms overriden fire difference {np.sum(atoms_2.get_positions() - atoms_3.get_positions())}")
+
+    print()

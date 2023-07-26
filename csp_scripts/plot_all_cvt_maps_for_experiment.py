@@ -3,6 +3,7 @@ import pathlib
 from ase.ga.utilities import CellBounds
 
 from csp_elites.crystal.crystal_evaluator import MaterialProperties
+from csp_elites.utils.archive_evolution_gif import plot_gif
 from csp_elites.utils.asign_target_values_to_centroids import \
     compute_centroids_for_target_solutions, reassign_data_from_pkl_to_new_centroids
 from csp_elites.utils.plot import plot_all_maps_in_archive, load_centroids, \
@@ -10,10 +11,11 @@ from csp_elites.utils.plot import plot_all_maps_in_archive, load_centroids, \
 from csp_experiments.run_experiment import ExperimentParameters
 
 if __name__ == '__main__':
-    experiment_label = "20230722_10_09_TiO2_100k_1000_niches"
+
+    experiment_label = "20230726_01_33_TiO2_local_115k"
     experiment_directory = f"../experiments/{experiment_label}"
 
-    centroid_filename = "../experiments/centroids/centroids_1000_2_shear_modulus_0_100_band_gap_0_100.dat"
+    centroid_filename = "../experiments/centroids/centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat"
 
     all_centroids = load_centroids(centroid_filename)
 
@@ -21,7 +23,7 @@ if __name__ == '__main__':
         number_of_niches=200,
         maximum_evaluations=4,
         experiment_tag="test_plotting",
-        fitler_comparison_data_for_n_atoms=24,
+        fitler_comparison_data_for_n_atoms=0,
         cvt_run_parameters= \
             {
                 # more of this -> higher-quality CVT
@@ -43,7 +45,7 @@ if __name__ == '__main__':
                 "bd_maximum_values": (100, 100),
                 "relaxation_probability": 0,
                 "behavioural_descriptors": [MaterialProperties.SHEAR_MODULUS, MaterialProperties.BAND_GAP],
-                "number_of_relaxation_steps": 0,
+                "number_of_relaxation_steps": 10,
             },
         system_name="TiO2",
         blocks = [22] * 8 + [8] * 16,
@@ -56,7 +58,7 @@ if __name__ == '__main__':
         operator_probabilities = [5., 0, 3., 2.],
         ### CVT PARAMETERS ###
         n_behavioural_descriptor_dimensions=2,
-        fitness_min_max_values=[4, 9],
+        fitness_min_max_values=[0, 10],
     )
 
     if MaterialProperties.ENERGY_FORMATION in experiment_parameters.cvt_run_parameters["behavioural_descriptors"]:
@@ -84,6 +86,7 @@ if __name__ == '__main__':
         target_centroids=target_centroids,
     )
 
+    plot_gif(experiment_directory_path=experiment_directory)
 
     plot_all_statistics_from_file(
         filename=f"{experiment_directory}/{experiment_label}.dat",

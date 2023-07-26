@@ -39,6 +39,7 @@
 from typing import List, Optional
 
 import numpy as np
+from pymatgen.io.ase import AseAtomsAdaptor
 # from numba import jit, prange
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
@@ -47,6 +48,8 @@ from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
 from csp_elites.map_elites.elites_utils import cvt, save_archive, evaluate, add_to_archive, \
     write_centroids, make_experiment_folder, Species, evaluate_parallel
+from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
+from csp_elites.utils.plot import load_archive_from_pickle
 
 
 class CVT:
@@ -112,22 +115,34 @@ class CVT:
             to_evaluate = []
             # random initialization
             population = []
-            # if random_initialisation:
-            #     individuals = self.crystal_system.create_n_individuals(
-            #         run_parameters['random_init_batch'])
+            if random_initialisation:
+                individuals = self.crystal_system.create_n_individuals(
+                    run_parameters['random_init_batch'])
             #     population += individuals
             #     random_initialisation = False
+                structure_info, known_atoms = get_all_materials_with_formula("TiO2")
+                # individuals = []
+                for atoms in known_atoms:
+                    if len(atoms.get_atomic_numbers()) == run_parameters["filter_starting_Structures"]:
+                        atoms.rattle()
+                        individuals.append(atoms)
+                # individuals = [AseAtomsAdaptor.get_atoms(structure) for structure in known_structures]
+                population += individuals
 
-            if len(archive) <= run_parameters['random_init'] * number_of_niches:
+
+            if random_initialisation:
+                random_initialisation = False
+            # if len(archive) <= run_parameters['random_init'] * number_of_niches:
                 # individuals = self.crystal_system.create_n_individuals(
                 #     run_parameters['random_init_batch'])
                 #
                 # population += individuals
-                for i in range(0, run_parameters['random_init_batch']):
-                    x = self.crystal_system.create_one_individual(individual_id=i)
-                    # individuals = self.crystal_system.create_n_individuals(run_parameters['random_init_batch'])
-
-                    population += [x]
+                # for i in range(0, run_parameters['random_init_batch']):
+                #     x = self.crystal_system.create_one_individual(individual_id=i)
+                #     # individuals = self.crystal_system.create_n_individuals(run_parameters['random_init_batch'])
+                #
+                #     population += [x]
+                # continue
 
             else:  # variation/selection loop
                 keys = list(archive.keys())
@@ -231,7 +246,7 @@ class CVT:
                         fit_list.max(), np.mean(fit_list), np.median(fit_list),
                         np.percentile(fit_list, 5), np.percentile(fit_list, 95), coverage, qd_score))
                 log_file.flush()
-            pbar.update(n_evals)
+            pbar.update(len(to_evaluate))
 
         save_archive(archive, n_evals, experiment_directory_path)
         return experiment_directory_path, archive
@@ -313,3 +328,126 @@ class CVT:
         sum_of_scores = np.sum(all_scores)
         weights = all_scores / sum_of_scores
         return weights
+
+
+    def start_experiment_from_archive(self, experiment_directory_path: str,
+                                      experiment_label: str, run_parameters,
+                                      number_of_niches, maximum_evaluations):
+        fitnesses, descriptors, centroids, individuals = load_archive_from_pickle()
+
+        # experiment_directory_path = make_experiment_folder(experiment_label)
+        log_file = open(f'{experiment_directory_path}/{experiment_label}.dat', 'w')
+
+
+        # create the CVT
+        c = cvt(number_of_niches, self.number_of_bd_dimensions,
+                run_parameters['cvt_samples'],
+                run_parameters["bd_minimum_values"],
+                run_parameters["bd_maximum_values"],
+                experiment_directory_path,
+                run_parameters["behavioural_descriptors"],
+                run_parameters['cvt_use_cache'],
+                )
+        kdt = KDTree(c, leaf_size=30, metric='euclidean')
+        write_centroids(
+            c, experiment_folder=experiment_directory_path,
+            bd_names=run_parameters["behavioural_descriptors"],
+            bd_minimum_values=run_parameters["bd_minimum_values"],
+            bd_maximum_values=run_parameters["bd_maximum_values"],
+        )
+
+        archive = {}  # init archive (empty)
+        n_evals = 0  # number of evaluations since the beginning
+        b_evals = 0  # number evaluation since the last dump
+
+        # main loop
+        configuration_counter = 0
+        pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations)
+        random_initialisation = True
+        while (n_evals < maximum_evaluations):  ### NUMBER OF GENERATIONS
+            to_evaluate = []
+            # random initialization
+            population = []
+            if random_initialisation:
+                individuals = self.crystal_system.create_n_individuals(
+                    run_parameters['random_init_batch'])
+                #     population += individuals
+                #     random_initialisation = False
+                structure_info, known_atoms = get_all_materials_with_formula("TiO2")
+                # individuals = []
+                for atoms in known_atoms:
+                    if len(atoms.get_atomic_numbers()) == run_parameters[
+                        "filter_starting_Structures"]:
+                        atoms.rattle()
+                        individuals.append(atoms)
+                # individuals = [AseAtomsAdaptor.get_atoms(structure) for structure in known_structures]
+                population += individuals[:2]
+
+            if random_initialisation:
+                random_initialisation = False
+
+            else:  # variation/selection loop
+                keys = list(archive.keys())
+                rand1 = np.random.randint(len(keys), size=run_parameters['batch_size'])
+                rand2 = np.random.randint(len(keys), size=run_parameters['batch_size'])
+
+                for n in range(0, run_parameters['batch_size']):
+                    # parent selection
+                    x = archive[keys[rand1[n]]]
+                    y = archive[keys[rand2[n]]]
+                    # copy & add variation
+                    z, _ = self.crystal_system.operators.get_new_individual([x.x, y.x])
+                    population += [z]
+
+            for i in range(len(population)):
+                x = population[i]
+                really_relax = True
+
+                to_evaluate += [(x, self.crystal_system.cellbounds,
+                                 run_parameters["behavioural_descriptors"],
+                                 run_parameters["number_of_relaxation_steps"],
+                                 self.crystal_evaluator.compute_fitness_and_bd)]
+
+            s_list = evaluate_parallel(to_evaluate)
+
+            # natural selection
+
+            for s in s_list:
+                if s is None:
+                    continue
+                else:
+                    s.x.info["confid"] = configuration_counter
+                    configuration_counter += 1
+                    s.calc = None
+                    add_to_archive(s, s.desc, archive, kdt)
+
+
+            # count evals
+            n_evals += len(to_evaluate)
+            b_evals += len(to_evaluate)
+
+            # write archive
+            if b_evals >= run_parameters['dump_period'] and run_parameters['dump_period'] != -1:
+                print("[{}/{}]".format(n_evals, int(maximum_evaluations)), end=" ", flush=True)
+                save_archive(archive, n_evals, experiment_directory_path)
+                b_evals = 0
+            # write log
+            if log_file != None:
+                fit_list = np.array([x.fitness for x in archive.values()])
+                qd_score = np.sum(fit_list)
+                coverage = 100 * len(fit_list) / len(c)
+
+                log_file.write("{} {} {} {} {} {} {} {} {}\n".format(n_evals, len(archive.keys()),
+                                                                     fit_list.max(),
+                                                                     np.mean(fit_list),
+                                                                     np.median(fit_list),
+                                                                     np.percentile(fit_list, 5),
+                                                                     np.percentile(fit_list, 95),
+                                                                     coverage, qd_score))
+                log_file.flush()
+            pbar.update(len(to_evaluate))
+
+        save_archive(archive, n_evals, experiment_directory_path)
+        return experiment_directory_path, archive
+
+        pass

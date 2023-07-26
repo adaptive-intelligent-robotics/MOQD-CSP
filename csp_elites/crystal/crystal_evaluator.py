@@ -1,9 +1,11 @@
+import time
 import warnings
 from enum import Enum
 from typing import Optional, Tuple, List, Dict
 
 import matgl
-from chgnet.model import StructOptimizer
+from chgnet.model import StructOptimizer, CHGNet
+from chgnet.model.dynamics import TrajectoryObserver
 from megnet.utils.models import load_model as megnet_load_model
 import torch
 from ase import Atoms
@@ -43,7 +45,8 @@ class CrystalEvaluator:
         relax_model = matgl.load_model("M3GNet-MP-2021.2.8-PES")
         # relax_model = relax_model.to(device)
         # self.relaxer = OverridenRelaxer(potential=relax_model)
-        self.relaxer = StructOptimizer()
+        # self.relaxer = StructOptimizer()
+        # self.relaxer = MultiprocessingOptimizer()
         self.comparator = comparator
         self.band_gap_calculator = matgl.load_model("MEGNet-MP-2019.4.1-BandGap-mfi")
         # self.band_gap_calculator.to(device)
@@ -55,17 +58,31 @@ class CrystalEvaluator:
             MaterialProperties.ENERGY_FORMATION: self.compute_formation_energy,
             MaterialProperties.SHEAR_MODULUS: self.compute_shear_modulus
         }
+        self.model = CHGNet.load()
 
     # todo:  @jit(cache=True)
     def compute_energy(self, atoms: Atoms, really_relax, n_steps: int = 10) -> float:
-        relaxation_results = self.relaxer.relax(atoms, steps=n_steps, verbose=False)
-        energy = float(
-            relaxation_results["trajectory"].energies[-1] / len(atoms.get_atomic_numbers()))
-        forces = relaxation_results["trajectory"].forces[-1]
-        stresses = relaxation_results["trajectory"].stresses[-1]
-        self._finalize_atoms(atoms, energy=energy, forces=forces, stress=stresses)
+        # relaxation_results = self.relaxer.relax(atoms, steps=n_steps, verbose=False)
 
-        return float(-atoms.get_potential_energy()), relaxation_results
+        # energy = float(
+        #     relaxation_results["trajectory"].energies[-1] / len(atoms.get_atomic_numbers()))
+        # forces = relaxation_results["trajectory"].forces[-1]
+        # stresses = relaxation_results["trajectory"].stresses[-1]
+        # self._finalize_atoms(atoms, energy=energy, forces=forces, stress=stresses)
+        # relaxation_results = None
+
+        structure = AseAtomsAdaptor.get_structure(atoms)
+        prediction = self.model.predict_structure(structure)
+        traj_observer = TrajectoryObserver(atoms)
+        traj_observer.energies.append(prediction["e"])
+        traj_observer.forces.append(prediction["f"])
+        traj_observer.stresses.append(prediction["s"])
+        relaxation_results ={
+            "final_structure": structure,
+            "trajectory": traj_observer
+        }
+        return -prediction["e"], relaxation_results
+        # return float(-atoms.get_potential_energy()), relaxation_results
 
     #todo: @jit(parallel=True, cache=True)
     # @jit(parallel=True)

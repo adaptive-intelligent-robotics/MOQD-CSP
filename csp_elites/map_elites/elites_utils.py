@@ -193,6 +193,8 @@ def evaluate_parallel(to_evaluate) -> List[Optional[Species]]:
 
     for i in range(len(to_evaluate)):
         z, cellbounds, behavioural_descriptors, n_relaxation_steps, f = to_evaluate[i]
+        if z is None:
+            continue
         s = evaluate(
             z, cellbounds, behavioural_descriptors, n_relaxation_steps, f
         )

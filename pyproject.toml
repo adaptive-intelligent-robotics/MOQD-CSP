@@ -29,7 +29,7 @@ cairosvg = "^2.7.0"
 pyxtal = "^0.5.8"
 csp-cryspy = "^1.2.0"
 pandas = "^2.0.3"
-chgnet = "^0.2.0"
+chgnet = {git = "https://github.com/CederGroupHub/chgnet.git"}
 
 
 [tool.poetry.group.dev.dependencies]

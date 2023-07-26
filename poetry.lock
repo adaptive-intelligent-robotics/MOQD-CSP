@@ -722,22 +722,27 @@ version = "0.2.0"
 description = "Pretrained Universal Neural Network Potential for Charge-informed Atomistic Modeling"
 optional = false
 python-versions = ">=3.8"
-files = [
-    {file = "chgnet-0.2.0-py3-none-any.whl", hash = "sha256:ee59c4595c10fd08d02e97d4d8262affbf63ef4f4fc398ab2ce846ca4f6299a1"},
-    {file = "chgnet-0.2.0.tar.gz", hash = "sha256:5c2a3e1b1e9fb5773b999bbbd5f90b7bd08f7be63ad3334ebdeb690a1ab39cb2"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 ase = ">=3.22.0"
 cython = ">=0.29.26"
 numpy = ">=1.21.6"
+nvidia-ml-py3 = ">=7.352.0"
 pymatgen = ">=2022.4.19"
 torch = ">=1.11.0"
 
 [package.extras]
-crystal-toolkit = ["crystal-toolkit"]
 docs = ["lazydocs"]
+examples = ["crystal-toolkit", "pandas"]
 test = ["pytest", "pytest-cov"]
+
+[package.source]
+type = "git"
+url = "https://github.com/CederGroupHub/chgnet.git"
+reference = "HEAD"
+resolved_reference = "f9bf74644c0fdecef247ffa646811d134f43020c"
 
 [[package]]
 name = "click"
@@ -3415,6 +3420,16 @@ files = [
 ]
 
 [[package]]
+name = "nvidia-ml-py3"
+version = "7.352.0"
+description = "Python Bindings for the NVIDIA Management Library"
+optional = false
+python-versions = "*"
+files = [
+    {file = "nvidia-ml-py3-7.352.0.tar.gz", hash = "sha256:390f02919ee9d73fe63a98c73101061a6b37fa694a793abf56673320f1f51277"},
+]
+
+[[package]]
 name = "oauthlib"
 version = "3.2.2"
 description = "A generic, spec-compliant, thorough implementation of the OAuth request-signing logic"
@@ -5809,4 +5824,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8, <3.11"
-content-hash = "55c3709871f4cec4ac4d3b6b2062c1a4910bebf0331e40bc9a22551f0ed297f6"
+content-hash = "21fbeddea0df19258b1105219cdba86592de5ac8e98e9f01155b5adcc2b98125"
