@@ -35,22 +35,18 @@
 #|
 #| The fact that you are presently reading this means that you have
 #| had knowledge of the CeCILL license and that you accept its terms.
-import pathlib
-
-from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
-from csp_elites.crystal.crystal_system import CrystalSystem
+# import multiprocessing
+from typing import List, Optional
 
 import numpy as np
-import multiprocessing
-
-
+# from numba import jit, prange
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
 
-from csp_elites.crystal.crytsl_evaluator_parallel import parallel_fitness_func_and_bd_computation
-from csp_elites.map_elites.elites_utils import cvt, save_archive, parallel_eval, evaluate, add_to_archive, \
-    write_centroids, make_experiment_folder
-from csp_elites.utils.plot import plot_all_statistics_from_file
+from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
+from csp_elites.crystal.crystal_system import CrystalSystem
+from csp_elites.map_elites.elites_utils import cvt, save_archive, evaluate, add_to_archive, \
+    write_centroids, make_experiment_folder, Species, evaluate_parallel
 
 
 class CVT:
@@ -71,7 +67,9 @@ class CVT:
                 experiment_label,
                 ):
         """CVT MAP-Elites
-           Vassiliades V, Chatzilygeroudis K, Mouret JB. Using centroidal voronoi tessellations to scale up the multidimensional archive of phenotypic elites algorithm. IEEE Transactions on Evolutionary Computation. 2017 Aug 3;22(4):623-30.
+           Vassiliades V, Chatzilygeroudis K, Mouret JB. Using centroidal voronoi
+           tessellations to scale up the multidimensional archive of phenotypic elites algorithm.
+           IEEE Transactions on Evolutionary Computation. 2017 Aug 3;22(4):623-30.
 
            Format of the logfile: evals archive_size max mean median 5%_percentile, 95%_percentile
 
@@ -81,6 +79,7 @@ class CVT:
         experiment_directory_path = make_experiment_folder(experiment_label)
         log_file = open(f'{experiment_directory_path}/{experiment_label}.dat', 'w')
 
+        # setup the parallel processing pool
         # num_cores = multiprocessing.cpu_count()
         # pool = multiprocessing.Pool(num_cores)
 
@@ -108,58 +107,98 @@ class CVT:
         # main loop
         configuration_counter = 0
         pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations)
+        random_initialisation = True
         while (n_evals < maximum_evaluations): ### NUMBER OF GENERATIONS
             to_evaluate = []
             # random initialization
             population = []
-            if len(archive) < run_parameters['random_init'] * number_of_niches:
+            # if random_initialisation:
+            #     individuals = self.crystal_system.create_n_individuals(
+            #         run_parameters['random_init_batch'])
+            #     population += individuals
+            #     random_initialisation = False
+
+            if len(archive) <= run_parameters['random_init'] * number_of_niches:
+                # individuals = self.crystal_system.create_n_individuals(
+                #     run_parameters['random_init_batch'])
+                #
+                # population += individuals
                 for i in range(0, run_parameters['random_init_batch']):
                     x = self.crystal_system.create_one_individual(individual_id=i)
+                    # individuals = self.crystal_system.create_n_individuals(run_parameters['random_init_batch'])
 
                     population += [x]
 
             else:  # variation/selection loop
                 keys = list(archive.keys())
                 # we select all the parents at the same time because randint is slow
+                # if run_parameters["curiosity_weights"]:
+                #     weights = self.compute_curiosity_weights(archive=archive)
+                # else:
+                #     weights = np.full(len(keys), 1/len(keys))
+                # rand1 = np.random.choice(np.arange(len(keys)), size=run_parameters['batch_size'], p=weights)
+                # rand2 = np.random.choice(np.arange(len(keys)), size=run_parameters['batch_size'], p=weights)
                 rand1 = np.random.randint(len(keys), size=run_parameters['batch_size'])
                 rand2 = np.random.randint(len(keys), size=run_parameters['batch_size'])
+
                 for n in range(0, run_parameters['batch_size']):
                     # parent selection
                     x = archive[keys[rand1[n]]]
                     y = archive[keys[rand2[n]]]
                     # copy & add variation
                     z, _ = self.crystal_system.operators.get_new_individual([x.x, y.x])
+                    # z.info["curiosity"] = 0
                     population += [z]
 
             # todo: update every 10 individuals tested
-            if population is not None:
-                self.crystal_system.update_operator_scaling_volumes(population=population)
+            # if population is not None:
+            #     self.crystal_system.update_operator_scaling_volumes(population=population)
 
             for i in range(len(population)):
                 x = population[i]
+                really_relax = True
 
-                if n_evals % 50 == 0 and n_evals >= 50:
-                    really_relax = False
-                else:
-                    really_relax = False
-                # self.crystal_evaluator.marta_relax_cells = np.random.choice([True, False], p=[1, 0])
-                # really_relax = np.random.choice([True, False], p=[run_parameters["relaxation_probability"], 1 - run_parameters["relaxation_probability"]])
-                if run_parameters["parallel"]:
-                    to_evaluate += [(x, self.crystal_system.cellbounds, population, really_relax,
-                                     run_parameters["behavioural_descriptors"],
-                                     self.crystal_evaluator.compute_fitness_and_bd)]
-                else:
-                    to_evaluate += [(x, self.crystal_system.cellbounds, population, really_relax,
-                                     run_parameters["behavioural_descriptors"],
-                                     parallel_fitness_func_and_bd_computation)]
+                to_evaluate += [(x, self.crystal_system.cellbounds,
+                                 run_parameters["behavioural_descriptors"],
+                                 run_parameters["number_of_relaxation_steps"],
+                                 self.crystal_evaluator.compute_fitness_and_bd)]
 
+            # chunks = chunkify_population(population)
+
+            s_list = evaluate_parallel(to_evaluate)
+
+            # s_list = pool.map(evaluate_parallel, to_evaluate, chunksize=2)
+            # s_list = sum(s_list)
+            # print()
+
+            # to_evaluate = self.create_evaluate_list(
+            #     population,
+            #     self.crystal_system.cellbounds,
+            #     run_parameters["behavioural_descriptors"],
+            #     run_parameters["number_of_relaxation_steps"],
+            #     # self.crystal_evaluator.compute_fitness_and_bd
+            # )
+            #
+            # s_list = self.evaluate_parallel_old(
+            #     to_evaluate
+            # )
 
             # evaluation of the fitness for to_evaluate
-            s_list = []
-            for individual_set in to_evaluate:
-                s = evaluate(individual_set)
-                s_list.append(s)
-            # s_list = parallel_eval(evaluate, to_evaluate, pool, run_parameters) # TODO: what happens when individual killed by me?
+
+            # s_list = self.evaluate_parallel_old(to_evaluate)
+            # s_list = self.evaluate_parallel(
+            #     population,
+            #     self.crystal_system.cellbounds,
+            #     run_parameters["behavioural_descriptors"],
+            #     run_parameters["number_of_relaxation_steps"],
+            #     self.crystal_evaluator.compute_fitness_and_bd
+            # )
+            # s_list = self.parallel_evaluator(
+            #     population,
+            #     self.crystal_system.cellbounds,
+            #     run_parameters["behavioural_descriptors"],
+            #     run_parameters["number_of_relaxation_steps"],
+            # )
 
             # natural selection
 
@@ -170,6 +209,9 @@ class CVT:
                     s.x.info["confid"] = configuration_counter
                     configuration_counter += 1
                     add_to_archive(s, s.desc, archive, kdt)
+                    # individual_added, parent_id_list = add_to_archive(s, s.desc, archive, kdt)
+                    # archive = self.update_parent_curiosity(archive, parent_id_list, individual_added)
+
             # count evals
             n_evals += len(to_evaluate)
             b_evals += len(to_evaluate)
@@ -193,3 +235,81 @@ class CVT:
 
         save_archive(archive, n_evals, experiment_directory_path)
         return experiment_directory_path, archive
+
+    # @jit(parallel=True)
+    def mutate_individuals(self, archive, run_parameters):
+        keys = list(archive.keys())
+        # we select all the parents at the same time because randint is slow
+        rand1 = np.random.randint(len(keys), size=run_parameters['batch_size'])
+        rand2 = np.random.randint(len(keys), size=run_parameters['batch_size'])
+        mutated_offspring = []
+        for n in range(0, run_parameters['batch_size']):
+            # parent selection
+            x = archive[keys[rand1[n]]]
+            y = archive[keys[rand2[n]]]
+            # copy & add variation
+            z, _ = self.crystal_system.operators.get_new_individual([x.x, y.x])
+            mutated_offspring += [z]
+        return mutated_offspring
+
+    # @jit(parallel=True)
+    def create_evaluate_list(self, population, cellbounds, bd, nb_relaxation_steps): # fitness_function
+        to_evaluate = []
+        for i in range(len(population)):
+            x = population[i]
+            to_evaluate += [(x, cellbounds, bd, nb_relaxation_steps)] # fitness_function
+        return to_evaluate
+
+    # @jit(parallel=True)
+    def evaluate_parallel_old(self, to_evaluate):
+        s_list = []
+
+        for i in range(len(to_evaluate)):
+            z, cellbounds, behavioural_descriptors, n_relaxation_steps, f = to_evaluate[i]
+            s = evaluate(
+                z, cellbounds, behavioural_descriptors, n_relaxation_steps, f
+            )
+            s_list.append(s)
+        return s_list
+
+    # @jit(parallel=True)
+    def evaluate_parallel(self, population, cellbounds, bd, nb_relaxation_steps, fitness_function) -> List[Optional[Species]]:
+        s_list = []
+        for i in range(len(population)):
+            x = population[i]
+            s = evaluate(
+                x,
+                cellbounds,
+                bd,
+                nb_relaxation_steps,
+                fitness_function
+            )
+            s_list.append(s)
+        return s_list
+
+    def update_parent_curiosity(self, archive, parent_id_list: List[int], offspring_added_to_archive):
+        # map id to niche
+        id_niche_mapping = {value.x.info['confid']: key for key, value in archive.items()}
+        for parent_id in parent_id_list:
+            if parent_id in id_niche_mapping:
+                niche = id_niche_mapping[parent_id]
+                if offspring_added_to_archive:
+                    archive[niche].x.info["curiosity"] += 1
+                else:
+                    archive[niche].x.info["curiosity"] -= 0.5
+            else:
+                continue
+        return archive
+
+    def compute_curiosity_weights(self, archive):
+        all_scores = [individual.x.info["curiosity"] for individual in archive.values()]
+        all_scores = np.array(all_scores)
+        minimum_value = np.min(all_scores)
+        if minimum_value < 0:
+            all_scores = all_scores + (minimum_value + 0.5)
+        elif minimum_value == 0:
+            all_scores = all_scores + 0.5
+
+        sum_of_scores = np.sum(all_scores)
+        weights = all_scores / sum_of_scores
+        return weights

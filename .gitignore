@@ -2,3 +2,7 @@
 __pycache__
 
 csp_experiments
+
+.DS_Store
+
+experiments/

@@ -39,9 +39,13 @@ import pathlib
 import pickle
 from datetime import date, datetime
 from pathlib import Path
-from typing import List
+from typing import List, Tuple, Optional
 
+# import numba
 import numpy as np
+from ase import Atom
+# from numba import jit
+# from numba.experimental import jitclass
 from sklearn.cluster import KMeans
 
 from csp_elites.crystal.crystal_evaluator import MaterialProperties
@@ -72,7 +76,7 @@ def write_centroids(
     dim = centroids.shape[1]
     filename = __centroids_filename(k, dim, bd_names, bd_minimum_values, bd_maximum_values)
     file_path = Path(experiment_folder).parent
-    with open(f"{file_path}/{filename}", 'w') as f:
+    with open(f"{file_path}{filename}", 'w') as f:
         for p in centroids:
             for item in p:
                 f.write(str(item) + ' ')
@@ -116,6 +120,9 @@ def parallel_eval(evaluate_function, to_evaluate, pool, params):
         s_list = map(evaluate_function, to_evaluate)
     return list(s_list)
 
+def parallel_eval_no_multiprocess():
+    pass
+
 # format: fitness, centroid, desc, genome \n
 # fitness, centroid, desc and x are vectors
 def save_archive(archive, gen, directory_path):
@@ -128,26 +135,41 @@ def save_archive(archive, gen, directory_path):
     with open(filename_pkl, 'wb') as f:
         pickle.dump(storage, f)
 
-def add_to_archive(s, centroid, archive, kdt):
+def add_to_archive(s, centroid, archive, kdt) -> Tuple[bool, int]:
     niche_index = kdt.query([centroid], k=1)[1][0][0]
     niche = kdt.data[niche_index]
     n = make_hashable(niche)
     s.centroid = n
+    if "data" in s.x.info:
+        parent_id = s.x.info["data"]["parents"]
+    else:
+        parent_id = [None]
     if n in archive:
         if s.fitness > archive[n].fitness:
             archive[n] = s
-            return 1
-        return 0
+            return True, parent_id
+        return False, parent_id
     else:
         archive[n] = s
-        return 1
+        return True, parent_id
+
+def evaluate_old(to_evaluate):
+    really_relax = True
+    z, cellbounds, behavioural_descriptors, n_relaxation_steps, f = to_evaluate
+    fit, desc, kill = f(z, cellbounds, really_relax, behavioural_descriptors, n_relaxation_steps)
+    if kill:
+        return None
+    else:
+        return Species(z, desc, fit)
 
 
 # evaluate a single vector (x) with a function f and return a species
 # t = vector, function
-def evaluate(t):
-    z, cellbounds, population, really_relax, behavioural_descriptors, f = t  # evaluate z with function f
-    fit, desc, kill = f(z, cellbounds, population, really_relax, behavioural_descriptors)
+# todo: @jit(cache=True)
+# @jit
+def evaluate(z, cellbounds, behavioural_descriptors, n_relaxation_steps, f) -> Optional[Species]:
+    really_relax = True
+    fit, desc, kill = f(z, cellbounds, really_relax, behavioural_descriptors, n_relaxation_steps)
     if kill:
         return None
     else:
@@ -163,3 +185,16 @@ def make_current_time_string(with_time: bool = True):
     today = date.today().strftime("%Y%m%d")
     time_now = datetime.now().strftime("%H_%M") if with_time else ""
     return f"{today}_{time_now}"
+
+
+
+def evaluate_parallel(to_evaluate) -> List[Optional[Species]]:
+    s_list = []
+
+    for i in range(len(to_evaluate)):
+        z, cellbounds, behavioural_descriptors, n_relaxation_steps, f = to_evaluate[i]
+        s = evaluate(
+            z, cellbounds, behavioural_descriptors, n_relaxation_steps, f
+        )
+        s_list.append(s)
+    return s_list

@@ -1,9 +1,7 @@
-import os
 import json
 import os
 import pathlib
-from dataclasses import dataclass
-from typing import List, Tuple, Dict, Any, Optional
+import time
 from dataclasses import asdict
 from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.utilities import CellBounds
@@ -13,50 +11,33 @@ from csp_elites.utils.asign_target_values_to_centroids import \
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator, MaterialProperties
 from csp_elites.crystal.crystal_system import CrystalSystem
 from csp_elites.map_elites.cvt_csp import CVT
+from csp_elites.utils.experiment_parameters import ExperimentParameters
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 from csp_elites.utils.plot import load_archive_from_pickle, load_centroids, \
     plot_2d_map_elites_repertoire_marta, convert_fitness_and_ddescriptors_to_plotting_format, \
-    plot_all_statistics_from_file
+    plot_all_statistics_from_file, plot_all_maps_in_archive
 # from csp_elites.plot import load_centroids, load_archive_from_pickle
 from csp_elites.map_elites.elites_utils import make_current_time_string, __centroids_filename
-
-
-@dataclass
-class ExperimentParameters:
-    system_name: str
-    blocks: List[int]
-    volume: int
-    ratio_of_covalent_radii: float
-    splits: Dict[Tuple[int], int]
-    cellbounds: CellBounds
-    operator_probabilities: List[float]
-    n_behavioural_descriptor_dimensions: int
-    number_of_niches: int
-    maximum_evaluations: int
-    cvt_run_parameters: Dict[str, Any]
-    experiment_tag: str
-    fitness_min_max_values: []
-    fitler_comparison_data_for_n_atoms: Optional[int]
 
 if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = "0"
     experiment_parameters = ExperimentParameters(
         number_of_niches=200,
-        maximum_evaluations=1000,
-        experiment_tag="test_hpc",
+        maximum_evaluations=100,
+        experiment_tag="100_evals_cghnet",
         fitler_comparison_data_for_n_atoms=24,
         cvt_run_parameters= \
             {
                 # more of this -> higher-quality CVT
                 "cvt_samples": 25000,
                 # we evaluate in batches to paralleliez
-                "batch_size": 2,
+                "batch_size": 10,
                 # proportion of niches to be filled before starting
-                "random_init": 0.1,
+                "random_init": 0.05,
                 # batch for random initialization
-                "random_init_batch": 20,
+                "random_init_batch": 10,
                 # when to write results (one generation = one batch)
-                "dump_period":  20,
+                "dump_period":  10,
                 # do we use several cores?
                 "parallel": True,
                 # do we cache the result of CVT and reuse?
@@ -65,7 +46,9 @@ if __name__ == '__main__':
                 "bd_minimum_values": (0, 0),
                 "bd_maximum_values": (100, 100),
                 "relaxation_probability": 0,
-                "behavioural_descriptors": [MaterialProperties.SHEAR_MODULUS, MaterialProperties.BAND_GAP]
+                "behavioural_descriptors": [MaterialProperties.SHEAR_MODULUS, MaterialProperties.BAND_GAP],
+                "number_of_relaxation_steps": 10,
+                "curiosity_weights": True,
             },
         system_name="TiO2",
         blocks = [22] * 8 + [8] * 16,
@@ -75,11 +58,10 @@ if __name__ == '__main__':
         cellbounds = CellBounds(
             bounds={'phi': [20, 160], 'chi': [20, 160], 'psi': [20, 160], 'a': [2, 40], 'b': [2, 40],
                     'c': [2, 40]}),
-        operator_probabilities = [5., 0, 3., 2.],
+        operator_probabilities=[5., 1, 2., 2.],
         ### CVT PARAMETERS ###
         n_behavioural_descriptor_dimensions=2,
         fitness_min_max_values=[4, 9],
-
     )
 
     print(experiment_parameters)
@@ -109,13 +91,14 @@ if __name__ == '__main__':
         crystal_system=crystal_system,
         crystal_evaluator=crystal_evaluator,
     )
-
+    tic = time.time()
     experiment_directory_path, archive = cvt.compute(
         number_of_niches=experiment_parameters.number_of_niches,
         maximum_evaluations=experiment_parameters.maximum_evaluations,
         run_parameters=experiment_parameters.cvt_run_parameters,
         experiment_label=experiment_label,
     )
+    print(f"time taken {time.time() - tic}")
 
     experiment_parameters.splits = "DUMMY"
     experiment_parameters.cellbounds = "DUMMY"
@@ -176,36 +159,12 @@ if __name__ == '__main__':
         directory_string=experiment_directory_path,
     )
 
-    for filename in [name for name in os.listdir(f"{experiment_directory_path}") if
-                     not os.path.isdir(name)]:
-        if "archive_" in filename:
-            fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
-                f"{experiment_directory_path}/{filename}")
-
-            fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_ddescriptors_to_plotting_format(
-                all_centroids=all_centroids,
-                centroids_from_archive=centroids,
-                fitnesses_from_archive=fitnesses,
-                descriptors_from_archive=descriptors,
-            )
-
-            archive_id = filename.lstrip("archive_").rstrip(".pkl")
-            if "relaxed" in filename:
-                archive_id += "_relaxed"
-            plot_2d_map_elites_repertoire_marta(
-                centroids=all_centroids,
-                repertoire_fitnesses=fitnesses_for_plotting,
-                minval=experiment_parameters.cvt_run_parameters["bd_minimum_values"],
-                maxval=experiment_parameters.cvt_run_parameters["bd_maximum_values"],
-                repertoire_descriptors=descriptors_for_plotting,
-                vmin=experiment_parameters.fitness_min_max_values[0],
-                vmax=experiment_parameters.fitness_min_max_values[1],
-                target_centroids=target_centroids,
-                directory_string=experiment_directory_path,
-                # TODO: remove this slach and add in plotting loop
-                filename=f"cvt_plot_{archive_id}",
-                axis_labels=[bd.value for bd in experiment_parameters.cvt_run_parameters["behavioural_descriptors"]]
-            )
+    plot_all_maps_in_archive(
+        experiment_directory_path=experiment_directory_path,
+        experiment_parameters=experiment_parameters,
+        all_centroids=all_centroids,
+        target_centroids=target_centroids,
+    )
 
     plot_all_statistics_from_file(
         filename=f"{experiment_directory_path}/{experiment_label}.dat",

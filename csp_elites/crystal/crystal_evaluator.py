@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Optional, Tuple, List, Dict
 
 import matgl
+from chgnet.model import StructOptimizer
 from megnet.utils.models import load_model as megnet_load_model
 import torch
 from ase import Atoms
@@ -12,6 +13,7 @@ from ase.ga import set_raw_score
 from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.utilities import CellBounds
 from matplotlib import pyplot as plt
+# from numba import jit, njit, prange
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -40,11 +42,12 @@ class CrystalEvaluator:
         # device = torch.device('cpu' if torch.cuda.is_available() else 'cuda')
         relax_model = matgl.load_model("M3GNet-MP-2021.2.8-PES")
         # relax_model = relax_model.to(device)
-        self.relaxer = OverridenRelaxer(potential=relax_model)
+        # self.relaxer = OverridenRelaxer(potential=relax_model)
+        self.relaxer = StructOptimizer()
         self.comparator = comparator
         self.band_gap_calculator = matgl.load_model("MEGNet-MP-2019.4.1-BandGap-mfi")
         # self.band_gap_calculator.to(device)
-        self.formation_energy_calculator = matgl.load_model("M3GNet-MP-2018.6.1-Eform")
+        # self.formation_energy_calculator = matgl.load_model("M3GNet-MP-2018.6.1-Eform")
         self.shear_modulus_calculator = megnet_load_model("logG_MP_2018")
         # self.formation_energy_calculator.to(device)
         self.property_to_function_mapping = {
@@ -53,8 +56,9 @@ class CrystalEvaluator:
             MaterialProperties.SHEAR_MODULUS: self.compute_shear_modulus
         }
 
-    def compute_energy(self, atoms: Atoms, really_relax) -> float:
-        relaxation_results = self.relaxer.relax(atoms, fmax=0.01, marta_realy_relax=really_relax, steps=10)
+    # todo:  @jit(cache=True)
+    def compute_energy(self, atoms: Atoms, really_relax, n_steps: int = 10) -> float:
+        relaxation_results = self.relaxer.relax(atoms, steps=n_steps, verbose=False)
         energy = float(
             relaxation_results["trajectory"].energies[-1] / len(atoms.get_atomic_numbers()))
         forces = relaxation_results["trajectory"].forces[-1]
@@ -63,20 +67,23 @@ class CrystalEvaluator:
 
         return float(-atoms.get_potential_energy()), relaxation_results
 
+    #todo: @jit(parallel=True, cache=True)
+    # @jit(parallel=True)
     def compute_fitness_and_bd(self,
         atoms: Atoms,
         cellbounds: CellBounds,
-        population: List[Atoms],
         really_relax: bool,
         behavioral_descriptor_names: List[MaterialProperties],
-                               ) -> Tuple[float, Tuple[float, float], bool]:
+        n_relaxation_steps: int,
+    ) -> Tuple[float, Tuple[float, float], bool]:
         if not cellbounds.is_within_bounds(atoms.get_cell()):
             niggli_reduce(atoms)
             if not cellbounds.is_within_bounds(atoms.get_cell()):
                 return 0, (0, 0), True
 
         # Compute fitness (i.e. energy)
-        fitness_score, relaxation_results = self.compute_energy(atoms=atoms, really_relax=really_relax)
+        fitness_score, relaxation_results = self.compute_energy(atoms=atoms, really_relax=really_relax,
+                                                                n_steps=n_relaxation_steps)
 
         cell = atoms.get_cell()
 
@@ -85,19 +92,12 @@ class CrystalEvaluator:
         if not cellbounds.is_within_bounds(cell):
             kill_individual = True
 
-        # if population is not None:
-        #     for el in population:
-        #         if el.info["confid"] != atoms.info["confid"]:
-        #             cosine_distance = self.comparator._compare_structure(atoms, el)
-        #             if cosine_distance == 0:
-        #                 return 0, (0, 0), True
-
         # Compute bd dimension
 
         behavioral_descriptor_values = []
 
-        for property in behavioral_descriptor_names:
-            bd_value = self.property_to_function_mapping[property](relaxed_structure=relaxation_results["final_structure"])
+        for i in range(len(behavioral_descriptor_names)):
+            bd_value = self.property_to_function_mapping[behavioral_descriptor_names[i]](relaxed_structure=relaxation_results["final_structure"])
             behavioral_descriptor_values.append(bd_value)
 
         return fitness_score, behavioral_descriptor_values, kill_individual
@@ -169,3 +169,49 @@ class CrystalEvaluator:
         structure = AseAtomsAdaptor.get_structure(atoms)
         conventional_structure = SpacegroupAnalyzer(structure=structure)
         return conventional_structure
+
+    def compute_local_order(self, atoms: Atoms):
+        all_local_orders = self.comparator.get_local_orders(atoms)
+        pass
+
+    def compute_mixing_energy(
+            self, crystal_energy: float,
+            crystal_1_proportion: float,
+            edge_crystal_1_energy: float,
+            edge_crystal_2_energy: float,
+    ):
+        return crystal_energy * (
+                (1 - crystal_1_proportion) * edge_crystal_2_energy +
+                crystal_1_proportion * edge_crystal_1_energy
+        )
+
+    def compute_fitness_and_bd_mixing_system(
+            self, atoms: Atoms, cellbounds, really_relax: bool, crystal_1_proportion: float,
+            edge_crystal_1_energy: float, edge_crystal_2_energy: float,
+    ):
+        if not cellbounds.is_within_bounds(atoms.get_cell()):
+            niggli_reduce(atoms)
+            if not cellbounds.is_within_bounds(atoms.get_cell()):
+                return 0, (0, 0), True
+
+        # Compute fitness (i.e. energy)
+        crystal_energy, relaxation_results = self.compute_energy(atoms=atoms,
+                                                                 really_relax=really_relax)
+
+        cell = atoms.get_cell()
+
+        # Check whether the individual is valid to be added to the archive
+        kill_individual = False
+        if not cellbounds.is_within_bounds(cell):
+            kill_individual = True
+
+        fitness_score = self.compute_mixing_energy(
+            crystal_energy=crystal_energy,
+            crystal_1_proportion=crystal_1_proportion,
+            edge_crystal_1_energy=edge_crystal_1_energy,
+            edge_crystal_2_energy=edge_crystal_2_energy,
+        )
+
+        band_gap = self.compute_band_gap(relaxed_structure=relaxation_results["final_structure"])
+
+        return fitness_score(band_gap, crystal_energy), kill_individual

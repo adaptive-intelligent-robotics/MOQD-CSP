@@ -6,7 +6,7 @@ from ase.ga.utilities import CellBounds, closest_distances_generator
 from matgl.ext.ase import Relaxer
 
 from csp_elites.crystal.crystal_system import CrystalSystem
-from run_experiment import ExperimentParameters
+from csp_elites.utils.experiment_parameters import ExperimentParameters
 
 if __name__ == '__main__':
     experiment_parameters = ExperimentParameters(
