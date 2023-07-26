@@ -457,57 +457,41 @@ class CVT:
 
 
     def start_experiment_from_archive(self, experiment_directory_path: str,
-                                      experiment_label: str, run_parameters,
+                                      experiment_label: str, archive_number:int,
+                                      run_parameters,
                                       number_of_niches, maximum_evaluations):
-        fitnesses, descriptors, centroids, individuals = load_archive_from_pickle()
+
 
         # experiment_directory_path = make_experiment_folder(experiment_label)
-        log_file = open(f'{experiment_directory_path}/{experiment_label}.dat', 'w')
+        log_file = open(f'{experiment_directory_path}/{experiment_label}_continued.dat', 'w')
 
-
-        # create the CVT
-        c = cvt(number_of_niches, self.number_of_bd_dimensions,
-                run_parameters['cvt_samples'],
-                run_parameters["bd_minimum_values"],
-                run_parameters["bd_maximum_values"],
-                experiment_directory_path,
-                run_parameters["behavioural_descriptors"],
-                run_parameters['cvt_use_cache'],
-                )
-        kdt = KDTree(c, leaf_size=30, metric='euclidean')
-        write_centroids(
-            c, experiment_folder=experiment_directory_path,
-            bd_names=run_parameters["behavioural_descriptors"],
-            bd_minimum_values=run_parameters["bd_minimum_values"],
-            bd_maximum_values=run_parameters["bd_maximum_values"],
+        kdt, c = self._initialise_kdt_and_centroids(
+            experiment_directory_path=experiment_directory_path,
+            number_of_niches=number_of_niches,
+            run_parameters=run_parameters
         )
 
         archive = {}  # init archive (empty)
-        n_evals = 0  # number of evaluations since the beginning
+        archive = self._convert_saved_archive_to_experiment_archive(
+            experiment_directory_path=experiment_directory_path,
+            archive_number=archive_number,
+            experiment_label=experiment_label,
+            kdt=kdt,
+            archive=archive
+        )
+
+        n_evals = archive_number  # number of evaluations since the beginning
         b_evals = 0  # number evaluation since the last dump
 
         # main loop
-        configuration_counter = 0
+        configuration_counter = 0 # todo: change configuration number to be alrger than the last one in the archive
+        n_evals_to_do = maximum_evaluations - archive_number
         pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations)
-        random_initialisation = True
+        random_initialisation = False
         while (n_evals < maximum_evaluations):  ### NUMBER OF GENERATIONS
             to_evaluate = []
             # random initialization
             population = []
-            if random_initialisation:
-                individuals = self.crystal_system.create_n_individuals(
-                    run_parameters['random_init_batch'])
-                #     population += individuals
-                #     random_initialisation = False
-                structure_info, known_atoms = get_all_materials_with_formula("TiO2")
-                # individuals = []
-                for atoms in known_atoms:
-                    if len(atoms.get_atomic_numbers()) == run_parameters[
-                        "filter_starting_Structures"]:
-                        atoms.rattle()
-                        individuals.append(atoms)
-                # individuals = [AseAtomsAdaptor.get_atoms(structure) for structure in known_structures]
-                population += individuals[:2]
 
             if random_initialisation:
                 random_initialisation = False
@@ -522,7 +506,8 @@ class CVT:
                     x = archive[keys[rand1[n]]]
                     y = archive[keys[rand2[n]]]
                     # copy & add variation
-                    z, _ = self.crystal_system.operators.get_new_individual([x.x, y.x])
+                    z, _ = self.crystal_system.operators.get_new_individual([Atoms.fromdict(x.x), Atoms.fromdict(y.x)])
+                    z = z.todict()
                     population += [z]
 
             for i in range(len(population)):
@@ -542,9 +527,9 @@ class CVT:
                 if s is None:
                     continue
                 else:
-                    s.x.info["confid"] = configuration_counter
+                    s.x["info"]["confid"] = configuration_counter
                     configuration_counter += 1
-                    s.calc = None
+                    # s.calc = None
                     add_to_archive(s, s.desc, archive, kdt)
 
 
@@ -555,7 +540,10 @@ class CVT:
             # write archive
             if b_evals >= run_parameters['dump_period'] and run_parameters['dump_period'] != -1:
                 print("[{}/{}]".format(n_evals, int(maximum_evaluations)), end=" ", flush=True)
-                save_archive(archive, n_evals, experiment_directory_path)
+                if n_evals == archive_number:
+                    continue
+                else:
+                    save_archive(archive, n_evals, experiment_directory_path)
                 b_evals = 0
             # write log
             if log_file != None:
@@ -576,4 +564,23 @@ class CVT:
         save_archive(archive, n_evals, experiment_directory_path)
         return experiment_directory_path, archive
 
-        pass
+    def _convert_saved_archive_to_experiment_archive(self, experiment_directory_path,
+                                                     experiment_label, archive_number, kdt, archive,
+                                                     individual_type = "atoms"):
+        fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
+            filename=f"{experiment_directory_path}/archive_{archive_number}.pkl")
+        if individual_type == "atoms":
+            species_list = [
+                Species(x=individuals[i].todict(), desc=descriptors[i], fitness=fitnesses[i], centroid=None)
+                for i in range(len(individuals))
+            ]
+        elif individual_type =="dict":
+            species_list = [
+                Species(x=individuals[i], desc=descriptors[i], fitness=fitnesses[i],
+                        centroid=None)
+                for i in range(len(individuals))
+            ]
+        for i in range(len(species_list)):
+            add_to_archive(species_list[i], descriptors[i], archive=archive, kdt=kdt)
+
+        return archive
