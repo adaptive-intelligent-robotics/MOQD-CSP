@@ -1,10 +1,9 @@
-import time
 import warnings
-from enum import Enum
 from typing import Optional, Tuple, List, Dict
 
 import matgl
-from chgnet.model import StructOptimizer, CHGNet
+import numpy as np
+from chgnet.model import CHGNet
 from chgnet.model.dynamics import TrajectoryObserver
 from megnet.utils.models import load_model as megnet_load_model
 import torch
@@ -20,21 +19,11 @@ from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-from csp_elites.crystal.override_relaxer import OverridenRelaxer
+from csp_elites.crystal.materials_data_model import BandGapEnum, MaterialProperties
+from csp_elites.map_elites.elites_utils import Species
 
 warnings.simplefilter("ignore")
 
-
-class BandGapEnum(int, Enum):
-    PBE = 0
-    GLLB_SC = 1
-    MSE = 2
-    SCAN = 3
-
-class MaterialProperties(str, Enum):
-    BAND_GAP = "band_gap"
-    ENERGY_FORMATION = "energy_formation"
-    SHEAR_MODULUS = "shear_modulus"
 
 class CrystalEvaluator:
     def __init__(self,
@@ -84,15 +73,16 @@ class CrystalEvaluator:
         return -prediction["e"], relaxation_results
         # return float(-atoms.get_potential_energy()), relaxation_results
 
+
     #todo: @jit(parallel=True, cache=True)
     # @jit(parallel=True)
     def compute_fitness_and_bd(self,
-        atoms: Atoms,
-        cellbounds: CellBounds,
-        really_relax: bool,
-        behavioral_descriptor_names: List[MaterialProperties],
-        n_relaxation_steps: int,
-    ) -> Tuple[float, Tuple[float, float], bool]:
+                               atoms: Atoms,
+                               cellbounds: CellBounds,
+                               really_relax: bool,
+                               behavioral_descriptor_names: List[MaterialProperties],
+                               n_relaxation_steps: int,
+                               ) -> Tuple[float, Tuple[float, float], bool]:
         if not cellbounds.is_within_bounds(atoms.get_cell()):
             niggli_reduce(atoms)
             if not cellbounds.is_within_bounds(atoms.get_cell()):
@@ -119,7 +109,8 @@ class CrystalEvaluator:
 
         return fitness_score, behavioral_descriptor_values, kill_individual
 
-    def compute_band_gap(self, relaxed_structure, bandgap_type: Optional[BandGapEnum] = BandGapEnum.SCAN):
+    def compute_band_gap(self, relaxed_structure, bandgap_type: Optional[
+        BandGapEnum] = BandGapEnum.SCAN):
         if bandgap_type is None:
             for i, method in ((0, "PBE"), (1, "GLLB-SC"), (2, "HSE"), (3, "SCAN")):
                 graph_attrs = torch.tensor([i])
@@ -232,3 +223,109 @@ class CrystalEvaluator:
         band_gap = self.compute_band_gap(relaxed_structure=relaxation_results["final_structure"])
 
         return fitness_score(band_gap, crystal_energy), kill_individual
+
+    def batch_compute_fitness_and_bd(self,
+                                     list_of_atoms: List[Atoms], cellbounds: CellBounds,
+                                     really_relax: bool, behavioral_descriptor_names: List[
+                MaterialProperties],
+                                     n_relaxation_steps: int,
+                                     ):
+        kill_list = self.check_atoms_in_cellbounds(list_of_atoms, cellbounds)
+        # todo: filter evaluations to remove killed_individuals
+        fitness_scores, relaxation_results = self.batch_compute_energy(
+            list_of_atoms=list_of_atoms,
+            really_relax=really_relax,
+            n_steps=n_relaxation_steps,
+        )
+
+        band_gaps = self._batch_band_gap_compute(list_of_atoms)
+        shear_moduli = self._batch_shear_modulus_compute(list_of_atoms)
+        # todo: finalise atoms here? currently no need
+
+        return fitness_scores, (band_gaps, shear_moduli), kill_list
+
+    def batch_create_species(self, list_of_atoms, fitness_scores, descriptors, kill_list):
+        # todo: here could do dict -> atoms conversion
+
+        kill_list = np.array(kill_list)
+        individual_indexes_to_add = np.arange(len(list_of_atoms))[~kill_list]
+        species_list = []
+        for i in individual_indexes_to_add:
+            new_specie = Species(
+                x=list_of_atoms[i],
+                fitness=fitness_scores[i],
+                desc=(descriptors[0][i], descriptors[1][i])
+            )
+            species_list.append(new_specie)
+
+        return species_list
+
+    def _batch_band_gap_compute(self, list_of_atoms: List[Atoms]):
+        structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
+        band_gaps = []
+        for i in range(len(structures)):
+            band_gap = self.compute_band_gap(relaxed_structure=structures[i])
+            band_gaps.append(band_gap)
+        return band_gaps
+
+    def _batch_shear_modulus_compute(self, list_of_atoms: List[Atoms]):
+        structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
+        shear_moduli = []
+        for i in range(len(structures)):
+            shear_modulus = self.compute_shear_modulus(relaxed_structure=structures[i])
+            shear_moduli.append(shear_modulus)
+        return shear_moduli
+
+    def check_atoms_in_cellbounds(self, list_of_atoms: List[Atoms],
+                                  cellbounds: CellBounds,
+                                  ) -> List[bool]:
+        kill_list = []
+        for i, atoms in enumerate(list_of_atoms):
+            if not cellbounds.is_within_bounds(atoms.get_cell()):
+                niggli_reduce(atoms)
+                if not cellbounds.is_within_bounds(atoms.get_cell()):
+                    kill_individual = True
+                else:
+                    kill_individual = True
+            else:
+                kill_individual = False
+
+            kill_list.append(kill_individual)
+        return kill_list
+
+    def batch_compute_energy(self, list_of_atoms: Atoms, really_relax, n_steps: int = 10) -> float:
+        trajectories = [TrajectoryObserver(atoms) for atoms in list_of_atoms]
+        forces, energies, stresses = self._evaluate_list_of_atoms(list_of_atoms)
+        trajectories = self._update_trajectories(trajectories, forces, energies, stresses)
+
+        final_structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
+        reformated_output = []
+        for i in range(len(final_structures)):
+            reformated_output.append(
+                {"final_structure": final_structures[i],
+                 "trajectory": trajectories[i],
+                 }
+            )
+        return -1 * energies, reformated_output
+
+    def _evaluate_list_of_atoms(self, list_of_atoms: List[Atoms]):
+        list_of_structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
+
+        predictions = self.model.predict_structure(list_of_structures,
+                                                   batch_size=len(list_of_atoms))
+        if isinstance(predictions, dict):
+            predictions = [predictions]
+
+        forces = np.array([pred["f"] for pred in predictions])
+        energies = np.array([pred["e"] for pred in predictions])
+        stresses = np.array([pred["s"] for pred in predictions])
+        return forces, energies, stresses
+
+    def _update_trajectories(self, trajectories: List[TrajectoryObserver], forces, energies,
+                             stresses) -> List[TrajectoryObserver]:
+        for i in range(len(trajectories)):
+            trajectories[i].energies.append(energies[i])
+            trajectories[i].forces.append(forces)
+            trajectories[i].stresses.append(stresses)
+
+        return trajectories

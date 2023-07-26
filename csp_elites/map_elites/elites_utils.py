@@ -48,7 +48,7 @@ from ase import Atom
 # from numba.experimental import jitclass
 from sklearn.cluster import KMeans
 
-from csp_elites.crystal.crystal_evaluator import MaterialProperties
+from csp_elites.crystal.materials_data_model import MaterialProperties
 
 
 class Species:

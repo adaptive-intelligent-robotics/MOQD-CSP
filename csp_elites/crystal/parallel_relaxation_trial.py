@@ -358,9 +358,7 @@ def evaluate_list_of_atoms(list_of_atoms: List[Atoms], chgnet):
         predictions = [predictions]
     print(f"Get energy etc: {time.time() - tic}")
     # print(f"multiple evals {time.time() - tic}")
-    forces = np.array([pred["f"] for pred in predictions])
-    energies = np.array([pred["e"] for pred in predictions])
-    stresses = np.array([pred["s"] for pred in predictions])
+
 
     return forces, energies, stresses
 
