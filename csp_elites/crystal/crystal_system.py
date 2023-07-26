@@ -8,6 +8,9 @@ from ase.ga.standardmutations import StrainMutation, PermutationMutation
 from ase.ga.startgenerator import StartGenerator
 from ase.ga.utilities import CellBounds, closest_distances_generator
 import numpy as np
+# from jax import jit
+# from numba import prange, jit
+
 
 class CrystalSystem:
     def __init__(self,
@@ -17,6 +20,7 @@ class CrystalSystem:
         splits: Dict[Tuple[int], int] = None,
         cellbounds: CellBounds = None,
         operator_probabilities: List[float] = (4., 2., 2., 2.),
+        compound_formula: Optional[str] = None,
     ):
 
         self.volume = volume
@@ -33,6 +37,7 @@ class CrystalSystem:
         self._soft_mutation = None
         self._permutation_mutation = None
         self.operators = self._initialise_operators(operator_probabilities)
+        self.compound_formula = compound_formula
 
     def create_one_individual(self, individual_id: Optional[int]):
         try:
@@ -40,8 +45,18 @@ class CrystalSystem:
         except AssertionError:
             individual = self._start_generator.get_new_candidate()
             print("Stupid ase error")
+
         individual.info["confid"] = individual_id
+        individual.info["curiosity"] = 0
         return individual
+
+    # @jit(parallel=True)
+    def create_n_individuals(self, number_of_individuals: int) -> List[Atoms]:
+        individuals = []
+        for i in range(number_of_individuals):
+            new_individual = self.create_one_individual(individual_id=i)
+            individuals.append(new_individual)
+        return individuals
 
     def _initialise_start_generator(self):
         closest_distances = closest_distances_generator(atom_numbers=self.atom_numbers_to_optimise,
@@ -78,4 +93,3 @@ class CrystalSystem:
     def update_operator_scaling_volumes(self, population: List[Atoms]):
         self._strain_mutation.update_scaling_volume(population, w_adapt=0.5, n_adapt=4)
         self._cut_and_splice.update_scaling_volume(population, w_adapt=0.5, n_adapt=4)
-        # TODO: update scaling volume for permutation?

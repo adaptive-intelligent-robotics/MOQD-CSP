@@ -17,7 +17,7 @@ from csp_elites.utils.get_mpi_structures import return_structure_information_fro
     get_all_materials_with_formula
 from csp_elites.utils.plot import plot_2d_map_elites_repertoire_marta, load_centroids, \
     convert_fitness_and_ddescriptors_to_plotting_format, load_archive_from_pickle
-from run_experiment import ExperimentParameters
+from csp_elites.utils.experiment_parameters import ExperimentParameters
 
 if __name__ == '__main__':
     formula = "TiO2"

@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 
 import numpy as np
 from matplotlib import pyplot as plt, cm
@@ -19,6 +19,8 @@ from csp_elites.map_elites.elites_utils import make_hashable
 
 from csp_elites.utils.asign_target_values_to_centroids import \
     compute_centroids_for_target_solutions, reassign_data_from_pkl_to_new_centroids
+if TYPE_CHECKING:
+    from csp_experiments.run_experiment import ExperimentParameters
 
 
 def get_voronoi_finite_polygons_2d(
@@ -224,20 +226,9 @@ def plot_2d_map_elites_repertoire_marta(
     if directory_string is None:
         plt.show()
     else:
-        plt.savefig(f"{directory_string}/{filename}.svg", format="svg")
+        plt.savefig(f"{directory_string}/{filename}.png", format="png")
     return fig, ax
 
-
-def plot_fitness_from_file(filename: str):
-    generation_indices, archive_size, best_fitness, mean_fitness, median_fitness, percentile_5, percentile_95 = load_fitness_info_from_file(filename)
-
-    fig, ax = plt.subplots()
-    ax.plot(generation_indices, best_fitness)
-    ax.set_title("Best Fitness Over Time")
-    ax.set_xlabel("Generation")
-    ax.set_ylabel("Maximum Fitness")
-
-    plt.show()
 
 def plot_all_statistics_from_file(filename: str, save_location: Optional[str]):
     with open(filename, "r") as file:
@@ -284,25 +275,6 @@ def load_centroids(filename: str) -> np.ndarray:
     with open(filename, "r") as file:
         centroids = np.loadtxt(file)
     return centroids
-
-def load_fitness_info_from_file(filename: str):
-    with open(filename, "r") as file:
-        generation_data = np.loadtxt(file)
-
-    generation_indices = generation_data[:, 0]
-    archive_size = generation_data[:, 1]
-    best_fitness = generation_data[:, 2]
-    mean_fitness = generation_data[:, 3]
-    median_fitness = generation_data[:, 4]
-    percentile_5 = generation_data[:, 5]
-    percentile_95 = generation_data[:, 6]
-    coverage = None
-    qd_score = None
-    if len(generation_data) > 6:
-        coverage = generation_data[:, 7]
-        qd_score = generation_data[:, 8]
-    return generation_indices, archive_size, best_fitness, mean_fitness, median_fitness, percentile_5, percentile_95
-
 
 def load_archive(filename: str):
     with open(filename, 'r') as file:
@@ -365,20 +337,60 @@ def convert_fitness_and_ddescriptors_to_plotting_format(
 
     return fitness_for_plotting, descriptors_for_plotting
 
+
+def plot_all_maps_in_archive(
+    experiment_directory_path: str,
+    experiment_parameters: "ExperimentParameters",
+    all_centroids,
+    target_centroids,
+):
+    for filename in [name for name in os.listdir(f"{experiment_directory_path}") if
+                     not os.path.isdir(name)]:
+        if "archive_" in filename:
+            fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
+                f"{experiment_directory_path}/{filename}")
+
+            fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_ddescriptors_to_plotting_format(
+                all_centroids=all_centroids,
+                centroids_from_archive=centroids,
+                fitnesses_from_archive=fitnesses,
+                descriptors_from_archive=descriptors,
+            )
+
+            archive_id = filename.lstrip("archive_").rstrip(".pkl")
+            if "relaxed" in filename:
+                archive_id += "_relaxed"
+            plot_2d_map_elites_repertoire_marta(
+                centroids=all_centroids,
+                repertoire_fitnesses=fitnesses_for_plotting,
+                minval=experiment_parameters.cvt_run_parameters["bd_minimum_values"],
+                maxval=experiment_parameters.cvt_run_parameters["bd_maximum_values"],
+                repertoire_descriptors=descriptors_for_plotting,
+                vmin=experiment_parameters.fitness_min_max_values[0],
+                vmax=experiment_parameters.fitness_min_max_values[1],
+                target_centroids=target_centroids,
+                directory_string=experiment_directory_path,
+                # TODO: remove this slach and add in plotting loop
+                filename=f"cvt_plot_{archive_id}",
+                axis_labels=[bd.value for bd in
+                             experiment_parameters.cvt_run_parameters["behavioural_descriptors"]]
+            )
+
 if __name__ == '__main__':
-    directory_string = "../../csp_experiments/experiments/20230711_11_23_TiO2_shear_modulus_1k_evals"
+    directory_string = "../../experiments/20230722_10_09_TiO2_100k_1000_niches"
 
     # Variables setting
-    archive_filename = f"{directory_string}/archive_500.pkl"
-    centroid_filename = f"../../csp_experiments/experiments/centroids/centroids_200_2_energy_formation_0_100_shear_modulus_0_100.dat"
+    archive_filename = f"{directory_string}/archive_61100.pkl"
+    centroid_filename = f"../../experiments/centroids/centroids_1000_2_shear_modulus_0_100_band_gap_0_100.dat"
     reassign_centroids = True
     comparison_data = "../../experiments/target_data/ti02_band_gap_shear_modulus.pkl"
-    filename_for_save = None
+    filename_for_save = "cvt_plot_61100"
     fitness_plotting_filename = "TiO2_dat.dat"  # TODO: get fitness from the right place - is this it
     descriptor_minimum_values = np.array([0, 0])
     descriptor_maximum_values = np.array([100, 100])
     fitness_min_max_values = (4, 9)
-    # target_centroids = None
+    target_centroids = None
+
     # ToDo: Pass target centroids in better
     # target_centroids = compute_centroids_for_target_solutions(
     #     centroids_file=centroid_filename,

@@ -1,49 +1,33 @@
 from __future__ import annotations
 
-from ase import Atoms
-from matgl.ext.ase import Relaxer, TrajectoryObserver
-
 import contextlib
 import io
-import pickle
 import sys
 from typing import TYPE_CHECKING, Optional
 
-import numpy as np
 import torch
-from ase import Atoms, units
-from ase.calculators.calculator import Calculator, all_changes
+from ase import Atoms
 from ase.constraints import ExpCellFilter
-from ase.md.nptberendsen import Inhomogeneous_NPTBerendsen, NPTBerendsen
-from ase.md.nvtberendsen import NVTBerendsen
-from ase.optimize.bfgs import BFGS
-from ase.optimize.bfgslinesearch import BFGSLineSearch
-from ase.optimize.fire import FIRE
-from ase.optimize.lbfgs import LBFGS, LBFGSLineSearch
-from ase.optimize.mdmin import MDMin
-from ase.optimize.sciopt import SciPyFminBFGS, SciPyFminCG
+from matgl.ext.ase import Relaxer, TrajectoryObserver
+from numba import jit
 from pymatgen.core.structure import Molecule, Structure
-from pymatgen.io.ase import AseAtomsAdaptor
-from pymatgen.optimization.neighbors import find_points_in_spheres
-
-from matgl.graph.converters import GraphConverter
 
 if TYPE_CHECKING:
-    import dgl
-    from ase.io import Trajectory
     from ase.optimize.optimize import Optimizer
-
     from matgl.apps.pes import Potential
 
 class OverridenRelaxer(Relaxer):
-    def __init__(self, potential: Potential | None = None,
+    def __init__(self,
+        potential: Potential | None = None,
         state_attr: torch.Tensor | None = None,
         optimizer: Optimizer | str = "FIRE",
         relax_cell: bool = True,
-        stress_weight: float = 0.01,):
+        stress_weight: float = 0.01,
+    ):
         super().__init__(potential, state_attr, optimizer, relax_cell, stress_weight)
         self.marta_relax_cells = False
 
+    # todo: @jit()
     def relax(
         self,
         atoms: Atoms,

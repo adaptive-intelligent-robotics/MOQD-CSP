@@ -1,22 +1,15 @@
 
 
 import warnings
-from enum import Enum
-from typing import Optional, Tuple, List, Dict
+from typing import List
 
 import matgl
-from megnet.utils.models import load_model as megnet_load_model
 import torch
 from ase import Atoms
-from ase.build import niggli_reduce
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.ga import set_raw_score
-from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.utilities import CellBounds
-from matplotlib import pyplot as plt
-from pymatgen.core import Structure
-from pymatgen.io.ase import AseAtomsAdaptor
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from megnet.utils.models import load_model as megnet_load_model
 
 from csp_elites.crystal.crystal_evaluator import MaterialProperties, BandGapEnum
 from csp_elites.crystal.override_relaxer import OverridenRelaxer
@@ -26,7 +19,6 @@ warnings.simplefilter("ignore")
 def parallel_fitness_func_and_bd_computation(
         atoms: Atoms,
         cellbounds: CellBounds,
-        population: List[Atoms],
         really_relax: bool,
         behavioral_descriptor_names: [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS],
 ):
@@ -50,7 +42,6 @@ def parallel_fitness_func_and_bd_computation(
     set_raw_score(atoms, raw_score)
 
     graph_attrs = torch.tensor([BandGapEnum.SCAN.value])
-
 
     bandgap = band_gap_calculator.predict_structure(
         structure=relaxation_results["final_structure"], state_feats=graph_attrs
