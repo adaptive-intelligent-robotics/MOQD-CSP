@@ -167,8 +167,9 @@ class CVT:
                 qd_score = np.sum(fit_list)
                 coverage = 100 * len(fit_list) / len(c)
 
-                log_file.write("{} {} {} {} {} {} {} {} {}\n".format(n_evals, len(archive.keys()),
-                                                                     fit_list.max(),
+                log_file.write("{} {} {} {} {} {} {} {} {}\n".format(n_evals,
+                                                                     len(archive.keys()),
+                                                                     np.max(fit_list),
                                                                      np.mean(fit_list),
                                                                      np.median(fit_list),
                                                                      np.percentile(fit_list, 5),
