@@ -100,13 +100,14 @@ class CVT:
                 individuals = self.crystal_system.create_n_individuals(
                     run_parameters['random_init_batch'])
 
-                structure_info, known_atoms = get_all_materials_with_formula("TiO2")
-                for atoms in known_atoms:
-                    if len(atoms.get_atomic_numbers()) == run_parameters["filter_starting_Structures"]:
-                        atoms.rattle()
-                        atoms.info = None
-                        atoms = atoms.todict()
-                        individuals.append(atoms)
+                if run_parameters["seed"]:
+                    structure_info, known_atoms = get_all_materials_with_formula("TiO2")
+                    for atoms in known_atoms:
+                        if len(atoms.get_atomic_numbers()) == run_parameters["filter_starting_Structures"]:
+                            atoms.rattle()
+                            atoms.info = None
+                            atoms = atoms.todict()
+                            individuals.append(atoms)
 
                 population += individuals
 

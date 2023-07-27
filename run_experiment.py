@@ -26,7 +26,7 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = "0"
     experiment_parameters = ExperimentParameters(
         number_of_niches=200,
-        maximum_evaluations=100,
+        maximum_evaluations=1_000_000,
         experiment_tag="test",
         fitler_comparison_data_for_n_atoms=24,
         cvt_run_parameters= \
@@ -34,13 +34,13 @@ if __name__ == '__main__':
                 # more of this -> higher-quality CVT
                 "cvt_samples": 25000,
                 # we evaluate in batches to paralleliez
-                "batch_size": 20,
+                "batch_size": 1000,
                 # proportion of niches to be filled before starting
                 "random_init": 0.1,
                 # batch for random initialization
-                "random_init_batch": 0,
+                "random_init_batch": 20,
                 # when to write results (one generation = one batch)
-                "dump_period":  10,
+                "dump_period":  1000,
                 # do we use several cores?
                 "parallel": True,
                 # do we cache the result of CVT and reuse?
@@ -53,6 +53,7 @@ if __name__ == '__main__':
                 "number_of_relaxation_steps": 0,
                 "curiosity_weights": True,
                 "filter_starting_Structures": 24,
+                "seed": False,
             },
         system_name="TiO2",
         blocks = [22] * 8 + [8] * 16,
@@ -110,7 +111,7 @@ if __name__ == '__main__':
         json.dump(asdict(experiment_parameters), file)
 
     # # Variables setting
-    archive_filename = f"{experiment_directory_path}/archive_{experiment_parameters.maximum_evaluations}.pkl"
+    # archive_filename = f"{experiment_directory_path}/archive_{experiment_parameters.maximum_evaluations}.pkl"
 
     centroid_filename = __centroids_filename(
         k=experiment_parameters.number_of_niches,
@@ -126,7 +127,7 @@ if __name__ == '__main__':
 
     # fitness_plotting_filename = "TiO2_dat.dat"  # TODO: get fitness from the right place - is this it
 
-    fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(archive_filename)
+    # fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(archive_filename)
 
     all_centroids = load_centroids(centroid_filename)
 
@@ -157,6 +158,12 @@ if __name__ == '__main__':
     for i, structure in enumerate(known_structures):
         if len(structure.get_atomic_numbers()) == experiment_parameters.fitler_comparison_data_for_n_atoms:
             structures_for_comparison[str(structure_info[i].material_id)] = structure
+
+    max_archive = max([int(name.lstrip("archive_").rstrip(".pkl")) for name in os.listdir(f"{experiment_directory_path}") if ((not os.path.isdir(name)) and ("archive_" in name))])
+
+    archive_filename = f"{experiment_directory_path}/archive_{max_archive}.pkl"
+    fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(archive_filename)
+
     cvt.crystal_evaluator.compare_to_target_structures(
         generated_structures=individuals,
         target_structures=structures_for_comparison,
