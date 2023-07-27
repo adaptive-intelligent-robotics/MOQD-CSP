@@ -159,17 +159,6 @@ if __name__ == '__main__':
         if len(structure.get_atomic_numbers()) == experiment_parameters.fitler_comparison_data_for_n_atoms:
             structures_for_comparison[str(structure_info[i].material_id)] = structure
 
-    max_archive = max([int(name.lstrip("archive_").rstrip(".pkl")) for name in os.listdir(f"{experiment_directory_path}") if ((not os.path.isdir(name)) and ("archive_" in name))])
-
-    archive_filename = f"{experiment_directory_path}/archive_{max_archive}.pkl"
-    fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(archive_filename)
-
-    cvt.crystal_evaluator.compare_to_target_structures(
-        generated_structures=individuals,
-        target_structures=structures_for_comparison,
-        directory_string=experiment_directory_path,
-    )
-
     plot_all_maps_in_archive(
         experiment_directory_path=experiment_directory_path,
         experiment_parameters=experiment_parameters,
@@ -180,4 +169,16 @@ if __name__ == '__main__':
     plot_all_statistics_from_file(
         filename=f"{experiment_directory_path}/{experiment_label}.dat",
         save_location=f"{experiment_directory_path}/",
+    )
+
+
+    max_archive = max([int(name.lstrip("archive_").rstrip(".pkl")) for name in os.listdir(f"{experiment_directory_path}") if ((not os.path.isdir(name)) and ("archive_" in name))])
+
+    archive_filename = f"{experiment_directory_path}/archive_{max_archive}.pkl"
+    fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(archive_filename)
+
+    cvt.crystal_evaluator.compare_to_target_structures(
+        generated_structures=individuals,
+        target_structures=structures_for_comparison,
+        directory_string=experiment_directory_path,
     )
