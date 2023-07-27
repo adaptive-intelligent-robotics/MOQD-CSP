@@ -104,6 +104,8 @@ class CVT:
                 for atoms in known_atoms:
                     if len(atoms.get_atomic_numbers()) == run_parameters["filter_starting_Structures"]:
                         atoms.rattle()
+                        atoms.info = None
+                        atoms = atoms.todict()
                         individuals.append(atoms)
 
                 population += individuals
@@ -121,11 +123,12 @@ class CVT:
                     x = archive[keys[rand1[n]]]
                     y = archive[keys[rand2[n]]]
                     # copy & add variation
-                    z, _ = self.crystal_system.operators.get_new_individual([x.x, y.x])
-                    # z.info["curiosity"] = 0
+                    z, _ = self.crystal_system.operators.get_new_individual(
+                        [Atoms.fromdict(x.x), Atoms.fromdict(y.x)])
+                    z = z.todict()
                     population += [z]
 
-            fitness_scores, descriptors, kill_list = self.crystal_evaluator.batch_compute_fitness_and_bd(
+            population, fitness_scores, descriptors, kill_list = self.crystal_evaluator.batch_compute_fitness_and_bd(
                 list_of_atoms=population,
                 cellbounds=self.crystal_system.cellbounds,
                 really_relax=None,
@@ -142,7 +145,7 @@ class CVT:
                 if s is None:
                     continue
                 else:
-                    s.x.info["confid"] = configuration_counter
+                    s.x["info"]["confid"] = configuration_counter
                     configuration_counter += 1
                     add_to_archive(s, s.desc, archive, kdt)
                     # individual_added, parent_id_list = add_to_archive(s, s.desc, archive, kdt)
@@ -569,12 +572,13 @@ class CVT:
                                                      individual_type = "atoms"):
         fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
             filename=f"{experiment_directory_path}/archive_{archive_number}.pkl")
-        if individual_type == "atoms":
+
+        if isinstance(individuals[0], Atoms):
             species_list = [
                 Species(x=individuals[i].todict(), desc=descriptors[i], fitness=fitnesses[i], centroid=None)
                 for i in range(len(individuals))
             ]
-        elif individual_type =="dict":
+        elif isinstance(individuals[0], dict):
             species_list = [
                 Species(x=individuals[i], desc=descriptors[i], fitness=fitnesses[i],
                         centroid=None)

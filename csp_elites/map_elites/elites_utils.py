@@ -43,7 +43,7 @@ from typing import List, Tuple, Optional
 
 # import numba
 import numpy as np
-from ase import Atom
+from ase import Atom, Atoms
 # from numba import jit
 # from numba.experimental import jitclass
 from sklearn.cluster import KMeans
@@ -140,8 +140,9 @@ def add_to_archive(s, centroid, archive, kdt) -> Tuple[bool, int]:
     niche = kdt.data[niche_index]
     n = make_hashable(niche)
     s.centroid = n
-    if "data" in s.x["info"]:
-        parent_id = s.x["info"]["data"]["parents"]
+    info = s.x.info if isinstance(s.x, Atoms) else s.x["info"]
+    if "data" in info:
+        parent_id = info["data"]["parents"]
     else:
         parent_id = [None]
     if n in archive:

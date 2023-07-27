@@ -56,7 +56,6 @@ class CrystalSystem:
         for i in range(number_of_individuals):
             new_individual = self.create_one_individual(individual_id=i)
             new_individual = new_individual.todict()
-
             individuals.append(new_individual)
         return individuals
 
