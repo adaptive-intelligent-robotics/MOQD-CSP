@@ -1,8 +1,12 @@
+import pathlib
 import pickle
 
 import numpy as np
+from ase import Atoms
 from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.utilities import CellBounds
+from chgnet.model import StructOptimizer
+from pymatgen.io.ase import AseAtomsAdaptor
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
 
@@ -13,8 +17,14 @@ from csp_elites.utils.plot import load_archive_from_pickle, \
     convert_fitness_and_ddescriptors_to_plotting_format, plot_2d_map_elites_repertoire_marta
 
 if __name__ == '__main__':
-    archive_filename = "experiments/20230707_22_04_TiO2_no_relaxation_20k_evals/archive_20000.pkl"
-    centroids_file = "experiments/20230707_22_04_TiO2_no_relaxation_20k_evals/centroids_200_2.dat"
+    experiment_tag = "20230727_03_43_TiO2_test"
+    archive_number = 701020
+    directory = pathlib.Path(__file__).resolve().parent  / "experiment" / "experiments"
+    centroids_file = directory / "centroids" / "centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat"
+    archive_filename = directory / experiment_tag / f"archive_{archive_number}.pkl"
+
+    # archive_filename = "experiments/20230707_22_04_TiO2_no_relaxation_20k_evals/archive_20000.pkl"
+    # centroids_file = "experiments/20230707_22_04_TiO2_no_relaxation_20k_evals/centroids_200_2.dat"
     fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(archive_filename)
 
     relaxed_archive = []
@@ -28,19 +38,27 @@ if __name__ == '__main__':
 
     crystal_evaluator = CrystalEvaluator(comparator=comparator)
 
+    structure_optimizer = StructOptimizer()
+    individuals = [Atoms.fromdict(individual) for individual in individuals]
+
+    relaxed_archive = []
 
     for individual in tqdm(individuals):
-        energy, bds, _ = crystal_evaluator.compute_fitness_and_bd(
-            atoms=individual,
-            cellbounds=CellBounds(
-            bounds={'phi': [20, 160], 'chi': [20, 160], 'psi': [20, 160], 'a': [2, 40], 'b': [2, 40],
+        relaxation_results = structure_optimizer.relax(individual)
+        relaxed_archive.append(relaxation_results)
+
+    relaxed_structures_as_dict = [AseAtomsAdaptor.get_atoms(result["final_structure"]).todict() for result in relaxed_archive]
+    new_atoms_dict, energy_batch, bds_batch, _ = crystal_evaluator.batch_compute_fitness_and_bd(
+        list_of_atoms=relaxed_structures_as_dict,
+        cellbounds=CellBounds(
+            bounds={'phi': [20, 160], 'chi': [20, 160], 'psi': [20, 160], 'a': [2, 40],
+                    'b': [2, 40],
                     'c': [2, 40]}),
-            population=individuals,
-            really_relax=True,
-        )
-        energies.append(energy)
-        new_descriptors.append(bds)
-        relaxed_archive.append(individual)
+        really_relax=None,
+        behavioral_descriptor_names=None,
+        n_relaxation_steps=500,
+    )
+
 
     with open(centroids_file, "r") as f:
         all_centroids = np.loadtxt(f)
@@ -48,29 +66,12 @@ if __name__ == '__main__':
 
     centroids = []
     for i in range(len(relaxed_archive)):
-        niche_index = kdt.query([new_descriptors[i]], k=1)[1][0][0]
+        niche_index = kdt.query([[bds_batch[0][i], bds_batch[1][i]]], k=1)[1][0][0]
         niche = kdt.data[niche_index]
         n = make_hashable(niche)
         centroids.append(n)
 
-    fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_ddescriptors_to_plotting_format(
-        all_centroids=all_centroids,
-        centroids_from_archive=centroids,
-        fitnesses_from_archive=energies,
-        descriptors_from_archive=new_descriptors,
-    )
-    plot_2d_map_elites_repertoire_marta(
-        centroids=all_centroids,
-        repertoire_fitnesses=fitnesses_for_plotting,
-        minval=[-4, 0],
-        maxval=[0, 4],
-        repertoire_descriptors=descriptors_for_plotting,
-        vmin=6.5,
-        vmax=9,
-        target_centroids=None,
-        directory_string="experiments/20230707_22_04_TiO2_no_relaxation_20k_evals/",
-        filename="cvt_plot_relaxed"
-    )
+    new_descriptors = np.array(bds_batch).T
 
-    with open("experiments/20230707_22_04_TiO2_no_relaxation_20k_evals/relaxed_archive_20k.pkl", "wb") as file:
-        pickle.dump([energies, centroids, new_descriptors, relaxed_archive], file)
+    with open(directory / experiment_tag / f"relaxed_archive_{archive_number}.pkl", "wb") as file:
+        pickle.dump([energy_batch, centroids, new_descriptors, relaxed_structures_as_dict, relaxed_archive], file)
