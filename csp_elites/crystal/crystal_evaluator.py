@@ -50,6 +50,12 @@ class CrystalEvaluator:
         }
         self.model = CHGNet.load()
 
+        self.element_to_number_map = {
+            "Ti": 22,
+            "O": 8,
+            "S": 16,
+        }
+
     # todo:  @jit(cache=True)
     def compute_energy(self, atoms: Atoms, really_relax, n_steps: int = 10) -> float:
         # relaxation_results = self.relaxer.relax(atoms, steps=n_steps, verbose=False)
@@ -350,3 +356,30 @@ class CrystalEvaluator:
             trajectories[i].stresses.append(stresses)
 
         return trajectories
+
+
+    def compute_composition(self, element_blocks: List[List[int]]):
+        element_blocks = np.array(element_blocks)
+        counts = np.unique(element_blocks, return_counts=True)
+        oxygen_count = counts[1][counts[0] == 8] if counts[1][counts[0] == 8] else 0
+        non_titanium = len(element_blocks) - counts[1][counts[0] == 22]
+        return oxygen_count / non_titanium
+
+def compute_composition_test(element_blocks: List[List[int]]):
+    element_blocks = np.array(element_blocks)
+    counts = np.unique(element_blocks, return_counts=True, axis=1)
+    oxygen_count = np.sum(np.array(counts[0] == 8, int) * counts[1], axis=1)
+    non_titanium = np.sum(np.array(counts[0]!=22, int) * counts[1], axis =1)
+    return oxygen_count / non_titanium
+
+
+if __name__ == '__main__':
+    pure_tio2 = [22] * 8 + [8] * 16
+    pure_tis2 = [22] * 8 + [16] * 16
+    half_half = [22] * 8 + [16] * 8 + [8] * 8
+    mix = [22] * 8 + [16] * 4 + [8] * 12
+
+    compute_composition_test([pure_tio2, pure_tis2, half_half, mix])
+
+    for el in [pure_tio2, pure_tis2, half_half, mix]:
+        print(compute_composition_test(el))
