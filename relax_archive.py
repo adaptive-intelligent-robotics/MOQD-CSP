@@ -46,6 +46,9 @@ if __name__ == '__main__':
     for individual in tqdm(individuals):
         relaxation_results = structure_optimizer.relax(individual)
         relaxed_archive.append(relaxation_results)
+        with open(directory / experiment_tag / f"backup_relaxed_archive_{archive_number}.pkl",
+                  "wb") as file:
+            pickle.dump(relaxed_archive, file)
 
     relaxed_structures_as_dict = [AseAtomsAdaptor.get_atoms(result["final_structure"]).todict() for result in relaxed_archive]
     new_atoms_dict, energy_batch, bds_batch, _ = crystal_evaluator.batch_compute_fitness_and_bd(
