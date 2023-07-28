@@ -96,7 +96,7 @@ class CVT:
             to_evaluate = []
             # random initialization
             population = []
-            if random_initialisation:
+            if len(archive) <= run_parameters['random_init'] * number_of_niches:
                 individuals = self.crystal_system.create_n_individuals(
                     run_parameters['random_init_batch'])
 
@@ -110,9 +110,6 @@ class CVT:
                             individuals.append(atoms)
 
                 population += individuals
-
-            if random_initialisation:
-                random_initialisation = False
 
             else:  # variation/selection loop
                 keys = list(archive.keys())
