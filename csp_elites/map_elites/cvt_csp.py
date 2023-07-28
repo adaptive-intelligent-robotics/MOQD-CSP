@@ -39,7 +39,9 @@
 from typing import List, Optional
 
 import numpy as np
+import psutil
 from ase import Atoms
+from matplotlib import pyplot as plt
 from pymatgen.io.ase import AseAtomsAdaptor
 # from numba import jit, prange
 from sklearn.neighbors import KDTree
@@ -72,7 +74,7 @@ class CVT:
         ):
         experiment_directory_path = make_experiment_folder(experiment_label)
         log_file = open(f'{experiment_directory_path}/{experiment_label}.dat', 'w')
-
+        memory_log = open(f'{experiment_directory_path}/memory_log.dat', 'w')
         # setup the parallel processing pool
         # num_cores = multiprocessing.cpu_count()
         # pool = multiprocessing.Pool(num_cores)
@@ -90,9 +92,21 @@ class CVT:
 
         # main loop
         configuration_counter = 0
-        pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations)
-        random_initialisation = True
+
+        rambar = tqdm(total=100, desc='ram%', position=0)
+        cpubar = tqdm(total=100, desc='cpu%', position=1)
+
+        cpubar.n = psutil.cpu_percent()
+        rambar.n = psutil.virtual_memory().percent
+        cpubar.refresh()
+        rambar.refresh()
+        print(f"Starting CPU usage % {psutil.cpu_percent()}")
+        print(f"Starting RAM usage Absolute {psutil.virtual_memory()[3]/1000000000}")
+
+        ram_logging = []
+        pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations, position=2)
         while (n_evals < maximum_evaluations):  ### NUMBER OF GENERATIONS
+            ram_logging.append(psutil.virtual_memory()[3]/1000000000)
             to_evaluate = []
             # random initialization
             population = []
@@ -174,8 +188,26 @@ class CVT:
                                                                      coverage, qd_score))
                 log_file.flush()
             pbar.update(len(population))
+            # cpubar.update(psutil.cpu_percent())
+            rambar.n = psutil.virtual_memory().percent
+            cpubar.n = psutil.cpu_percent()
+            cpubar.refresh()
+            rambar.refresh()
+            memory = psutil.virtual_memory()[3] / 1000000000
+            memory_log.write("{} {}\n".format(n_evals, memory))
+            memory_log.flush()
 
         save_archive(archive, n_evals, experiment_directory_path)
+        plt.plot(range(len(ram_logging)), ram_logging)
+        plt.xlabel("Number of Times Evaluation Loop Was Ran")
+        plt.ylabel("Amount of RAM Used")
+        plt.title("RAM over time")
+        plt.savefig(f"{experiment_directory_path}/memory_over_time.png", format="png")
+
+        print(f"End CPU usage {psutil.cpu_percent()}")
+        print(f"End RAM usage {psutil.virtual_memory()[3] / 1000000000}")
+
+
         return experiment_directory_path, archive
 
 
