@@ -18,7 +18,7 @@ from csp_elites.utils.plot import load_archive_from_pickle, \
 
 if __name__ == '__main__':
     experiment_tag = "20230727_03_43_TiO2_test"
-    archive_number = 701020
+    archive_number = 100020
     directory = pathlib.Path(__file__).resolve().parent  / "experiments"
     centroids_file = directory / "centroids" / "centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat"
     archive_filename = directory / experiment_tag / f"archive_{archive_number}.pkl"
