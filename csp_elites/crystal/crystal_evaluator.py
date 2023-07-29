@@ -62,6 +62,9 @@ class CrystalEvaluator:
         return float(-atoms.get_potential_energy()), relaxation_results
 
 
+    def _threshold_forces_on_atoms(self, forces: np.ndarray):
+        pass
+
     #todo: @jit(parallel=True, cache=True)
     # @jit(parallel=True)
     def compute_fitness_and_bd(self,
@@ -220,7 +223,7 @@ class CrystalEvaluator:
         return fitness_score(band_gap, crystal_energy), kill_individual
 
     def batch_compute_fitness_and_bd(self,
-                                     list_of_atoms: List[Atoms], cellbounds: CellBounds,
+                                     list_of_atoms: List[Dict[str, np.ndarray]], cellbounds: CellBounds,
                                      really_relax: bool, behavioral_descriptor_names: List[
                 MaterialProperties],
                                      n_relaxation_steps: int,
@@ -253,9 +256,13 @@ class CrystalEvaluator:
         updated_atoms = [AseAtomsAdaptor.get_atoms(relaxation_results[i]["final_structure"])
                          for i in range(len(list_of_atoms))]
         new_atoms_dict = [atoms.todict() for atoms in updated_atoms]
-        del relaxation_results
+
         for i in range(len(list_of_atoms)):
             new_atoms_dict[i]["info"] = list_of_atoms[i].info
+        del relaxation_results
+        del structures
+        del list_of_atoms
+        del updated_atoms
         return new_atoms_dict, fitness_scores, (band_gaps, shear_moduli), kill_list
 
     def batch_create_species(self, list_of_atoms, fitness_scores, descriptors, kill_list):
@@ -358,15 +365,3 @@ def compute_composition_test(element_blocks: List[List[int]]):
     oxygen_count = np.sum(np.array(counts[0] == 8, int) * counts[1], axis=1)
     non_titanium = np.sum(np.array(counts[0]!=22, int) * counts[1], axis =1)
     return oxygen_count / non_titanium
-
-
-if __name__ == '__main__':
-    pure_tio2 = [22] * 8 + [8] * 16
-    pure_tis2 = [22] * 8 + [16] * 16
-    half_half = [22] * 8 + [16] * 8 + [8] * 8
-    mix = [22] * 8 + [16] * 4 + [8] * 12
-
-    compute_composition_test([pure_tio2, pure_tis2, half_half, mix])
-
-    for el in [pure_tio2, pure_tis2, half_half, mix]:
-        print(compute_composition_test(el))
