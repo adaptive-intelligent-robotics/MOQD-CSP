@@ -54,7 +54,6 @@ class CrystalSystem:
 
     def create_one_individual(self, individual_id: Optional[int]):
         if isinstance(self._start_generator, StartGenerator):
-            print("random")
             try:
                 individual = self._start_generator.get_new_candidate()
             except AssertionError:
@@ -62,7 +61,6 @@ class CrystalSystem:
                 print("Stupid ase error")
 
         elif isinstance(self._start_generator, pyxtal):
-            print("pyxtal")
             generate_structure = True
             while generate_structure:
                 self._start_generator.from_random(

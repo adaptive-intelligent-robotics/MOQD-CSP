@@ -232,7 +232,7 @@ class CrystalEvaluator:
         if fake_data:
             return list_of_atoms, np.zeros(len(list_of_atoms)), \
                    (np.zeros(len(list_of_atoms), np.zeros(len(list_of_atoms)))), \
-                   np.zeros(len(list_of_atoms), dtype=bool)
+                   [False] * len(list_of_atoms)
         else:
             list_of_atoms = [Atoms.fromdict(atoms) for atoms in list_of_atoms]
             structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
@@ -260,6 +260,7 @@ class CrystalEvaluator:
             # todo: finalise atoms here? currently no need
             updated_atoms = [AseAtomsAdaptor.get_atoms(relaxation_results[i]["final_structure"])
                              for i in range(len(list_of_atoms))]
+
             new_atoms_dict = [atoms.todict() for atoms in updated_atoms]
 
             for i in range(len(list_of_atoms)):
@@ -267,8 +268,7 @@ class CrystalEvaluator:
             del relaxation_results
             del structures
             del list_of_atoms
-            del updated_atoms
-            return new_atoms_dict, fitness_scores, (band_gaps, shear_moduli), kill_list
+            return updated_atoms, new_atoms_dict, fitness_scores, (band_gaps, shear_moduli), kill_list
 
     def batch_create_species(self, list_of_atoms, fitness_scores, descriptors, kill_list):
         # todo: here could do dict -> atoms conversion
