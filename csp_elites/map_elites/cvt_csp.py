@@ -135,6 +135,8 @@ class CVT:
                         z = z.todict()
                         population += [z]
 
+            if population is not None:
+                self.crystal_system.update_operator_scaling_volumes(population=population)
             memory_profiling = run_parameters["profiling"] if "profiling" in run_parameters.keys() else False
 
             population, fitness_scores, descriptors, kill_list = self.crystal_evaluator.batch_compute_fitness_and_bd(
