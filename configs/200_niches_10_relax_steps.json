@@ -65,7 +65,7 @@
     "filter_starting_Structures": 24,
     "seed": false
   },
-  "experiment_tag": "200_niches_0_2_init",
+  "experiment_tag": "200_niches_10_relaxation_steps",
   "fitness_min_max_values": [
     6.5,
     9

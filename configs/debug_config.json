@@ -65,7 +65,7 @@
     "filter_starting_Structures": 24,
     "seed": true
   },
-  "experiment_tag": "100_evals_cghnet",
+  "experiment_tag": "debug_config",
   "fitness_min_max_values": [
     4,
     9

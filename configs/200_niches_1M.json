@@ -38,7 +38,7 @@
   ],
   "n_behavioural_descriptor_dimensions": 2,
   "number_of_niches": 200,
-  "maximum_evaluations": 100000,
+  "maximum_evaluations": 1000000,
   "cvt_run_parameters": {
     "cvt_samples": 25000,
     "batch_size": 100,
@@ -66,7 +66,7 @@
     "seed": false,
     "profiling": true
   },
-  "experiment_tag": "200_niches_0_2_init",
+  "experiment_tag": "200_niches_1M",
   "fitness_min_max_values": [
     6.5,
     9
