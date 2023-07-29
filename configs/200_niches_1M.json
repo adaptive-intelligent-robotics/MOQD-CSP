@@ -71,5 +71,6 @@
     6.5,
     9
   ],
-  "fitler_comparison_data_for_n_atoms": 24
+  "fitler_comparison_data_for_n_atoms": 24,
+  "start_generator": "pyxtal"
 }
