@@ -63,7 +63,8 @@
     "number_of_relaxation_steps": 0,
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
-    "seed": false
+    "seed": false,
+    "profiling": true
   },
   "experiment_tag": "200_niches_0_2_init",
   "fitness_min_max_values": [

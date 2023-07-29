@@ -39,7 +39,7 @@ import pathlib
 import pickle
 from datetime import date, datetime
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 # import numba
 import numpy as np
@@ -135,7 +135,7 @@ def save_archive(archive, gen, directory_path):
     with open(filename_pkl, 'wb') as f:
         pickle.dump(storage, f)
 
-def add_to_archive(s, centroid, archive, kdt) -> Tuple[bool, int]:
+def add_to_archive(s: Species, centroid: np.ndarray, archive: Dict[str, Species], kdt) -> Tuple[bool, int]:
     niche_index = kdt.query([centroid], k=1)[1][0][0]
     niche = kdt.data[niche_index]
     n = make_hashable(niche)

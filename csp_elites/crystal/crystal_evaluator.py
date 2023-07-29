@@ -227,43 +227,48 @@ class CrystalEvaluator:
                                      really_relax: bool, behavioral_descriptor_names: List[
                 MaterialProperties],
                                      n_relaxation_steps: int,
+                                     fake_data: bool = False
                                      ):
-
-        list_of_atoms = [Atoms.fromdict(atoms) for atoms in list_of_atoms]
-        structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
-        kill_list = self.check_atoms_in_cellbounds(list_of_atoms, cellbounds)
-        # todo: filter evaluations to remove killed_individuals
-        if n_relaxation_steps == 0:
-            fitness_scores, relaxation_results = self.batch_compute_energy(
-                list_of_structures=structures,
-                really_relax=really_relax,
-                n_steps=n_relaxation_steps,
-            )
+        if fake_data:
+            return list_of_atoms, np.zeros(len(list_of_atoms)), \
+                   (np.zeros(len(list_of_atoms), np.zeros(len(list_of_atoms)))), \
+                   np.zeros(len(list_of_atoms), dtype=bool)
         else:
-            fitness_scores, relaxation_results = [], []
-            for i in range(len(list_of_atoms)):
-                fitness_score, one_relaxation_results = self.compute_energy(
-                    atoms=list_of_atoms[i],
-                    really_relax=None,
+            list_of_atoms = [Atoms.fromdict(atoms) for atoms in list_of_atoms]
+            structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
+            kill_list = self.check_atoms_in_cellbounds(list_of_atoms, cellbounds)
+            # todo: filter evaluations to remove killed_individuals
+            if n_relaxation_steps == 0:
+                fitness_scores, relaxation_results = self.batch_compute_energy(
+                    list_of_structures=structures,
+                    really_relax=really_relax,
                     n_steps=n_relaxation_steps,
                 )
-                fitness_scores.append(fitness_score)
-                relaxation_results.append(one_relaxation_results)
+            else:
+                fitness_scores, relaxation_results = [], []
+                for i in range(len(list_of_atoms)):
+                    fitness_score, one_relaxation_results = self.compute_energy(
+                        atoms=list_of_atoms[i],
+                        really_relax=None,
+                        n_steps=n_relaxation_steps,
+                    )
+                    fitness_scores.append(fitness_score)
+                    relaxation_results.append(one_relaxation_results)
 
-        band_gaps = self._batch_band_gap_compute(structures)
-        shear_moduli = self._batch_shear_modulus_compute(structures)
-        # todo: finalise atoms here? currently no need
-        updated_atoms = [AseAtomsAdaptor.get_atoms(relaxation_results[i]["final_structure"])
-                         for i in range(len(list_of_atoms))]
-        new_atoms_dict = [atoms.todict() for atoms in updated_atoms]
+            band_gaps = self._batch_band_gap_compute(structures)
+            shear_moduli = self._batch_shear_modulus_compute(structures)
+            # todo: finalise atoms here? currently no need
+            updated_atoms = [AseAtomsAdaptor.get_atoms(relaxation_results[i]["final_structure"])
+                             for i in range(len(list_of_atoms))]
+            new_atoms_dict = [atoms.todict() for atoms in updated_atoms]
 
-        for i in range(len(list_of_atoms)):
-            new_atoms_dict[i]["info"] = list_of_atoms[i].info
-        del relaxation_results
-        del structures
-        del list_of_atoms
-        del updated_atoms
-        return new_atoms_dict, fitness_scores, (band_gaps, shear_moduli), kill_list
+            for i in range(len(list_of_atoms)):
+                new_atoms_dict[i]["info"] = list_of_atoms[i].info
+            del relaxation_results
+            del structures
+            del list_of_atoms
+            del updated_atoms
+            return new_atoms_dict, fitness_scores, (band_gaps, shear_moduli), kill_list
 
     def batch_create_species(self, list_of_atoms, fitness_scores, descriptors, kill_list):
         # todo: here could do dict -> atoms conversion
