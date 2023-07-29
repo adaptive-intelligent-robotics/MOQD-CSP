@@ -38,11 +38,11 @@
   ],
   "n_behavioural_descriptor_dimensions": 2,
   "number_of_niches": 200,
-  "maximum_evaluations": 10,
+  "maximum_evaluations": 100,
   "cvt_run_parameters": {
     "cvt_samples": 25000,
     "batch_size": 10,
-    "random_init": 0.01,
+    "random_init": 0.05,
     "random_init_batch": 0,
     "dump_period": 10,
     "parallel": true,
@@ -70,5 +70,6 @@
     4,
     9
   ],
-  "fitler_comparison_data_for_n_atoms": 24
+  "fitler_comparison_data_for_n_atoms": 24,
+  "start_generator": "pyxtal"
 }

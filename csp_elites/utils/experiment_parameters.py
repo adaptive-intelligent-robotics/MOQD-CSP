@@ -3,6 +3,8 @@ from typing import List, Dict, Tuple, Any, Optional
 
 from ase.ga.utilities import CellBounds
 
+from csp_elites.crystal.materials_data_model import StartGenerators
+
 
 @dataclass
 class ExperimentParameters:
@@ -20,3 +22,4 @@ class ExperimentParameters:
     experiment_tag: str
     fitness_min_max_values: []
     fitler_comparison_data_for_n_atoms: Optional[int]
+    start_generator: StartGenerators

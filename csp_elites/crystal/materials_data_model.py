@@ -12,3 +12,8 @@ class MaterialProperties(str, Enum):
     BAND_GAP = "band_gap"
     ENERGY_FORMATION = "energy_formation"
     SHEAR_MODULUS = "shear_modulus"
+
+
+class StartGenerators(str, Enum):
+    RANDOM = "random"
+    PYXTAL = "pyxtal"

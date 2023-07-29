@@ -1,6 +1,7 @@
 import pickle
 from typing import List
 
+import numpy as np
 from ase import Atoms
 from ase.cell import Cell
 from ase.ga.utilities import CellBounds
@@ -112,4 +113,11 @@ def get_all_and_model_from_formula(formula: str):
 
 if __name__ == '__main__':
     docs, atom_objects = get_all_materials_with_formula("TiO2")
+
+    space_group_numbers = []
+    for structure in docs:
+        if len(structure.structure) == 24:
+            space_group_numbers.append(structure.structure.get_space_group_info()[1])
+    space_group_numbers = np.unique(space_group_numbers)
+    print(space_group_numbers)
     print()

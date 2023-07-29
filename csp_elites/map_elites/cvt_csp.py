@@ -36,6 +36,7 @@
 #| The fact that you are presently reading this means that you have
 #| had knowledge of the CeCILL license and that you accept its terms.
 # import multiprocessing
+import gc
 from typing import List, Optional
 
 import numpy as np
@@ -91,13 +92,8 @@ class CVT:
         configuration_counter = 0
 
         rambar = tqdm(total=100, desc='ram%', position=0)
-        cpubar = tqdm(total=100, desc='cpu%', position=1)
-
-        cpubar.n = psutil.cpu_percent()
         rambar.n = psutil.virtual_memory().percent
-        cpubar.refresh()
         rambar.refresh()
-        print(f"Starting CPU usage % {psutil.cpu_percent()}")
         print(f"Starting RAM usage Absolute {psutil.virtual_memory()[3]/1000000000}")
 
         ram_logging = []
@@ -193,14 +189,12 @@ class CVT:
                                                                      coverage, qd_score))
                 log_file.flush()
             pbar.update(evaluations_performed)
-            # cpubar.update(psutil.cpu_percent())
             rambar.n = psutil.virtual_memory().percent
-            cpubar.n = psutil.cpu_percent()
-            cpubar.refresh()
             rambar.refresh()
             memory = psutil.virtual_memory()[3] / 1000000000
             memory_log.write("{} {}\n".format(n_evals, memory))
             memory_log.flush()
+            gc.collect()
 
         save_archive(archive, n_evals, experiment_directory_path)
         plt.plot(range(len(ram_logging)), ram_logging)
@@ -209,7 +203,6 @@ class CVT:
         plt.title("RAM over time")
         plt.savefig(f"{experiment_directory_path}/memory_over_time.png", format="png")
 
-        print(f"End CPU usage {psutil.cpu_percent()}")
         print(f"End RAM usage {psutil.virtual_memory()[3] / 1000000000}")
 
 
@@ -433,40 +426,6 @@ class CVT:
             mutated_offspring += [z]
         return mutated_offspring
 
-    # @jit(parallel=True)
-    def create_evaluate_list(self, population, cellbounds, bd, nb_relaxation_steps): # fitness_function
-        to_evaluate = []
-        for i in range(len(population)):
-            x = population[i]
-            to_evaluate += [(x, cellbounds, bd, nb_relaxation_steps)] # fitness_function
-        return to_evaluate
-
-    # @jit(parallel=True)
-    def evaluate_parallel_old(self, to_evaluate):
-        s_list = []
-
-        for i in range(len(to_evaluate)):
-            z, cellbounds, behavioural_descriptors, n_relaxation_steps, f = to_evaluate[i]
-            s = evaluate(
-                z, cellbounds, behavioural_descriptors, n_relaxation_steps, f
-            )
-            s_list.append(s)
-        return s_list
-
-    # @jit(parallel=True)
-    def evaluate_parallel(self, population, cellbounds, bd, nb_relaxation_steps, fitness_function) -> List[Optional[Species]]:
-        s_list = []
-        for i in range(len(population)):
-            x = population[i]
-            s = evaluate(
-                x,
-                cellbounds,
-                bd,
-                nb_relaxation_steps,
-                fitness_function
-            )
-            s_list.append(s)
-        return s_list
 
     def update_parent_curiosity(self, archive, parent_id_list: List[int], offspring_added_to_archive):
         # map id to niche
@@ -528,6 +487,8 @@ class CVT:
         n_evals_to_do = maximum_evaluations - archive_number
         pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations)
         random_initialisation = False
+        snapshots = []
+        # snapshots.append(tracemalloc.sna)
         while (n_evals < maximum_evaluations):  ### NUMBER OF GENERATIONS
             to_evaluate = []
             # random initialization
