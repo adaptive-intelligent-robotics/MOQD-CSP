@@ -64,7 +64,7 @@
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
     "seed": false,
-    "profiling": true
+    "profiling": false
   },
   "experiment_tag": "200_niches_1M",
   "fitness_min_max_values": [
