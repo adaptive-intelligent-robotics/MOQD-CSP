@@ -3,5 +3,6 @@
     "remove_band_gap_model": true,
     "remove_shear_model": false,
     "no_check_population_to_kill": false,
-    "no_mutation": false
+    "no_mutation": false,
+    "label": "no_bg"
 }

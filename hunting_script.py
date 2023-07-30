@@ -83,7 +83,7 @@ if __name__ == '__main__':
     with open(profiling_parameters_file, "r") as file:
         profiling_paramters = json.load(file)
 
-    remove_energy_model, remove_band_gap_model, remove_shear_model, no_check_population_to_kill, no_mutation = list(profiling_paramters.values())
+    remove_energy_model, remove_band_gap_model, remove_shear_model, no_check_population_to_kill, no_mutation, tag = list(profiling_paramters.values())
 
     experiment_parameters = ExperimentParameters(**experiment_parameters)
     experiment_parameters.cellbounds = CellBounds(
@@ -94,6 +94,7 @@ if __name__ == '__main__':
         [MaterialProperties(value) for value in experiment_parameters.cvt_run_parameters["behavioural_descriptors"]]
 
     experiment_parameters.start_generator = StartGenerators(experiment_parameters.start_generator)
+    experiment_parameters.experiment_tag = tag
 
     hunting_main(experiment_parameters, remove_energy_model=remove_energy_model,
     remove_band_gap_model=remove_band_gap_model,
