@@ -1,5 +1,6 @@
 import pathlib
 import pickle
+import sys
 
 import numpy as np
 from ase import Atoms
@@ -17,8 +18,13 @@ from csp_elites.utils.plot import load_archive_from_pickle, \
     convert_fitness_and_ddescriptors_to_plotting_format, plot_2d_map_elites_repertoire_marta
 
 if __name__ == '__main__':
-    experiment_tag = "20230727_03_43_TiO2_test"
-    archive_number = 1000020
+    try:
+        experiment_tag = sys.argv[1]
+        archive_number = sys.argv[2]
+    except IndexError:
+        experiment_tag = "20230727_03_43_TiO2_test"
+        archive_number = 1000020
+    print(experiment_tag)
     directory = pathlib.Path(__file__).resolve().parent  / "experiments"
     centroids_file = directory / "centroids" / "centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat"
     archive_filename = directory / experiment_tag / f"archive_{archive_number}.pkl"
