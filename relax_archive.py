@@ -65,7 +65,7 @@ if __name__ == '__main__':
                     'c': [2, 40]}),
         really_relax=None,
         behavioral_descriptor_names=None,
-        n_relaxation_steps=500,
+        n_relaxation_steps=0,
     )
 
 
