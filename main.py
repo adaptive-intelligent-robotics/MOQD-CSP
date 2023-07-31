@@ -59,7 +59,7 @@ def main(experiment_parameters: ExperimentParameters):
 
     force_threshold = experiment_parameters.cvt_run_parameters["force_threshold"] if "force_threshold" in experiment_parameters.cvt_run_parameters.keys() else False
 
-    crystal_evaluator = CrystalEvaluator(comparator=comparator)
+    crystal_evaluator = CrystalEvaluator(comparator=comparator, with_force_threshold=force_threshold)
 
     cvt = CVT(
         number_of_bd_dimensions=experiment_parameters.n_behavioural_descriptor_dimensions,
