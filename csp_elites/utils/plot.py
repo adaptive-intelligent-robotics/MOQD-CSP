@@ -1,4 +1,5 @@
 import os
+import pathlib
 import pickle
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 
@@ -12,6 +13,7 @@ import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.spatial import Voronoi
 from sklearn.neighbors import KDTree
+from tqdm import tqdm
 
 from csp_elites.map_elites.elites_utils import make_hashable
 # from qdax.utils.plotting import get_voronoi_finite_polygons_2d
@@ -199,19 +201,21 @@ def plot_2d_map_elites_repertoire_marta(
             polygon = vertices[region]
 
             ax.fill(*zip(*polygon), alpha=0.8, color=my_cmap(norm(fitness)))
-
+    np.set_printoptions(2)
     # if descriptors are specified, add points location
     if repertoire_descriptors is not None:
         descriptors = repertoire_descriptors[~grid_empty]
         ax.scatter(
             descriptors[:, 0],
             descriptors[:, 1],
-            c=fitnesses[~grid_empty],
-            cmap=my_cmap,
+            # c=fitnesses[~grid_empty],
+            # cmap=my_cmap,
             s=10,
             zorder=0,
         )
-
+        for i in range(len(fitnesses)):
+            if fitnesses[i] != -np.inf:
+                ax.annotate(str(fitnesses[i])[:5], (centroids[i, 0], centroids[i, 1]))
     # aesthetic
     ax.set_xlabel(f"BD1 - {axis_labels[0]}")
     ax.set_ylabel(f"BD2 - {axis_labels[1]}")
@@ -316,6 +320,7 @@ def load_archive_from_pickle(filename: str):
     for el in archive:
         fitnesses.append(el[0])
         centroids.append(list(el[1]))
+
         descriptors.append(list(el[2]))
         individuals.append(el[3])
 
@@ -344,12 +349,20 @@ def plot_all_maps_in_archive(
     all_centroids,
     target_centroids,
 ):
-    for filename in [name for name in os.listdir(f"{experiment_directory_path}") if
-                     not os.path.isdir(name)]:
-        if "archive_" in filename:
+    list_of_files = [name for name in os.listdir(f"{experiment_directory_path}") if
+                     not os.path.isdir(name)]
+    list_of_archives = [filename for filename in list_of_files if ("archive_" in filename) and (".pkl" in filename)]
+    list_of_plots = [filename for filename in list_of_files if ("cvt_plot" in filename) and (".png" in filename)]
+    list_of_archive_ids = [filename.lstrip("archive_").rstrip(".pkl") for filename in list_of_archives]
+    list_of_plot_ids = [filename.lstrip("cvt_plot_").rstrip(".png") for filename in list_of_plots]
+
+    for filename in tqdm(list_of_archives):
+        if "relaxed_archive" in filename:
+            continue
+        archive_id = filename.lstrip("relaxed_archive_").rstrip(".pkl")
+        if archive_id not in list_of_plot_ids:
             fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
                 f"{experiment_directory_path}/{filename}")
-
             fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_ddescriptors_to_plotting_format(
                 all_centroids=all_centroids,
                 centroids_from_archive=centroids,
@@ -357,7 +370,6 @@ def plot_all_maps_in_archive(
                 descriptors_from_archive=descriptors,
             )
 
-            archive_id = filename.lstrip("archive_").rstrip(".pkl")
             if "relaxed" in filename:
                 archive_id += "_relaxed"
             plot_2d_map_elites_repertoire_marta(
@@ -370,25 +382,30 @@ def plot_all_maps_in_archive(
                 vmax=experiment_parameters.fitness_min_max_values[1],
                 target_centroids=target_centroids,
                 directory_string=experiment_directory_path,
-                # TODO: remove this slach and add in plotting loop
                 filename=f"cvt_plot_{archive_id}",
                 axis_labels=[bd.value for bd in
                              experiment_parameters.cvt_run_parameters["behavioural_descriptors"]]
             )
 
 if __name__ == '__main__':
-    directory_string = "../../experiments/20230722_10_09_TiO2_100k_1000_niches"
+    archive_number = 910020
+    directory_string = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /"20230727_03_43_TiO2_test"
+
+    # a = [name for name in os.listdir(f"{directory_string}") if
+    #  not os.path.isdir(name)]
 
     # Variables setting
-    archive_filename = f"{directory_string}/archive_61100.pkl"
-    centroid_filename = f"../../experiments/centroids/centroids_1000_2_shear_modulus_0_100_band_gap_0_100.dat"
+    archive_filename = directory_string / f"archive_{archive_number}.pkl"
+    centroid_filename = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids"/ "centroids_200_2_band_gap_0_100_shear_modulus_0_100_old.dat"
+    # centroid_filename = pathlib.Path(
+    #     __file__).parent.parent.parent / ".experiment.nosync" / "backup_centroids" / "centroids"/ "centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat"
     reassign_centroids = True
     comparison_data = "../../experiments/target_data/ti02_band_gap_shear_modulus.pkl"
-    filename_for_save = "cvt_plot_61100"
+    filename_for_save = f"cvt_plot_{archive_number}"
     fitness_plotting_filename = "TiO2_dat.dat"  # TODO: get fitness from the right place - is this it
     descriptor_minimum_values = np.array([0, 0])
     descriptor_maximum_values = np.array([100, 100])
-    fitness_min_max_values = (4, 9)
+    fitness_min_max_values = (6.5, 10)
     target_centroids = None
 
     # ToDo: Pass target centroids in better
@@ -440,4 +457,5 @@ if __name__ == '__main__':
         target_centroids=target_centroids,
         directory_string=f"{directory_string}",
         filename=filename_for_save,
+
     )

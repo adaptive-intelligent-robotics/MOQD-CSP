@@ -12,6 +12,7 @@ from ase import Atoms
 from ase.spacegroup import get_spacegroup
 from pymatgen.io.ase import AseAtomsAdaptor
 
+from csp_elites.map_elites.archive import Archive
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 from csp_elites.utils.plot import load_archive_from_pickle
 
@@ -36,7 +37,7 @@ class SymmetryEvaluation:
         fitnesses: np.ndarray,
         spacegroup_type: SpaceGroups=SpaceGroups.SPGLIB,
     ):
-        pass
+        raise NotImplementedError
 
     def compute_symmetries_from_individuals(self, individuals: List[Atoms], fitnesses: np.ndarray) -> Dict[str, List[int]]:
         indices_to_check = self._get_indices_to_check(fitnesses)
@@ -94,31 +95,19 @@ class SymmetryEvaluation:
         plt.show()
 
 if __name__ == '__main__':
-    docs, atom_objects = get_all_materials_with_formula("TiO2")
-    experimentally_observed = [docs[i] for i in range(len(docs)) if
-                               not docs[i].theoretical]
-    experimetnally_observed_atoms = [AseAtomsAdaptor.get_atoms(docs[i].structure) for i in range(len(experimentally_observed))]
-    experimental_space_groups = [docs[0].structure.get_space_group_info() for i in range(len(experimentally_observed))]
 
     # get_spacegroup()
     experiment_tag = "20230730_05_02_TiO2_200_niches_10_relaxation_steps"
     archive_number = 25030
-    relaxed_archive_location = pathlib.Path(__file__).parent.parent / ".experiment.nosync" / "experiments" /experiment_tag / f"relaxed_archive_{archive_number}.pkl"
-    unrelaxed_archive_location = pathlib.Path(__file__).parent.parent / ".experiment.nosync" / "experiments" /experiment_tag / f"archive_{archive_number}.pkl"
-    with open(relaxed_archive_location, "rb") as file:
-        relaxed_archive = pickle.load(file)
+    relaxed_archive_location = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag / f"relaxed_archive_{archive_number}.pkl"
+    unrelaxed_archive_location = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag / f"archive_{archive_number}.pkl"
 
-    fintesses_unrelaxed, _, _, unrelaxed_individuals = load_archive_from_pickle(unrelaxed_archive_location)
-    fitnesses_unrelaxed = np.array(fintesses_unrelaxed)
-    ind_to_check_unrelaxed = np.argwhere(fintesses_unrelaxed > 8.5).reshape(-1)
-    fitnesses_relaxed = [relaxed_archive[0][i] for i in range(len(relaxed_archive[0]))]
-    fitnesses_relaxed = np.array(fitnesses_relaxed)
-    ind_to_check_relaxed = np.argwhere(fitnesses_relaxed > 9).reshape(-1)
-    unrelaxed_individuals = [Atoms.fromdict(unrelaxed_individuals[i]) for i in
-                           range(len(unrelaxed_individuals))]
+    archive = Archive.from_archive(unrelaxed_archive_location)
 
-    relaxed_individuals = [Atoms.fromdict(relaxed_archive[3][i]) for i in
-                           range(len(relaxed_archive[3]))]
     symmetry_evaluation = SymmetryEvaluation()
-    relaxed_dict = symmetry_evaluation.compute_symmetries_from_individuals(individuals=relaxed_individuals, fitnesses=fitnesses_relaxed)
+    relaxed_dict = symmetry_evaluation.compute_symmetries_from_individuals(
+        individuals=archive.individuals,
+        fitnesses=archive.fitnesses,
+    )
+    symmetry_evaluation.plot_histogram(relaxed_dict, False)
     print()

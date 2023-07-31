@@ -57,8 +57,8 @@
     ],
     "relaxation_probability": 0,
     "behavioural_descriptors": [
-      "shear_modulus",
-      "band_gap"
+      "band_gap",
+      "shear_modulus"
     ],
     "number_of_relaxation_steps": 0,
     "curiosity_weights": true,
