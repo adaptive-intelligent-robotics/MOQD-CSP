@@ -67,7 +67,7 @@
     "profiling": false,
     "force_threshold": true
   },
-  "experiment_tag": "200_niches_1M",
+  "experiment_tag": "200_niches_1M_force_threshold",
   "fitness_min_max_values": [
     -10,
     10
