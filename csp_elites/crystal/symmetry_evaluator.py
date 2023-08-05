@@ -22,8 +22,8 @@ class SpaceGroups(str, Enum):
 
 
 class SymmetryEvaluation:
-    def __init__(self, formula: str="TiO2", tolerance: float=0.1, fitness_threshold: float= 8.5):
-        self.known_space_groups_pymatgen, self.known_space_group_spglib = self._get_reference_spacegroups(formula, tolerance)
+    def __init__(self, formula: str="TiO2", tolerance: float=0.1, fitness_threshold: float=8.5):
+        self.known_space_groups_pymatgen, self.known_space_group_spglib, self.material_ids = self._get_reference_spacegroups(formula, tolerance)
         self.tolerance = tolerance
         self.spacegroup_matching = {
             SpaceGroups.PYMATGEN: self.known_space_groups_pymatgen,
@@ -37,7 +37,16 @@ class SymmetryEvaluation:
         fitnesses: np.ndarray,
         spacegroup_type: SpaceGroups=SpaceGroups.SPGLIB,
     ):
-        raise NotImplementedError
+        spacegroup_dictionary = self.compute_symmetries_from_individuals(individuals, fitnesses)
+
+        reference_spacegroups = self.spacegroup_matching[spacegroup_type]
+
+        archive_to_reference_mapping = defaultdict(list)
+        for key in reference_spacegroups:
+            if key in spacegroup_dictionary.keys():
+                archive_to_reference_mapping[key] += spacegroup_dictionary[key]
+
+        return archive_to_reference_mapping
 
     def compute_symmetries_from_individuals(self, individuals: List[Atoms], fitnesses: np.ndarray) -> Dict[str, List[int]]:
         indices_to_check = self._get_indices_to_check(fitnesses)
@@ -61,12 +70,13 @@ class SymmetryEvaluation:
                                          range(len(experimentally_observed))]
         pymatgen_spacegeroups = [docs[i].structure.get_space_group_info() for i in
                                      range(len(experimentally_observed))]
+        material_ids = [docs[i].material_id for i in range(len(docs))]
 
         spglib_spacegroups = []
         for el in experimetnally_observed_atoms:
             spglib_spacegroups.append(get_spacegroup(el, symprec=tolerance).symbol)
 
-        return pymatgen_spacegeroups, spglib_spacegroups
+        return pymatgen_spacegeroups, spglib_spacegroups, material_ids
 
     def _get_indices_to_check(self, fitnesses: np.ndarray) -> np.ndarray:
         return np.argwhere(fitnesses > self.tolerance).reshape(-1)
@@ -105,9 +115,11 @@ if __name__ == '__main__':
     archive = Archive.from_archive(unrelaxed_archive_location)
 
     symmetry_evaluation = SymmetryEvaluation()
-    relaxed_dict = symmetry_evaluation.compute_symmetries_from_individuals(
-        individuals=archive.individuals,
-        fitnesses=archive.fitnesses,
-    )
-    symmetry_evaluation.plot_histogram(relaxed_dict, False)
-    print()
+    # relaxed_dict = symmetry_evaluation.compute_symmetries_from_individuals(
+    #     individuals=archive.individuals,
+    #     fitnesses=archive.fitnesses,
+    # )
+    # symmetry_evaluation.plot_histogram(relaxed_dict, False)
+
+    symmetry_mapping_to_references = symmetry_evaluation.find_individuals_with_reference_symmetries(individuals=archive.individuals, fitnesses=archive.fitnesses)
+    print(symmetry_mapping_to_references)
