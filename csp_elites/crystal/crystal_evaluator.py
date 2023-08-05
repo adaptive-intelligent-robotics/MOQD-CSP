@@ -30,6 +30,7 @@ class CrystalEvaluator:
     def __init__(self,
                  comparator: OFPComparator = None,
                  with_force_threshold=True,
+                 constrained_qd=False
                  ):
 
         self.relaxer = MultiprocessOptimizer()
@@ -37,7 +38,8 @@ class CrystalEvaluator:
         self.band_gap_calculator = matgl.load_model("MEGNet-MP-2019.4.1-BandGap-mfi")
         self.shear_modulus_calculator = megnet_load_model("logG_MP_2018")
         self.fmax_threshold = 0.2
-        self.with_force_threshold= with_force_threshold
+        self.with_force_threshold = with_force_threshold
+        self.constrained_qd = constrained_qd
 
     def compute_band_gap(self, relaxed_structure, bandgap_type: Optional[
         BandGapEnum] = BandGapEnum.SCAN):
@@ -56,7 +58,6 @@ class CrystalEvaluator:
                 structure=relaxed_structure, state_feats=graph_attrs
             )
         return float(bandgap) * 25 # TODO CHANGE THIS
-
 
     def compare_to_target_structures(self,
                                      generated_structures: List[Atoms],
@@ -112,6 +113,7 @@ class CrystalEvaluator:
                 really_relax=really_relax,
                 n_steps=n_relaxation_steps,
             )
+            updated_atoms = list_of_atoms
             fitness_scores *= -1
         else:
             relaxation_results, updated_atoms = self.relaxer.relax(list_of_atoms, n_relaxation_steps)
@@ -132,10 +134,21 @@ class CrystalEvaluator:
 
         for i in range(len(list_of_atoms)):
             new_atoms_dict[i]["info"] = list_of_atoms[i].info
+
+        if self.constrained_qd:
+            forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
+                               range(len(relaxation_results))])
+            distance_to_0_force_normalised_to_100 = self.compute_fmax(forces) * 100 # TODO: change this normalisation
+            descriptors = (band_gaps, shear_moduli, distance_to_0_force_normalised_to_100)
+            # print(descriptors)
+            # print(fitness_scores)
+        else:
+            descriptors = (band_gaps, shear_moduli)
+
         del relaxation_results
         del structures
         del list_of_atoms
-        return updated_atoms, new_atoms_dict, fitness_scores, (band_gaps, shear_moduli), kill_list
+        return updated_atoms, new_atoms_dict, fitness_scores, descriptors, kill_list
 
     def batch_create_species(self, list_of_atoms, fitness_scores, descriptors, kill_list):
         # todo: here could do dict -> atoms conversion
@@ -147,7 +160,8 @@ class CrystalEvaluator:
             new_specie = Species(
                 x=list_of_atoms[i],
                 fitness=fitness_scores[i],
-                desc=(descriptors[0][i], descriptors[1][i])
+                desc=tuple([descriptors[j][i] for j in range(len(descriptors))])
+                # desc=(descriptors[0][i], descriptors[1][i])
             )
             species_list.append(new_specie)
 

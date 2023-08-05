@@ -98,8 +98,11 @@ def cvt(k, number_of_bd_dimensions, samples, bd_minimum_values, bd_maximum_value
 
     bd_dim_1 = np.random.uniform(bd_minimum_values[0], bd_maximum_values[0], size=(samples, 1))
     bd_dim_2 = np.random.uniform(bd_minimum_values[1], bd_maximum_values[1], size=(samples, 1))
-
     x = np.hstack((bd_dim_1, bd_dim_2))
+    if number_of_bd_dimensions == 3:
+        bd_dim_3 = np.random.uniform(bd_minimum_values[1], bd_maximum_values[1], size=(samples, 1))
+        x = np.hstack((x, bd_dim_3))
+
     k_means = KMeans(init='k-means++', n_clusters=k,
                      n_init=1, verbose=1)#,algorithm="full") ##  n_jobs=-1,
     k_means.fit(x)
