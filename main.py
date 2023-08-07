@@ -49,6 +49,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
         experiment_label = \
             f"{current_time_label}_{experiment_parameters.system_name}_{experiment_parameters.experiment_tag}"
 
+        alternative_operators = experiment_parameters.cvt_run_parameters["alternative_operators"] if "alternative_operators" in experiment_parameters.cvt_run_parameters.keys() else None
         crystal_system = CrystalSystem(
             atom_numbers_to_optimise=experiment_parameters.blocks,
             volume=experiment_parameters.volume,
@@ -56,6 +57,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
             splits=experiment_parameters.splits,
             operator_probabilities=experiment_parameters.operator_probabilities,
             start_generator=experiment_parameters.start_generator,
+            alternative_operators=alternative_operators,
         )
 
         comparator = OFPComparator(n_top=len(experiment_parameters.blocks), dE=1.0,
