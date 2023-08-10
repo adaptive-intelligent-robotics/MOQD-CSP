@@ -1,9 +1,10 @@
-
+import os
 import pathlib
 from collections import defaultdict
 from enum import Enum
 from typing import List, Dict, Optional, Tuple
 
+import imageio
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -167,11 +168,12 @@ class SymmetryEvaluation:
             self.structure_viewer.set_structure(individual_as_structure)
             individual_confid = archive.individuals[individual_index].info["confid"]
 
-
+            filename = f"ind_{archive.centroid_ids[individual_index]}_{file_tag}_{individual_confid}{primitive_string}.png"
             self.structure_viewer.write_image(
-                str(directory_to_save / f"{file_tag}_{individual_confid}_list_index_{individual_index}{primitive_string}.png"),
+                str(directory_to_save / filename),
                 magnification=5,
             )
+        return filename
 
     def save_best_structures_by_energy(
         self, archive: Archive, fitness_range: Optional[Tuple[float, float]],
@@ -191,7 +193,7 @@ class SymmetryEvaluation:
                 archive=archive,
                 structure_indices=list(indices_to_check),
                 directory_to_save=directory_to_save,
-                file_tag="ind_best_by_energy_confid",
+                file_tag="best_by_energy",
                 save_primitive=save_primitive,
             )
         return list(indices_to_check)
@@ -212,7 +214,7 @@ class SymmetryEvaluation:
                     archive=archive,
                     structure_indices=list(indices_to_check),
                     directory_to_save=directory_to_save,
-                    file_tag=f"ind_best_by_symmetry_{desired_symmetry}",
+                    file_tag=f"best_by_symmetry_{desired_symmetry}",
                     save_primitive=save_primitive,
                 )
 
@@ -232,8 +234,9 @@ class SymmetryEvaluation:
             primitive_structure = SpacegroupAnalyzer(structure).find_primitive()
             new_row = {
                 "individual_confid": archive.individuals[structure_index].info["confid"],
-                "list_index": structure_index,
+                "centroid_index": archive.centroid_ids[structure_index],
                 "symmetry": self.get_spacegroup_for_individual(archive.individuals[structure_index]),
+                "symmetry_match": None,
                 "fitness": archive.fitnesses[structure_index],
                 "descriptors": archive.descriptors[structure_index],
                 "number_of_cells_in_primitive_cell": len(primitive_structure),
@@ -270,28 +273,70 @@ class SymmetryEvaluation:
         self.structure_viewer.set_structure(structure)
         self.structure_viewer.show()
 
+    def gif_centroid_over_time(
+        self, experiment_directory_path: pathlib.Path, centroid_filepath: pathlib.Path,
+            centroid_index: int,
+        save_primitive: bool = False, number_of_frames_for_gif: int = 50,
+    ):
+        list_of_files = [name for name in os.listdir(f"{experiment_directory_path}") if
+                         not os.path.isdir(name)]
+        list_of_archives = [filename for filename in list_of_files if
+                            ("archive_" in filename) and (".pkl" in filename)]
+
+        temp_dir = experiment_directory_path / "tempdir"
+        temp_dir.mkdir(exist_ok=False)
+
+        archive_ids = []
+        plots = []
+        for i, filename in enumerate(list_of_archives):
+            if "relaxed_" in filename:
+                continue
+            else:
+                archive_id = list_of_archives[i].lstrip("relaxed_archive_").rstrip(".pkl")
+                archive = Archive.from_archive(pathlib.Path(experiment_directory_path / filename),
+                                               centroid_filepath=centroid_filepath)
+                archive_ids.append(archive_id)
+
+                plot_name = self.save_structure_visualisations(
+                    archive=archive,
+                    structure_indices=[centroid_index],
+                    directory_to_save=temp_dir,
+                    file_tag=archive_id,
+                    save_primitive=save_primitive,
+                )
+                plots.append(plot_name)
+
+        frames = []
+        sorting_ids = np.argsort(np.array(archive_ids, dtype=int))
+        for id in sorting_ids:
+            image = imageio.v2.imread(str(temp_dir / plots[id]))
+            frames.append(image)
+
+        imageio.mimsave(f"{experiment_directory_path}/structure_over_time_{centroid_index}.gif",  # output gif
+                        frames, duration=400, )
+        for plot_name in plots:
+            image_path = temp_dir / plot_name
+            image_path.unlink()
+        temp_dir.rmdir()
+
+
 
 if __name__ == '__main__':
 
-    # get_spacegroup()
-    # experiment_tag = "20230807_19_56_TiO2_200_niches_relax_every_10_generations"
-    # archive_number = 61062
-
-    experiment_tag = "20230807_19_31_TiO2_200_niches_for benchmark_100_relax"
-    archive_number = 4284
-    structure_number = 42
+    experiment_tag = "20230808_20_31_TiO2_100_niches_with_threshold"
+    centroid_path = "centroids_200_2_band_gap_0_100_shear_modulus_0_120.dat"
+    # archive_number = 2086
+    # structure_number = 42
+    experiment_directory_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag
+    centroid_full_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids" / centroid_path
     # relaxed_archive_location = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag / f"relaxed_archive_{archive_number}.pkl"
-    unrelaxed_archive_location = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag / f"archive_{archive_number}.pkl"
-
-    archive = Archive.from_archive(unrelaxed_archive_location)
+    # unrelaxed_archive_location = experiment_directory_path / f"archive_{archive_number}.pkl"
+    #
+    # archive = Archive.from_archive(unrelaxed_archive_location, centroid_filepath=centroid_full_path)
 
     symmetry_evaluation = SymmetryEvaluation()
-    symmetry_evaluation.quick_view_structure(archive, structure_number)
-    # relaxed_dict = symmetry_evaluation.compute_symmetries_from_individuals(
-    #     individuals=archive.individuals,
-    #     fitnesses=archive.fitnesses,
-    # )
-    # symmetry_evaluation.plot_histogram(relaxed_dict, False)
-    #
-    # symmetry_mapping_to_references = symmetry_evaluation.find_individuals_with_reference_symmetries(individuals=archive.individuals, fitnesses=archive.fitnesses)
-    # print(symmetry_mapping_to_references)
+    # symmetry_evaluation.quick_view_structure(archive, structure_number)
+
+    symmetry_evaluation.gif_centroid_over_time(
+        experiment_directory_path=experiment_directory_path, centroid_filepath=centroid_full_path, centroid_index=25,
+    )
