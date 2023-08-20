@@ -43,8 +43,8 @@
     "cvt_samples": 25000,
     "batch_size": 100,
     "random_init": 0.1,
-    "random_init_batch": 100,
-    "dump_period": 1000,
+    "random_init_batch": 20,
+    "dump_period": 500,
     "parallel": true,
     "cvt_use_cache": true,
     "bd_minimum_values": [
@@ -60,23 +60,22 @@
       "band_gap",
       "shear_modulus"
     ],
-    "number_of_relaxation_steps": 0,
+    "number_of_relaxation_steps": 30,
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
     "seed": false,
     "profiling": false,
     "force_threshold": false,
-    "fmax_threshold": 1.0,
     "constrained_qd": false,
     "relax_every_n_generations": 0,
-    "relax_archive_every_n_generations": 0,
+    "relax_archive_every_n_generations": 5,
     "alternative_operators": [
       ["dqd", 10]
     ],
     "dqd": true,
     "dqd_learning_rate": 0.00001
   },
-  "experiment_tag": "500k_lr-5",
+  "experiment_tag": "500k_lr-5_30_relax_steps_whole_archive_relax_10_steps_every_5",
   "fitness_min_max_values": [
     6.5,
     10
