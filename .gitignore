@@ -6,6 +6,8 @@ csp_experiments
 .DS_Store
 
 experiments/
+experiment/
+csp_investigations/
 
 experiments/
 experiment/
