@@ -31,18 +31,11 @@ class CrystalEvaluator:
         comparator: OFPComparator = None,
 
 ):
-        # device = torch.device('cpu' if torch.cuda.is_available() else 'cuda')
-        # relax_model = matgl.load_model("M3GNet-MP-2021.2.8-PES")
-        # relax_model = relax_model.to(device)
-        # self.relaxer = OverridenRelaxer(potential=relax_model)
-        # self.relaxer = StructOptimizer()
-        # self.relaxer = MultiprocessingOptimizer()
+
+        self.relaxer = StructOptimizer()
         self.comparator = comparator
         self.band_gap_calculator = matgl.load_model("MEGNet-MP-2019.4.1-BandGap-mfi")
-        # self.band_gap_calculator.to(device)
-        # self.formation_energy_calculator = matgl.load_model("M3GNet-MP-2018.6.1-Eform")
         self.shear_modulus_calculator = megnet_load_model("logG_MP_2018")
-        # self.formation_energy_calculator.to(device)
         self.property_to_function_mapping = {
             MaterialProperties.BAND_GAP: self.compute_band_gap,
             MaterialProperties.ENERGY_FORMATION: self.compute_formation_energy,
@@ -57,33 +50,16 @@ class CrystalEvaluator:
         }
 
     # todo:  @jit(cache=True)
-    def compute_energy(self, atoms: Atoms, really_relax, n_steps: int = 10) -> float:
-        # relaxation_results = self.relaxer.relax(atoms, steps=n_steps, verbose=False)
+    def compute_energy(self, atoms: Atoms, really_relax, n_steps: int = 10) -> Tuple[float, Dict[str, np.ndarray]]:
+        relaxation_results = self.relaxer.relax(atoms, steps=n_steps, verbose=False)
 
-        # energy = float(
-        #     relaxation_results["trajectory"].energies[-1] / len(atoms.get_atomic_numbers()))
-        # forces = relaxation_results["trajectory"].forces[-1]
-        # stresses = relaxation_results["trajectory"].stresses[-1]
-        # self._finalize_atoms(atoms, energy=energy, forces=forces, stress=stresses)
-        # relaxation_results = None
+        energy = float(
+            relaxation_results["trajectory"].energies[-1] / len(atoms.get_atomic_numbers()))
+        forces = relaxation_results["trajectory"].forces[-1]
+        stresses = relaxation_results["trajectory"].stresses[-1]
+        self._finalize_atoms(atoms, energy=energy, forces=forces, stress=stresses)
 
-        structure = AseAtomsAdaptor.get_structure(atoms)
-        prediction = self.model.predict_structure(structure)
-        # traj_observer = TrajectoryObserver(atoms)
-        # traj_observer.energies.append(prediction["e"])
-        # traj_observer.forces.append(prediction["f"])
-        # traj_observer.stresses.append(prediction["s"])
-        self._finalize_atoms(atoms, energy=prediction["e"], forces=prediction["f"], stress=prediction["s"])
-        relaxation_results = {
-            "final_structure": structure,
-            "trajectory": {
-                "energies": prediction["e"],
-                "forces": prediction["f"],
-                "stresses": prediction["s"],
-            }
-        }
-        return -prediction["e"], relaxation_results
-        # return float(-atoms.get_potential_energy()), relaxation_results
+        return float(-atoms.get_potential_energy()), relaxation_results
 
 
     #todo: @jit(parallel=True, cache=True)
@@ -254,11 +230,22 @@ class CrystalEvaluator:
         structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
         kill_list = self.check_atoms_in_cellbounds(list_of_atoms, cellbounds)
         # todo: filter evaluations to remove killed_individuals
-        fitness_scores, relaxation_results = self.batch_compute_energy(
-            list_of_structures=structures,
-            really_relax=really_relax,
-            n_steps=n_relaxation_steps,
-        )
+        if n_relaxation_steps == 0:
+            fitness_scores, relaxation_results = self.batch_compute_energy(
+                list_of_structures=structures,
+                really_relax=really_relax,
+                n_steps=n_relaxation_steps,
+            )
+        else:
+            fitness_scores, relaxation_results = [], []
+            for i in range(len(list_of_atoms)):
+                fitness_score, one_relaxation_results = self.compute_energy(
+                    atoms=list_of_atoms[i],
+                    really_relax=None,
+                    n_steps=n_relaxation_steps,
+                )
+                fitness_scores.append(fitness_score)
+                relaxation_results.append(one_relaxation_results)
 
         band_gaps = self._batch_band_gap_compute(structures)
         shear_moduli = self._batch_shear_modulus_compute(structures)
