@@ -137,7 +137,7 @@ class CVT:
 
             memory_profiling = run_parameters["profiling"] if "profiling" in run_parameters.keys() else False
 
-            population, fitness_scores, descriptors, kill_list = self.crystal_evaluator.batch_compute_fitness_and_bd(
+            population_as_atoms, population, fitness_scores, descriptors, kill_list = self.crystal_evaluator.batch_compute_fitness_and_bd(
                 list_of_atoms=population,
                 cellbounds=self.crystal_system.cellbounds,
                 really_relax=None,
@@ -145,6 +145,9 @@ class CVT:
                 n_relaxation_steps=run_parameters["number_of_relaxation_steps"],
                 fake_data=memory_profiling
             )
+            if population is not None:
+                self.crystal_system.update_operator_scaling_volumes(population=population_as_atoms)
+                del population_as_atoms
             # todo: make sure population ok after relaxation
             s_list = self.crystal_evaluator.batch_create_species(population, fitness_scores, descriptors, kill_list)
             # count evals

@@ -18,7 +18,7 @@ from csp_elites.crystal.materials_data_model import StartGenerators
 # from numba import prange, jit
 
 
-class CrystalSystem:
+class CrystalSystemHunting:
     def __init__(self,
         atom_numbers_to_optimise: List[float],
         volume: int = 240,
@@ -27,7 +27,8 @@ class CrystalSystem:
         cellbounds: CellBounds = None,
         operator_probabilities: List[float] = (4., 2., 2., 2.),
         compound_formula: Optional[str] = None,
-        start_generator: StartGenerators = StartGenerators.RANDOM
+        start_generator: StartGenerators = StartGenerators.RANDOM,
+
     ):
 
         self.volume = volume
