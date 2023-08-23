@@ -1,4 +1,5 @@
 import warnings
+from math import sqrt
 from multiprocessing.managers import BaseManager
 from typing import Optional, Tuple, List, Dict
 
@@ -29,6 +30,7 @@ warnings.simplefilter("ignore")
 class CrystalEvaluator:
     def __init__(self,
         comparator: OFPComparator = None,
+                 with_force_threshold=True,
 
 ):
 
@@ -42,7 +44,8 @@ class CrystalEvaluator:
             MaterialProperties.SHEAR_MODULUS: self.compute_shear_modulus
         }
         self.model = CHGNet.load()
-
+        self.fmax_threshold = 0.1
+        self.with_force_threshold= with_force_threshold
         self.element_to_number_map = {
             "Ti": 22,
             "O": 8,
@@ -227,48 +230,44 @@ class CrystalEvaluator:
                                      really_relax: bool, behavioral_descriptor_names: List[
                 MaterialProperties],
                                      n_relaxation_steps: int,
-                                     fake_data: bool = False
+
                                      ):
-        if fake_data:
-            return list_of_atoms, np.zeros(len(list_of_atoms)), \
-                   (np.zeros(len(list_of_atoms), np.zeros(len(list_of_atoms)))), \
-                   [False] * len(list_of_atoms)
+
+        list_of_atoms = [Atoms.fromdict(atoms) for atoms in list_of_atoms]
+        structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
+        kill_list = self.check_atoms_in_cellbounds(list_of_atoms, cellbounds)
+        # todo: filter evaluations to remove killed_individuals
+        if n_relaxation_steps == 0:
+            fitness_scores, relaxation_results = self.batch_compute_energy(
+                list_of_structures=structures,
+                really_relax=really_relax,
+                n_steps=n_relaxation_steps,
+            )
         else:
-            list_of_atoms = [Atoms.fromdict(atoms) for atoms in list_of_atoms]
-            structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
-            kill_list = self.check_atoms_in_cellbounds(list_of_atoms, cellbounds)
-            # todo: filter evaluations to remove killed_individuals
-            if n_relaxation_steps == 0:
-                fitness_scores, relaxation_results = self.batch_compute_energy(
-                    list_of_structures=structures,
-                    really_relax=really_relax,
+            fitness_scores, relaxation_results = [], []
+            for i in range(len(list_of_atoms)):
+                fitness_score, one_relaxation_results = self.compute_energy(
+                    atoms=list_of_atoms[i],
+                    really_relax=None,
                     n_steps=n_relaxation_steps,
                 )
-            else:
-                fitness_scores, relaxation_results = [], []
-                for i in range(len(list_of_atoms)):
-                    fitness_score, one_relaxation_results = self.compute_energy(
-                        atoms=list_of_atoms[i],
-                        really_relax=None,
-                        n_steps=n_relaxation_steps,
-                    )
-                    fitness_scores.append(fitness_score)
-                    relaxation_results.append(one_relaxation_results)
+                fitness_scores.append(fitness_score)
+                relaxation_results.append(one_relaxation_results)
 
-            band_gaps = self._batch_band_gap_compute(structures)
-            shear_moduli = self._batch_shear_modulus_compute(structures)
-            # todo: finalise atoms here? currently no need
-            updated_atoms = [AseAtomsAdaptor.get_atoms(relaxation_results[i]["final_structure"])
-                             for i in range(len(list_of_atoms))]
+        band_gaps = self._batch_band_gap_compute(structures)
+        shear_moduli = self._batch_shear_modulus_compute(structures)
+        # todo: finalise atoms here? currently no need
+        updated_atoms = [AseAtomsAdaptor.get_atoms(relaxation_results[i]["final_structure"])
+                         for i in range(len(list_of_atoms))]
 
-            new_atoms_dict = [atoms.todict() for atoms in updated_atoms]
+        new_atoms_dict = [atoms.todict() for atoms in updated_atoms]
 
-            for i in range(len(list_of_atoms)):
-                new_atoms_dict[i]["info"] = list_of_atoms[i].info
-            del relaxation_results
-            del structures
-            del list_of_atoms
-            return updated_atoms, new_atoms_dict, fitness_scores, (band_gaps, shear_moduli), kill_list
+        for i in range(len(list_of_atoms)):
+            new_atoms_dict[i]["info"] = list_of_atoms[i].info
+        del relaxation_results
+        del structures
+        del list_of_atoms
+        return updated_atoms, new_atoms_dict, fitness_scores, (band_gaps, shear_moduli), kill_list
 
     def batch_create_species(self, list_of_atoms, fitness_scores, descriptors, kill_list):
         # todo: here could do dict -> atoms conversion
@@ -332,6 +331,14 @@ class CrystalEvaluator:
                  },
                  }
             )
+        fitnesses = -1 * energies
+        if self.with_force_threshold:
+            fmax = self.compute_fmax(forces)
+            indices_above_threshold = np.argwhere(fmax > self.fmax_threshold).reshape(-1)
+            forces_above_threshold = -1 * np.abs(fmax[fmax > self.fmax_threshold] - 0.1)
+            np.put(fitnesses, indices_above_threshold, forces_above_threshold)
+
+
         return -1 * energies, reformated_output
 
     def _evaluate_list_of_atoms(self, list_of_structures: List[Structure]):
@@ -356,13 +363,15 @@ class CrystalEvaluator:
 
         return trajectories
 
-
     def compute_composition(self, element_blocks: List[List[int]]):
         element_blocks = np.array(element_blocks)
         counts = np.unique(element_blocks, return_counts=True)
         oxygen_count = counts[1][counts[0] == 8] if counts[1][counts[0] == 8] else 0
         non_titanium = len(element_blocks) - counts[1][counts[0] == 22]
         return oxygen_count / non_titanium
+
+    def compute_fmax(self, forces: np.ndarray):
+        return np.max((forces ** 2).sum(axis=2), axis=1) ** 0.5
 
 def compute_composition_test(element_blocks: List[List[int]]):
     element_blocks = np.array(element_blocks)

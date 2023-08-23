@@ -6,6 +6,7 @@ import tracemalloc
 from dataclasses import asdict
 
 import psutil
+from ase import Atoms
 from ase.ga.ofp_comparator import OFPComparator
 
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
@@ -56,7 +57,9 @@ def main(experiment_parameters: ExperimentParameters):
                                pbc=[True, True, True], sigma=0.05, nsigma=4,
                                recalculate=False)
 
-    crystal_evaluator = CrystalEvaluator(comparator=comparator)
+    force_threshold = experiment_parameters.cvt_run_parameters["force_threshold"] if "force_threshold" in experiment_parameters.cvt_run_parameters.keys() else False
+
+    crystal_evaluator = CrystalEvaluator(comparator=comparator, with_force_threshold=force_threshold)
 
     cvt = CVT(
         number_of_bd_dimensions=experiment_parameters.n_behavioural_descriptor_dimensions,
@@ -137,9 +140,8 @@ def main(experiment_parameters: ExperimentParameters):
 
     archive_filename = f"{experiment_directory_path}/archive_{max_archive}.pkl"
     fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(archive_filename)
-
     cvt.crystal_evaluator.compare_to_target_structures(
-        generated_structures=individuals,
+        generated_structures=[Atoms.fromdict(individual) for individual in individuals],
         target_structures=structures_for_comparison,
         directory_string=experiment_directory_path,
     )
