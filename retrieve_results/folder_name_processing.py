@@ -2,9 +2,11 @@ import json
 import os
 import pathlib
 import pickle
-from typing import List
+from datetime import date
+from typing import List, Dict, Any
 
 import numpy as np
+import pandas as pd
 from ase.ga.utilities import CellBounds
 
 from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
@@ -50,11 +52,12 @@ class ExperimentOrganiser:
             experiment_parameters = pickle.load(file)
 
         centroid_filename = make_centroid_filename(
-            k=200,
+            k=200, # make number of niches dynamic
             dim=len(experiment_parameters["behavioural_descriptors"]),
             bd_names=experiment_parameters["behavioural_descriptors"],
             bd_minimum_values=experiment_parameters["bd_minimum_values"],
             bd_maximum_values=experiment_parameters["bd_maximum_values"],
+            formula="TiO2" # todo: make this dynamic
         )
         return centroid_filename
 
@@ -76,13 +79,38 @@ class ExperimentOrganiser:
         config_files = [config_files_1, config_files_2]
         config_folders = [config_folder_1, config_folder_2]
         config_mapping_dict = {}
+        config_for_csv = {}
         for id, configs_for_day in enumerate(config_files):
             for config in configs_for_day:
                 with open(config_folders[id] / config, "r") as file:
                     config_data = json.load(file)
                 config_tag = config_data["experiment_tag"]
                 config_mapping_dict[f"{days[id]}/{config}"] = config_tag
-        return config_mapping_dict
+                config_data["config_filename"] = f"{days[id]}/{config}"
+                config_for_csv[config_tag] = config_data
+
+        return config_mapping_dict, config_for_csv
+
+    def map_config_data_to_experiment(self, experiments: List[str], config_for_csv: Dict[str, Any], tag):
+        mapped_configs = {}
+        for experiment_folder in experiments:
+            experiment_tag = experiment_folder.split("TiO2_")[1]
+            config_information = config_for_csv[experiment_tag]
+            mapped_configs[experiment_folder] = config_information
+
+        df = pd.DataFrame(mapped_configs)
+        df = df.transpose()
+        df = pd.concat([df, df["cvt_run_parameters"].apply(pd.Series)], axis=1)
+        df.drop(columns="cvt_run_parameters", inplace=True)
+        temp_cols = df.columns.tolist()
+        index = df.columns.get_loc("config_filename")
+        new_cols = temp_cols[index:index + 1] + temp_cols[:index] + temp_cols[index+1:]
+        df = df[new_cols]
+
+        # today = date.today()
+        df.to_csv(pathlib.Path(__file__).parent.parent / ".experiment.nosync" / f"{tag}_list_of_configs.csv")
+
+        pass
 
     @staticmethod
     def get_date_from_folder_name(folder_name: str):
@@ -219,55 +247,56 @@ class ExperimentProcessor:
 
 
 if __name__ == '__main__':
-    date = "0820"
+    experiment_date = "0822"
     save_structure_images = True
     filter_for_experimental_structures = False
 
     experiment_organiser = ExperimentOrganiser()
-    folder_list = experiment_organiser.get_all_folders_with_date(date)
-    config_mapping = experiment_organiser.get_config_data(date)
+    folder_list = experiment_organiser.get_all_folders_with_date(experiment_date)
+    config_mapping, config_dict_csv = experiment_organiser.get_config_data(experiment_date)
     config_names = list(config_mapping.keys())
     experiment_tags_list = list(config_mapping.values())
+    experiment_organiser.map_config_data_to_experiment(folder_list, config_dict_csv, experiment_date)
 
-    folders_done = []
-    manual_check = {}
-    for folder in folder_list:
-        print(folder)
-        if experiment_organiser.is_experiment_valid(folder):
-            centroid_name = experiment_organiser.get_centroid_name(folder)
-            experiment_tag = folder.split("TiO2_")[1]
-            config_match_index = np.argwhere(np.array(experiment_tags_list) == experiment_tag).reshape(-1)
-            if len(config_match_index) == 0:
-                manual_check[folder] = "no matching experiment tag in configs"
-                continue
-            elif len(config_match_index) > 1:
-                files_in_experiment = [name for name in os.listdir(f"{experiment_organiser.experiment_directory_path / folder}") if name == "config.json"]
-                if files_in_experiment:
-                    config_filepath = experiment_organiser.experiment_directory_path / folder / files_in_experiment[0]
-                else:
-                    manual_check[folder] = "multiple matching experiment tags in configs"
-                    continue
-            else:
-                config_filepath = experiment_organiser.repo_location / "configs" / config_names[config_match_index[0]]
-
-            plotting_done, symmetry_summary_done = experiment_organiser.is_done(folder)
-
-            if plotting_done and symmetry_summary_done:
-                continue
-            else:
-                print(folder)
-                centroid_filename = experiment_organiser.get_centroid_name(folder)
-                experiment_processor = ExperimentProcessor(
-                    experiment_label=folder,
-                    config_filepath=config_filepath,
-                    centroid_filename=centroid_filename,
-                    fitness_limits=(6.5, 10),
-                    save_structure_images=save_structure_images,
-                    filter_for_experimental_structures=filter_for_experimental_structures,
-                )
-                if not plotting_done:
-                    experiment_processor.plot()
-                if not symmetry_summary_done:
-                    experiment_processor.process_symmetry()
-
-    print(manual_check)
+    # folders_done = []
+    # manual_check = {}
+    # for folder in folder_list:
+    #     print(folder)
+    #     if experiment_organiser.is_experiment_valid(folder):
+    #         centroid_name = experiment_organiser.get_centroid_name(folder)
+    #         experiment_tag = folder.split("TiO2_")[1]
+    #         config_match_index = np.argwhere(np.array(experiment_tags_list) == experiment_tag).reshape(-1)
+    #         if len(config_match_index) == 0:
+    #             manual_check[folder] = "no matching experiment tag in configs"
+    #             continue
+    #         elif len(config_match_index) > 1:
+    #             files_in_experiment = [name for name in os.listdir(f"{experiment_organiser.experiment_directory_path / folder}") if name == "config.json"]
+    #             if files_in_experiment:
+    #                 config_filepath = experiment_organiser.experiment_directory_path / folder / files_in_experiment[0]
+    #             else:
+    #                 manual_check[folder] = "multiple matching experiment tags in configs"
+    #                 continue
+    #         else:
+    #             config_filepath = experiment_organiser.repo_location / "configs" / config_names[config_match_index[0]]
+    #
+    #         plotting_done, symmetry_summary_done = experiment_organiser.is_done(folder)
+    #
+    #         if plotting_done and symmetry_summary_done:
+    #             continue
+    #         else:
+    #             print(folder)
+    #             centroid_filename = experiment_organiser.get_centroid_name(folder)
+    #             experiment_processor = ExperimentProcessor(
+    #                 experiment_label=folder,
+    #                 config_filepath=config_filepath,
+    #                 centroid_filename=centroid_filename,
+    #                 fitness_limits=(6.5, 10),
+    #                 save_structure_images=save_structure_images,
+    #                 filter_for_experimental_structures=filter_for_experimental_structures,
+    #             )
+    #             if not plotting_done:
+    #                 experiment_processor.plot()
+    #             if not symmetry_summary_done:
+    #                 experiment_processor.process_symmetry()
+    #
+    # print(manual_check)

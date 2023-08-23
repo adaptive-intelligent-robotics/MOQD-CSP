@@ -5,17 +5,17 @@ import numpy as np
 from retrieve_results.folder_name_processing import ExperimentProcessor, ExperimentOrganiser
 
 if __name__ == '__main__':
-    date = "0820"
+    date = "0822"
     save_structure_images = False
     filter_for_experimental_structures = False
     always_run_plotting = True
 
     experiment_organiser = ExperimentOrganiser()
     folder_list = experiment_organiser.get_all_folders_with_date(date)
-    config_mapping = experiment_organiser.get_config_data(date)
+    config_mapping, config_dict_csv = experiment_organiser.get_config_data(date)
     config_names = list(config_mapping.keys())
     experiment_tags_list = list(config_mapping.values())
-
+    experiment_organiser.map_config_data_to_experiment(folder_list, config_dict_csv, date)
     folders_done = []
     manual_check = {}
     for folder in folder_list:
@@ -55,8 +55,15 @@ if __name__ == '__main__':
                     filter_for_experimental_structures=filter_for_experimental_structures,
                 )
                 if not plotting_done:
-                    experiment_processor.plot()
+                    try:
+                        experiment_processor.plot()
+                    except ValueError:
+                        print(f"problem with plotting folder {folder}")
+                        continue
                 if not symmetry_summary_done:
-                    experiment_processor.process_symmetry()
+                    try:
+                        experiment_processor.process_symmetry()
+                    except ValueError:
+                        print(f"problem with plotting folder {folder}")
 
     print(manual_check)
