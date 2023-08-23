@@ -55,6 +55,8 @@ if __name__ == '__main__':
                                pbc=[True, True, True], sigma=0.05, nsigma=4,
                                recalculate=False)
 
+    memory_profiling = experiment_parameters.cvt_run_parameters["profiling"] \
+        if "profiling" in experiment_parameters.cvt_run_parameters.keys() else False
     crystal_evaluator = CrystalEvaluator(comparator=comparator)
 
     cvt = CVT(

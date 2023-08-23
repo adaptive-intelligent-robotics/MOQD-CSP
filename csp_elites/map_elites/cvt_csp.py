@@ -39,7 +39,9 @@
 from typing import List, Optional
 
 import numpy as np
+import psutil
 from ase import Atoms
+from matplotlib import pyplot as plt
 from pymatgen.io.ase import AseAtomsAdaptor
 # from numba import jit, prange
 from sklearn.neighbors import KDTree
@@ -72,13 +74,10 @@ class CVT:
         ):
         experiment_directory_path = make_experiment_folder(experiment_label)
         log_file = open(f'{experiment_directory_path}/{experiment_label}.dat', 'w')
-
-        # setup the parallel processing pool
-        # num_cores = multiprocessing.cpu_count()
-        # pool = multiprocessing.Pool(num_cores)
+        memory_log = open(f'{experiment_directory_path}/memory_log.dat', 'w')
 
         # create the CVT
-        kdt, c = self._initialise_kdt_and_centroids(
+        kdt = self._initialise_kdt_and_centroids(
             experiment_directory_path=experiment_directory_path,
             number_of_niches=number_of_niches,
             run_parameters=run_parameters,
@@ -90,10 +89,21 @@ class CVT:
 
         # main loop
         configuration_counter = 0
-        pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations)
-        random_initialisation = True
+
+        rambar = tqdm(total=100, desc='ram%', position=0)
+        cpubar = tqdm(total=100, desc='cpu%', position=1)
+
+        cpubar.n = psutil.cpu_percent()
+        rambar.n = psutil.virtual_memory().percent
+        cpubar.refresh()
+        rambar.refresh()
+        print(f"Starting CPU usage % {psutil.cpu_percent()}")
+        print(f"Starting RAM usage Absolute {psutil.virtual_memory()[3]/1000000000}")
+
+        ram_logging = []
+        pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations, position=2)
         while (n_evals < maximum_evaluations):  ### NUMBER OF GENERATIONS
-            to_evaluate = []
+            ram_logging.append(psutil.virtual_memory()[3]/1000000000)
             # random initialization
             population = []
             if len(archive) <= run_parameters['random_init'] * number_of_niches:
@@ -101,14 +111,14 @@ class CVT:
                     run_parameters['random_init_batch'])
 
                 if run_parameters["seed"]:
-                    structure_info, known_atoms = get_all_materials_with_formula("TiO2")
+                    _, known_atoms = get_all_materials_with_formula("TiO2")
                     for atoms in known_atoms:
                         if len(atoms.get_atomic_numbers()) == run_parameters["filter_starting_Structures"]:
                             atoms.rattle()
                             atoms.info = None
                             atoms = atoms.todict()
                             individuals.append(atoms)
-
+                    del known_atoms
                 population += individuals
 
             else:  # variation/selection loop
@@ -123,8 +133,13 @@ class CVT:
                     # copy & add variation
                     z, _ = self.crystal_system.operators.get_new_individual(
                         [Atoms.fromdict(x.x), Atoms.fromdict(y.x)])
-                    z = z.todict()
-                    population += [z]
+                    if z is None:
+                        print(" z is none bug")
+                    else:
+                        z = z.todict()
+                        population += [z]
+
+            memory_profiling = run_parameters["profiling"] if "profiling" in run_parameters.keys() else False
 
             population, fitness_scores, descriptors, kill_list = self.crystal_evaluator.batch_compute_fitness_and_bd(
                 list_of_atoms=population,
@@ -132,9 +147,19 @@ class CVT:
                 really_relax=None,
                 behavioral_descriptor_names=run_parameters["behavioural_descriptors"],
                 n_relaxation_steps=run_parameters["number_of_relaxation_steps"],
+                fake_data=memory_profiling
             )
             # todo: make sure population ok after relaxation
             s_list = self.crystal_evaluator.batch_create_species(population, fitness_scores, descriptors, kill_list)
+            # count evals
+            evaluations_performed = len(population)
+            n_evals += evaluations_performed
+            b_evals += evaluations_performed
+
+            del population
+            del fitness_scores
+            del descriptors
+            del kill_list
             # s_list = evaluate_parallel(to_evaluate)
 
             # natural selection
@@ -146,12 +171,6 @@ class CVT:
                     s.x["info"]["confid"] = configuration_counter
                     configuration_counter += 1
                     add_to_archive(s, s.desc, archive, kdt)
-                    # individual_added, parent_id_list = add_to_archive(s, s.desc, archive, kdt)
-                    # archive = self.update_parent_curiosity(archive, parent_id_list, individual_added)
-
-            # count evals
-            n_evals += len(population)
-            b_evals += len(population)
 
             # write archive
             if b_evals >= run_parameters['dump_period'] and run_parameters['dump_period'] != -1:
@@ -162,7 +181,7 @@ class CVT:
             if log_file != None:
                 fit_list = np.array([x.fitness for x in archive.values()])
                 qd_score = np.sum(fit_list)
-                coverage = 100 * len(fit_list) / len(c)
+                coverage = 100 * len(fit_list) / number_of_niches
 
                 log_file.write("{} {} {} {} {} {} {} {} {}\n".format(n_evals,
                                                                      len(archive.keys()),
@@ -173,9 +192,27 @@ class CVT:
                                                                      np.percentile(fit_list, 95),
                                                                      coverage, qd_score))
                 log_file.flush()
-            pbar.update(len(population))
+            pbar.update(evaluations_performed)
+            # cpubar.update(psutil.cpu_percent())
+            rambar.n = psutil.virtual_memory().percent
+            cpubar.n = psutil.cpu_percent()
+            cpubar.refresh()
+            rambar.refresh()
+            memory = psutil.virtual_memory()[3] / 1000000000
+            memory_log.write("{} {}\n".format(n_evals, memory))
+            memory_log.flush()
 
         save_archive(archive, n_evals, experiment_directory_path)
+        plt.plot(range(len(ram_logging)), ram_logging)
+        plt.xlabel("Number of Times Evaluation Loop Was Ran")
+        plt.ylabel("Amount of RAM Used")
+        plt.title("RAM over time")
+        plt.savefig(f"{experiment_directory_path}/memory_over_time.png", format="png")
+
+        print(f"End CPU usage {psutil.cpu_percent()}")
+        print(f"End RAM usage {psutil.virtual_memory()[3] / 1000000000}")
+
+
         return experiment_directory_path, archive
 
 
@@ -203,7 +240,7 @@ class CVT:
         # pool = multiprocessing.Pool(num_cores)
 
         # create the CVT
-        kdt, c = self._initialise_kdt_and_centroids(
+        kdt = self._initialise_kdt_and_centroids(
             experiment_directory_path=experiment_directory_path,
             number_of_niches=number_of_niches,
             run_parameters=run_parameters,
@@ -225,7 +262,7 @@ class CVT:
                     run_parameters['random_init_batch']) # individuals are dict
             #     population += individuals
             #     random_initialisation = False
-                structure_info, known_atoms = get_all_materials_with_formula("TiO2")
+                _, known_atoms = get_all_materials_with_formula("TiO2")
                 # individuals = []
                 for i, atoms in enumerate(known_atoms):
                     if len(atoms.get_atomic_numbers()) == run_parameters["filter_starting_Structures"]:
@@ -233,9 +270,9 @@ class CVT:
                         atoms.info["confid"] = None
                         atoms = atoms.todict()
                         individuals.append(atoms)
+                    del known_atoms
                 # individuals = [AseAtomsAdaptor.get_atoms(structure) for structure in known_structures]
                 population += individuals # all individuals are dictionary
-
 
             if random_initialisation:
                 random_initialisation = False
@@ -348,7 +385,7 @@ class CVT:
             if log_file != None:
                 fit_list = np.array([x.fitness for x in archive.values()])
                 qd_score = np.sum(fit_list)
-                coverage = 100 * len(fit_list) / len(c)
+                coverage = 100 * len(fit_list) / number_of_niches
 
                 log_file.write("{} {} {} {} {} {} {} {} {}\n".format(n_evals, len(archive.keys()),
                         fit_list.max(), np.mean(fit_list), np.median(fit_list),
@@ -377,7 +414,8 @@ class CVT:
             bd_minimum_values=run_parameters["bd_minimum_values"],
             bd_maximum_values=run_parameters["bd_maximum_values"],
         )
-        return kdt, c
+        del c
+        return kdt
 
     # @jit(parallel=True)
     def mutate_individuals(self, archive, run_parameters):
