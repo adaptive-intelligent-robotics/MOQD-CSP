@@ -33,8 +33,8 @@
   "operator_probabilities": [
     0.0,
     0,
-    5.0,
-    5.0
+    10.0,
+    0.0
   ],
   "n_behavioural_descriptor_dimensions": 2,
   "number_of_niches": 200,
