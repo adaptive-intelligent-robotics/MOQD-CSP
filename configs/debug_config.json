@@ -32,8 +32,8 @@
   "cellbounds": "DUMMY",
   "operator_probabilities": [
     5.0,
-    1,
-    2.0,
+    0,
+    3.0,
     2.0
   ],
   "n_behavioural_descriptor_dimensions": 2,
@@ -43,7 +43,7 @@
     "cvt_samples": 25000,
     "batch_size": 10,
     "random_init": 0,
-    "random_init_batch": 0,
+    "random_init_batch": 10,
     "dump_period": 10,
     "parallel": true,
     "cvt_use_cache": true,
@@ -57,13 +57,14 @@
     ],
     "relaxation_probability": 0,
     "behavioural_descriptors": [
-      "shear_modulus",
-      "band_gap"
+      "band_gap",
+      "shear_modulus"
     ],
     "number_of_relaxation_steps": 10,
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
-    "seed": true
+    "seed": false,
+    "profiling": false
   },
   "experiment_tag": "debug_config",
   "fitness_min_max_values": [
