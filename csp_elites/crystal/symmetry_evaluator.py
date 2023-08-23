@@ -170,7 +170,7 @@ class SymmetryEvaluation:
         else:
             reference_string = "with_ref" if against_reference else ""
             plt.savefig(save_directory / f"ind_symmetries_histogram_{reference_string}.png", format="png")
-
+        plt.clf()
     def save_structure_visualisations(
         self, archive: Archive, structure_indices: List[int], directory_to_save: pathlib.Path,
         file_tag: str, save_primitive: bool = False,
@@ -605,9 +605,10 @@ class SymmetryEvaluation:
         ax.set_aspect("equal")
 
         if directory_string is None:
-            plt.show()
+            fig.show()
         else:
-            plt.savefig(f"{directory_string}/{filename}.png", format="png")
+            fig.savefig(f"{directory_string}/{filename}.png", format="png")
+        plt.clf()
         return fig, ax
 
 
