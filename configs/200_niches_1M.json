@@ -37,13 +37,13 @@
     2.0
   ],
   "n_behavioural_descriptor_dimensions": 2,
-  "number_of_niches": 1000,
-  "maximum_evaluations": 1000000,
+  "number_of_niches": 200,
+  "maximum_evaluations": 100000,
   "cvt_run_parameters": {
     "cvt_samples": 25000,
     "batch_size": 100,
     "random_init": 0.1,
-    "random_init_batch": 50,
+    "random_init_batch": 20,
     "dump_period": 1000,
     "parallel": true,
     "cvt_use_cache": true,
@@ -63,13 +63,13 @@
     "number_of_relaxation_steps": 0,
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
-    "seed": false
+    "seed": false,
+    "profiling": true
   },
-  "experiment_tag": "100_niches_1M",
+  "experiment_tag": "200_niches_0_2_init",
   "fitness_min_max_values": [
     6.5,
     9
   ],
-  "fitler_comparison_data_for_n_atoms": 24,
-    "start_generator": "pyxtal"
+  "fitler_comparison_data_for_n_atoms": 24
 }
