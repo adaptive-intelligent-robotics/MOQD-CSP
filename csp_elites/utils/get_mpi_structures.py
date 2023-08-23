@@ -56,7 +56,8 @@ def get_all_materials_with_formula(formula: str):
                                   fields=["material_id",
                                           "band_gap",
                                           "volume", "lattice", "formation_energy_per_atom", "energy_above_hull",
-                                          "structure",
+                                          "structure", "energy_per_atom", "uncorrected_energy_per_atom",
+                                          "theoretical"
                                           ])
 
     atoms = []
@@ -111,3 +112,4 @@ def get_all_and_model_from_formula(formula: str):
 
 if __name__ == '__main__':
     docs, atom_objects = get_all_materials_with_formula("TiO2")
+    print()

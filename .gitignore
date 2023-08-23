@@ -6,3 +6,26 @@ csp_experiments
 .DS_Store
 
 experiments/
+
+experiments/
+experiment/
+csp_investigations/
+
+run_job_on_cluster.sh
+
+used_modes.json
+.experiment.nosync
+
+csp_scripts
+
+script_job.sh
+
+list_of_configs.csv
+
+report_figures/
+/configs/0808/
+/configs/0809/
+/configs/0812/
+/configs/0813/
+/configs/0814/
+/configs/0815/
