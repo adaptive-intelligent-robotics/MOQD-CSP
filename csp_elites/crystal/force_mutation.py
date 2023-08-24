@@ -37,7 +37,7 @@ class GradientMutation(OffspringCreator):
     """
     # def __init__(self, test_dist_to_slab=True, use_tags=False,
     #              verbose=False, rng=np.random):
-    def __init__(self, blmin, n_top, test_dist_to_slab=True, use_tags=False,
+    def __init__(self, blmin, n_top, learning_rate: float = 0.01, test_dist_to_slab=True, use_tags=False,
                  verbose=False, rng=np.random):
         OffspringCreator.__init__(self, verbose, rng=rng)
         self.blmin = blmin
@@ -48,7 +48,7 @@ class GradientMutation(OffspringCreator):
         self.descriptor = 'GradientMutation'
         self.min_inputs = 1
         self.model = CHGNet.load()
-        self.learning_rate = 0.01
+        self.learning_rate = learning_rate
 
     def get_new_individual(self, parents):
         f = parents[0]
