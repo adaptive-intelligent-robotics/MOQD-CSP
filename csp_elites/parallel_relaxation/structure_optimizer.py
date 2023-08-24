@@ -138,6 +138,7 @@ class MultiprocessOptimizer:
 
         tic = time.time()
         if None in graphs:
+            indices_to_pop = []
             print("isolated atomssss")
             print(f"graphs starting length {len(graphs)}")
             hotfix_graphs = True
@@ -146,7 +147,9 @@ class MultiprocessOptimizer:
                 print(i)
                 if graphs[i] is None:
                     indices_to_update.append(i)
-                    graphs.pop(i)
+                    indices_to_pop.append(i)
+            for j in indices_to_pop:
+                graphs.pop(j)
 
             print(f"graphs end length {len(graphs)}")
 

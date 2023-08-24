@@ -230,6 +230,63 @@ def plot_2d_map_elites_repertoire_marta(
         plt.savefig(f"{directory_string}/{filename}.png", format="png")
     return fig, ax
 
+def plot_numbered_centroids(
+    centroids: np.ndarray,
+    minval: np.ndarray,
+    maxval: np.ndarray,
+):
+
+    # set the parameters
+    font_size = 12
+    params = {
+        "axes.labelsize": font_size,
+        "legend.fontsize": font_size,
+        "xtick.labelsize": font_size,
+        "ytick.labelsize": font_size,
+        "text.usetex": False,
+        "figure.figsize": [10, 10],
+    }
+
+    mpl.rcParams.update(params)
+
+    # create the plot object
+
+    fig, ax = plt.subplots(facecolor="white", edgecolor="white")
+
+    assert (
+        len(np.array(minval).shape) < 2
+    ), f"minval : {minval} should be float or couple of floats"
+    assert (
+        len(np.array(maxval).shape) < 2
+    ), f"maxval : {maxval} should be float or couple of floats"
+
+    if len(np.array(minval).shape) == 0 and len(np.array(maxval).shape) == 0:
+        ax.set_xlim(minval, maxval)
+        ax.set_ylim(minval, maxval)
+    else:
+        ax.set_xlim(minval[0], maxval[0])
+        ax.set_ylim(minval[1], maxval[1])
+
+    ax.set(adjustable="box", aspect="equal")
+
+    # create the regions and vertices from centroids
+    regions, vertices = get_voronoi_finite_polygons_2d(centroids)
+
+    # fill the plot with contours
+    for i, region in enumerate(regions):
+        polygon = vertices[region]
+        ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
+        ax.annotate(str(i), (centroids[i, 0], centroids[i, 1]))
+    # aesthetic
+    ax.set_xlabel(f"BD1")
+    ax.set_ylabel(f"BD2")
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="5%", pad=0.05)
+
+    ax.set_title("MAP-Elites Grid")
+    ax.set_aspect("equal")
+    fig.show()
+
 
 def plot_all_statistics_from_file(filename: str, save_location: Optional[str]):
     with open(filename, "r") as file:
@@ -385,74 +442,85 @@ def plot_all_maps_in_archive(
             )
 
 if __name__ == '__main__':
-    archive_number = 910020
-    directory_string = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /"20230727_03_43_TiO2_test"
+    centroid_filename = "centroids_200_2_band_gap_0_100_shear_modulus_0_100_slurm.dat"
+    centroids_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids" / centroid_filename
 
-    # a = [name for name in os.listdir(f"{directory_string}") if
-    #  not os.path.isdir(name)]
+    centroids = load_centroids(centroids_path)
+    plot_numbered_centroids(centroids=centroids,
+                            minval=[0, 0],
+                            maxval=[100, 100],
+                            )
 
-    # Variables setting
-    archive_filename = directory_string / f"archive_{archive_number}.pkl"
-    centroid_filename = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids"/ "centroids_200_2_band_gap_0_100_shear_modulus_0_100_old.dat"
-    # centroid_filename = pathlib.Path(
-    #     __file__).parent.parent.parent / ".experiment.nosync" / "backup_centroids" / "centroids"/ "centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat"
-    reassign_centroids = True
-    comparison_data = "../../experiments/target_data/ti02_band_gap_shear_modulus.pkl"
-    filename_for_save = f"cvt_plot_{archive_number}"
-    fitness_plotting_filename = "TiO2_dat.dat"  # TODO: get fitness from the right place - is this it
-    descriptor_minimum_values = np.array([0, 0])
-    descriptor_maximum_values = np.array([100, 100])
-    fitness_min_max_values = (6.5, 10)
-    target_centroids = None
 
-    # ToDo: Pass target centroids in better
-    # target_centroids = compute_centroids_for_target_solutions(
+
+    # archive_number = 910020
+    # directory_string = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /"20230727_03_43_TiO2_test"
+    #
+    # # a = [name for name in os.listdir(f"{directory_string}") if
+    # #  not os.path.isdir(name)]
+    #
+    # # Variables setting
+    # archive_filename = directory_string / f"archive_{archive_number}.pkl"
+    # centroid_filename = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids"/ "centroids_200_2_band_gap_0_100_shear_modulus_0_100_old.dat"
+    # # centroid_filename = pathlib.Path(
+    # #     __file__).parent.parent.parent / ".experiment.nosync" / "backup_centroids" / "centroids"/ "centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat"
+    # reassign_centroids = True
+    # comparison_data = "../../experiments/target_data/ti02_band_gap_shear_modulus.pkl"
+    # filename_for_save = f"cvt_plot_{archive_number}"
+    # fitness_plotting_filename = "TiO2_dat.dat"  # TODO: get fitness from the right place - is this it
+    # descriptor_minimum_values = np.array([0, 0])
+    # descriptor_maximum_values = np.array([100, 100])
+    # fitness_min_max_values = (6.5, 10)
+    # target_centroids = None
+    #
+    # # ToDo: Pass target centroids in better
+    # # target_centroids = compute_centroids_for_target_solutions(
+    # #     centroids_file=centroid_filename,
+    # #     target_data_file=comparison_data,
+    # #     filter_for_number_of_atoms=24
+    # # )
+    #
+    # comparison_data_packed = load_archive_from_pickle(comparison_data)
+    # target_centroids = reassign_data_from_pkl_to_new_centroids(
     #     centroids_file=centroid_filename,
-    #     target_data_file=comparison_data,
-    #     filter_for_number_of_atoms=24
+    #     target_data=comparison_data_packed,
+    #     filter_for_number_of_atoms=24,
     # )
-
-    comparison_data_packed = load_archive_from_pickle(comparison_data)
-    target_centroids = reassign_data_from_pkl_to_new_centroids(
-        centroids_file=centroid_filename,
-        target_data=comparison_data_packed,
-        filter_for_number_of_atoms=24,
-    )
-
-    # with open(archive_filename, "rb") as file:
-    #     fitnesses, centroids, descriptors, individuals = pickle.load(file)
-
-    fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(archive_filename)
-    all_centroids = load_centroids(centroid_filename)
-    kdt = KDTree(all_centroids, leaf_size=30, metric='euclidean')
-
-    if reassign_centroids:
-        centroids = []
-        for i in range(len(fitnesses)):
-            niche_index = kdt.query([(descriptors[i][0], descriptors[i][1])], k=1)[1][0][0]
-            niche = kdt.data[niche_index]
-            n = make_hashable(niche)
-            centroids.append(n)
-
-
-    # plot_fitness_from_file(fitness_plotting_filename)
-
-    fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_ddescriptors_to_plotting_format(
-        all_centroids=all_centroids,
-        centroids_from_archive=centroids,
-        fitnesses_from_archive=fitnesses,
-        descriptors_from_archive=descriptors,
-    )
-    plot_2d_map_elites_repertoire_marta(
-        centroids=all_centroids,
-        repertoire_fitnesses=fitnesses_for_plotting,
-        minval=descriptor_minimum_values,
-        maxval=descriptor_maximum_values,
-        repertoire_descriptors=descriptors_for_plotting,
-        vmin=fitness_min_max_values[0],
-        vmax=fitness_min_max_values[1],
-        target_centroids=target_centroids,
-        directory_string=f"{directory_string}",
-        filename=filename_for_save,
-
-    )
+    #
+    # # with open(archive_filename, "rb") as file:
+    # #     fitnesses, centroids, descriptors, individuals = pickle.load(file)
+    #
+    # fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(archive_filename)
+    # all_centroids = load_centroids(centroid_filename)
+    # kdt = KDTree(all_centroids, leaf_size=30, metric='euclidean')
+    #
+    # if reassign_centroids:
+    #     centroids = []
+    #     for i in range(len(fitnesses)):
+    #         niche_index = kdt.query([(descriptors[i][0], descriptors[i][1])], k=1)[1][0][0]
+    #         niche = kdt.data[niche_index]
+    #         n = make_hashable(niche)
+    #         centroids.append(n)
+    #
+    #
+    # # plot_fitness_from_file(fitness_plotting_filename)
+    #
+    # fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_ddescriptors_to_plotting_format(
+    #     all_centroids=all_centroids,
+    #     centroids_from_archive=centroids,
+    #     fitnesses_from_archive=fitnesses,
+    #     descriptors_from_archive=descriptors,
+    # )
+    # plot_2d_map_elites_repertoire_marta(
+    #     centroids=all_centroids,
+    #     repertoire_fitnesses=fitnesses_for_plotting,
+    #     minval=descriptor_minimum_values,
+    #     maxval=descriptor_maximum_values,
+    #     repertoire_descriptors=descriptors_for_plotting,
+    #     vmin=fitness_min_max_values[0],
+    #     vmax=fitness_min_max_values[1],
+    #     target_centroids=target_centroids,
+    #     directory_string=f"{directory_string}",
+    #     filename=filename_for_save,
+    #
+    # )
