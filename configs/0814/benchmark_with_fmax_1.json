@@ -44,7 +44,7 @@
     "batch_size": 100,
     "random_init": 0.1,
     "random_init_batch": 20,
-    "dump_period": 1000,
+    "dump_period": 500,
     "parallel": true,
     "cvt_use_cache": true,
     "bd_minimum_values": [

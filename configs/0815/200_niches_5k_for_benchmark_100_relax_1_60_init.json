@@ -43,7 +43,7 @@
     "cvt_samples": 25000,
     "batch_size": 100,
     "random_init": 0.1,
-    "random_init_batch": 20,
+    "random_init_batch": 60,
     "dump_period": 200,
     "parallel": true,
     "cvt_use_cache": true,
@@ -64,10 +64,9 @@
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
     "seed": false,
-    "profiling": true,
-    "force_threshold": true
+    "profiling": true
   },
-  "experiment_tag": "200_niches_for benchmark_100_relax_4_with_threshold",
+  "experiment_tag": "200_niches_for benchmark_100_relax_1",
   "fitness_min_max_values": [
     6.5,
     9

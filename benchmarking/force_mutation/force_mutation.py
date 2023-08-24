@@ -94,9 +94,10 @@ def benchmark_force_mutation():
 
     model = CHGNet.load()
     number_of_steps = 50
-    all_data = []
-    list_of_atoms = starting_atoms
-    for learning_rate in tqdm([0.1]):
+
+    for learning_rate in tqdm([0.001, 0.01, 0.1]):
+        all_data = []
+        list_of_atoms = starting_atoms
         force_mutation = GradientMutation(
             blmin=closest_distances, n_top=len(experiment_parameters.blocks),
             learning_rate=learning_rate
@@ -122,7 +123,6 @@ def benchmark_force_mutation():
 
             hotfix_graphs = False
             if None in graphs:
-                indices_to_pop = []
                 hotfix_graphs = True
                 indices_to_update = []
                 new_graphs = []
@@ -159,4 +159,36 @@ def benchmark_force_mutation():
 
 
 if __name__ == '__main__':
-    benchmark_force_mutation()
+    # benchmark_force_mutation()
+
+    #
+    # learning_rates = [0.1, 0.001]
+    # number_of_steps = 2
+    # number_of_structures = 10
+
+    # for i in range(len(learning_rates)):
+    #     filepath = pathlib.Path(__file__).parent / "data" / f"TiO2_{number_of_structures}_steps_{number_of_steps}_lr_{learning_rates[i]}.pkl"
+    #     with open(filepath, "rb") as file:
+    #         all_data = pickle.load(file)
+    #         print(len(all_data))
+    # for learning_rate in tqdm([0.0001, 0.001, 0.01, 0.1]):
+
+
+    learning_rates = [0.01]
+    number_of_steps = 50
+    number_of_structures = 100
+
+    for i in range(len(learning_rates)):
+        filepath = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "benchmarking" / "force_mutation" / "data" / f"TiO2_{number_of_structures}_steps_{number_of_steps}_lr_{learning_rates[i]}.pkl"
+        with open(filepath, "rb") as file:
+            all_data = pickle.load(file)
+            print(len(all_data))
+
+
+    fake_1 = all_data[:50]
+    fake_2 = all_data[50:100]
+    fake_3 = all_data[100:]
+
+    print()
+
+    # print()
