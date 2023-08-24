@@ -31,10 +31,10 @@
   "splits": "DUMMY",
   "cellbounds": "DUMMY",
   "operator_probabilities": [
-    0.0,
     0,
-    5.0,
-    5.0
+    5,
+    3.0,
+    2.0
   ],
   "n_behavioural_descriptor_dimensions": 2,
   "number_of_niches": 200,
@@ -60,13 +60,15 @@
       "band_gap",
       "shear_modulus"
     ],
-    "number_of_relaxation_steps": 100,
+    "number_of_relaxation_steps": 10,
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
     "seed": false,
-    "profiling": true
+    "profiling": false,
+    "force_threshold": true,
+    "constrained_qd": false
   },
-  "experiment_tag": "200_niches_for benchmark_100_relax",
+  "experiment_tag": "force_mutation",
   "fitness_min_max_values": [
     6.5,
     9

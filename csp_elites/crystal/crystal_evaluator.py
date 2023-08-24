@@ -30,7 +30,8 @@ class CrystalEvaluator:
     def __init__(self,
                  comparator: OFPComparator = None,
                  with_force_threshold=True,
-                 constrained_qd=False
+                 constrained_qd=False,
+                 relax_every_n_generations=0,
                  ):
 
         self.relaxer = MultiprocessOptimizer()
@@ -40,6 +41,7 @@ class CrystalEvaluator:
         self.fmax_threshold = 0.2
         self.with_force_threshold = with_force_threshold
         self.constrained_qd = constrained_qd
+        self.relax_every_n_generations = relax_every_n_generations
 
     def compute_band_gap(self, relaxed_structure, bandgap_type: Optional[
         BandGapEnum] = BandGapEnum.SCAN):
@@ -114,7 +116,6 @@ class CrystalEvaluator:
                 n_steps=n_relaxation_steps,
             )
             updated_atoms = list_of_atoms
-            fitness_scores *= -1
         else:
             relaxation_results, updated_atoms = self.relaxer.relax(list_of_atoms, n_relaxation_steps)
             energies = - np.array([relaxation_results[i]["trajectory"]["energies"] for i in range(len(relaxation_results))])
@@ -140,8 +141,6 @@ class CrystalEvaluator:
                                range(len(relaxation_results))])
             distance_to_0_force_normalised_to_100 = self.compute_fmax(forces) * 100 # TODO: change this normalisation
             descriptors = (band_gaps, shear_moduli, distance_to_0_force_normalised_to_100)
-            # print(descriptors)
-            # print(fitness_scores)
         else:
             descriptors = (band_gaps, shear_moduli)
 
@@ -209,8 +208,11 @@ class CrystalEvaluator:
                  },
                  }
             )
-        fitnesses = self._apply_force_threshold(energies, forces)
 
+        if self.with_force_threshold:
+            fitnesses = self._apply_force_threshold(energies, forces)
+        else:
+            fitnesses = -1 * energies
         return fitnesses, reformated_output
 
     def _apply_force_threshold(self, energies: np.ndarray, forces: np.ndarray) -> np.ndarray:

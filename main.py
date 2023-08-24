@@ -19,7 +19,7 @@ from csp_elites.utils.plot import load_centroids
 
 
 class HiddenPrints:
-
+    # from https://stackoverflow.com/questions/8391411/how-to-block-calls-to-print
     def __init__(self, hide_prints: bool = True):
         self.hide_prints = hide_prints
 

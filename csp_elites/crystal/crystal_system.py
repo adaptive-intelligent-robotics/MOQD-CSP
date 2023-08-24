@@ -8,10 +8,12 @@ from ase.ga.standardmutations import StrainMutation, PermutationMutation
 from ase.ga.startgenerator import StartGenerator
 from ase.ga.utilities import CellBounds, closest_distances_generator
 import numpy as np
+from chgnet.graph import CrystalGraphConverter
 from pymatgen.io.ase import AseAtomsAdaptor
 from pyxtal import pyxtal
 
 from csp_elites.crystal.materials_data_model import StartGenerators
+from csp_elites.crystal.force_mutation import GradientMutation
 
 
 # from jax import jit
@@ -45,12 +47,15 @@ class CrystalSystem:
         self._cut_and_splice = None
         self._soft_mutation = None
         self._permutation_mutation = None
+        self._gradient_mutation = None
         self.operators = self._initialise_operators(operator_probabilities)
         self.compound_formula = compound_formula
         self._possible_pyxtal_modes =  [
             1,  8, 11, 12, 14, 15, 25, 35, 59, 60, 61, 62, 63, 74, 87, 136,
             141, 156, 186, 189, 194, 205, 227,
         ]
+
+        self.graph_converter = CrystalGraphConverter()
 
     def create_one_individual(self, individual_id: Optional[int]):
         if isinstance(self._start_generator, StartGenerator):
@@ -80,8 +85,9 @@ class CrystalSystem:
         individuals = []
         for i in range(number_of_individuals):
             new_individual = self.create_one_individual(individual_id=i)
-            new_individual = new_individual.todict()
-            individuals.append(new_individual)
+            if self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn") is not None:
+                new_individual = new_individual.todict()
+                individuals.append(new_individual)
         return individuals
 
     def _initialise_start_generator(self, start_generator : StartGenerators):
@@ -116,6 +122,8 @@ class CrystalSystem:
         )
 
         self._permutation_mutation = PermutationMutation(len(self.atom_numbers_to_optimise))
+
+        self._gradient_mutation = GradientMutation
         return OperationSelector(
             operator_probabilities,
             [self._cut_and_splice, self._soft_mutation, self._strain_mutation, self._permutation_mutation],

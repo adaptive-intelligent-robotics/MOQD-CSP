@@ -47,9 +47,6 @@ class OverridenFire:
             v_reshaped = v.reshape(len(v), -1)
             vf = np.diag(f_reshaped @ v_reshaped.T)
 
-            # vf_positive_mask = np.zeros(len(f))
-            # vf_positive_mask = vf_positive_mask.at[vf > 0.0].set(1).reshape((-1, 1, 1))
-
             vf_positive_mask = (vf > 0.0).reshape((-1, 1, 1))
             vf_negative_mask = ~vf_positive_mask
 
