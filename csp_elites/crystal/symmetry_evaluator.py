@@ -2,7 +2,7 @@ import os
 import pathlib
 from collections import defaultdict
 from enum import Enum
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Union
 
 import imageio
 import matplotlib.pyplot as plt
@@ -14,6 +14,7 @@ from ase import Atoms
 from ase.ga.ofp_comparator import OFPComparator
 from ase.spacegroup import get_spacegroup
 from pymatgen.analysis.structure_matcher import StructureMatcher
+from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.vis.structure_vtk import StructureVis
@@ -25,6 +26,11 @@ from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 class SpaceGroups(str, Enum):
     PYMATGEN = "pymatgen"
     SPGLIB = "spglib"
+
+class ConfidenceLevels(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
 
 
 class SymmetryEvaluation:
@@ -330,7 +336,94 @@ class SymmetryEvaluation:
                 summary_df.drop(columns=column_name, inplace=True)
         summary_df.to_csv(str(directory_to_save / "ind_top_summary_statistics.csv"))
 
-        # return df
+        return df, summary_df
+
+    def executive_summary_csv(
+        self, archive: Archive, indices_to_compare: List[int], directory_to_save: pathlib.Path,
+            reference_data_path: Optional[pathlib.Path] = None
+    ) -> pd.DataFrame:
+        if reference_data_path is not None:
+            reference_data = pd.read_csv(reference_data_path)
+            reference_data.index = reference_data["Unnamed: 0"].to_list()
+            reference_data.drop(columns="Unnamed: 0", inplace=True)
+        else:
+            reference_data = None
+        summary_data = []
+
+        symmetry_to_material_id_dict = self.make_symmetry_to_material_id_dict()
+        if indices_to_compare is None:
+            indices_to_compare = list(range(len(archive.individuals)))
+
+        for structure_index in indices_to_compare:
+            structure = AseAtomsAdaptor.get_structure(archive.individuals[structure_index])
+            primitive_structure = SpacegroupAnalyzer(structure).find_primitive()
+            spacegroup = self.get_spacegroup_for_individual(archive.individuals[structure_index])
+            symmetry_match = symmetry_to_material_id_dict[spacegroup] if spacegroup in symmetry_to_material_id_dict.keys() else []
+
+            summary_row = {
+                "individual_confid": archive.individuals[structure_index].info["confid"],
+                "centroid_index": archive.centroid_ids[structure_index],
+                "fitness": archive.fitnesses[structure_index],
+                "descriptors": archive.descriptors[structure_index],
+                "symmetry": spacegroup,
+                "number_of_cells_in_primitive_cell": len(primitive_structure),
+                "matches": []
+
+            }
+
+            for known_structure in self.known_structures_docs:
+                reference_id = str(known_structure.material_id)
+                structure_matcher_match = self.structure_matcher.fit(structure, known_structure.structure)
+
+                distance_to_known_structure = self._compute_distance(
+                    primitive_structure,
+                    known_structure.structure,
+                )
+
+                if distance_to_known_structure <= 0.1 or structure_matcher_match or str(reference_id) in symmetry_match:
+                    summary_row["matches"].append(
+                        {reference_id:
+                            {
+                                "symmetry": reference_id in symmetry_match,
+                                "structure_matcher": structure_matcher_match,
+                                "distance": distance_to_known_structure,
+                                "centroid": reference_data[reference_id]["centroid_id"]  if reference_data is not None else None,
+                                "reference energy": reference_data[reference_id]["energy"] if reference_data is not None else None,
+                                "reference_band_gap": reference_data[reference_id]["band_gap"]  if reference_data is not None else None,
+                                "reference_shear_modulus": reference_data[reference_id]["shear_modulus"]  if reference_data is not None else None,
+
+                            }
+                        }
+                    )
+
+            summary_data.append(summary_row)
+        individuals_with_matches = [individual for individual in summary_data if
+                                    individual["matches"]]
+
+        df = pd.DataFrame(individuals_with_matches)
+        df = df.explode("matches")
+        df['matches'] = df['matches'].apply(lambda x: x.items())
+        df = df.explode("matches")
+        df[['reference', 'match_info']] = pd.DataFrame(df['matches'].tolist(), index=df.index)
+        df.drop(columns="matches", inplace=True)
+        df = pd.concat([df, df["match_info"].apply(pd.Series)], axis=1)
+        df.drop(columns="match_info", inplace=True)
+        df.to_csv(directory_to_save / "ind_executive_summary.csv")
+        print()
+
+    def _assign_confidence_level_in_match(self, match_dictionary):
+        pass
+
+    def _compute_distance(self, structure_to_check: Structure, reference_structure: Structure):
+        if len(structure_to_check) == len(reference_structure):
+            structure_to_check.sort()
+            structure_to_check.sort()
+            distance_to_known_structure = float(self.comparator._compare_structure(
+                AseAtomsAdaptor.get_atoms(structure_to_check),
+                AseAtomsAdaptor.get_atoms(reference_structure)))
+        else:
+            distance_to_known_structure = 1
+        return distance_to_known_structure
 
     def quick_view_structure(self, archive: Archive, individual_index: int):
         structure = AseAtomsAdaptor.get_structure(archive.individuals[individual_index])
@@ -398,20 +491,25 @@ class SymmetryEvaluation:
 
 if __name__ == '__main__':
 
-    experiment_tag = "20230809_22_24_TiO2_rattle_50_relax_steps_100_init_batch"
-    centroid_path = "centroids_200_2_band_gap_0_100_shear_modulus_0_120.dat"
-    archive_number = 4284
-    structure_number = 53
-    experiment_directory_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag
+    experiment_tag = "20230813_01_48_TiO2_200_niches_for benchmark_100_relax_2"
+    centroiid_tag = "centroids_200_2_band_gap_0_100_shear_modulus_0_120"
+    centroid_path = f"{centroiid_tag}.dat"
+    target_data_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "target_data" / f"target_data_{centroiid_tag}.csv"
+
+    archive_number = 5079
+    # structure_number = 53
+    experiment_directory_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / experiment_tag
     centroid_full_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids" / centroid_path
     # relaxed_archive_location = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag / f"relaxed_archive_{archive_number}.pkl"
-    # unrelaxed_archive_location = experiment_directory_path / f"archive_{archive_number}.pkl"
-    # #
-    # archive = Archive.from_archive(unrelaxed_archive_location, centroid_filepath=centroid_full_path)
-    #
+    unrelaxed_archive_location = experiment_directory_path / f"archive_{archive_number}.pkl"
+
+    archive = Archive.from_archive(unrelaxed_archive_location, centroid_filepath=centroid_full_path)
+
     symmetry_evaluation = SymmetryEvaluation()
     # symmetry_evaluation.quick_view_structure(archive, structure_number)
-
-    symmetry_evaluation.gif_centroid_over_time(
-        experiment_directory_path=experiment_directory_path, centroid_filepath=centroid_full_path, centroid_index=85,
-    )
+    symmetry_evaluation.executive_summary_csv(archive, list(range(20)), experiment_directory_path, target_data_path)
+    # symmetry_evaluation.executive_summary_csv(experiment_directory_path / "ind_top_summary_statistics.csv")
+    print()
+    # symmetry_evaluation.gif_centroid_over_time(
+    #     experiment_directory_path=experiment_directory_path, centroid_filepath=centroid_full_path, centroid_index=85,
+    # )
