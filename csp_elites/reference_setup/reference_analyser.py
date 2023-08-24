@@ -1,9 +1,11 @@
 import json
 import pathlib
+import pickle
 from collections import defaultdict
 from typing import Optional, Tuple, List
 
 import numpy as np
+from ase import Atoms
 from ase.spacegroup import get_spacegroup
 from matplotlib import pyplot as plt
 from pymatgen.io.ase import AseAtomsAdaptor
@@ -20,6 +22,7 @@ from csp_elites.map_elites.elites_utils import __centroids_filename as get_centr
 from csp_elites.reference_setup.reference_plotter import ReferencePlotter
 from csp_elites.utils.asign_target_values_to_centroids import \
     reassign_data_from_pkl_to_new_centroids
+from csp_elites.utils.experiment_parameters import ExperimentParameters
 from csp_elites.utils.plot import load_centroids, plot_2d_map_elites_repertoire_marta
 from csp_scripts.log_target_data_band_gap_shear import \
     return_predictions_bg_shear_for_list_of_mp_docs
@@ -65,6 +68,9 @@ class ReferenceAnalyser:
         self.bd_minimum_values = None
         self.bd_maximum_values = None
 
+        self.save_path = self.main_experiments_directory.parent / "mp_reference_analysis" / f"{formula}_{max_n_atoms_in_cell}"
+        self.save_path.mkdir(parents=True, exist_ok=True)
+
     def compute_target_values(self):
         predictions, band_gaps, shear_moduli = return_predictions_bg_shear_for_list_of_mp_docs(
             self.structures_to_consider)
@@ -77,6 +83,7 @@ class ReferenceAnalyser:
 
         band_gaps = np.array(band_gaps)
         shear_moduli = np.array(shear_moduli)
+
         return energies, fmax_list, band_gaps, shear_moduli
 
     @staticmethod
@@ -88,14 +95,14 @@ class ReferenceAnalyser:
         shear_moduli_min_max_diff = shear_moduli_limits[1] - shear_moduli_limits[0]
         if not np.abs(shear_moduli_min_max_diff - band_gap_min_max_diff) < 0.2 * max([shear_moduli_min_max_diff, band_gap_min_max_diff]):
             print(f"Recommend setting band gaps manually, bg limits: {band_gap_limits}, shear moduli limits {shear_moduli_limits}")
-            return band_gap_limits, shear_moduli_limits
+            return band_gap_limits.tolist(), shear_moduli_limits.tolist()
         else:
-            return band_gap_limits, shear_moduli_limits
+            return band_gap_limits.tolist(), shear_moduli_limits.tolist()
 
     def propose_fitness_limits(self):
         energies = np.array(self.energies)
-        limits = np.array([np.floor(energies.min() * 0.8), np.ceil(energies.max() * 1.2)])
-        return limits
+        limits = np.array([np.floor(energies.min() * - 0.5), np.ceil(energies.max() * 1.2) + 0.5])
+        return limits.tolist()
 
     def initialise_kdt_and_centroids(self,
         number_of_niches: int, band_gap_limits: Optional[np.ndarray] = None, shear_moduli_limits: Optional[np.ndarray]= None,
@@ -132,7 +139,7 @@ class ReferenceAnalyser:
         )
         return kdt
 
-    def create_model_archive(self):
+    def create_model_archive(self, save_reference = False):
         if self.centroid_filename is None:
             print("first create centroids or provide path to centroid file")
 
@@ -153,6 +160,20 @@ class ReferenceAnalyser:
             labels=self.reference_ids,
         )
         target_archive.centroid_ids = Archive.assign_centroid_ids(centroids, self.centroid_folder_path.parent / self.centroid_filename[1:])
+
+        if save_reference:
+            all_data = []
+            for i in range(len(self.energies)):
+                one_data_point = []
+                one_data_point.append(self.energies[i])
+                one_data_point.append(centroids[i])
+                one_data_point.append(descriptors[i])
+                one_data_point.append(individuals[i].todict())
+
+                all_data.append(one_data_point)
+
+            with open(self.save_path / f"{self.formula}_band_gap_shear_modulus.pkl", "wb") as file:
+                pickle.dump(all_data, file)
 
         return target_archive
 
@@ -178,7 +199,7 @@ class ReferenceAnalyser:
             vmin=fitness_limits[0],
             vmax=fitness_limits[1],
             annotations=labels_for_plotting,
-            directory_string=directory_string,
+            directory_string=self.save_path,
             filename=f"{self.formula}_cvt_plot_{self.experimental_string}"
         )
         plt.clf()
@@ -191,7 +212,7 @@ class ReferenceAnalyser:
         ax.set_ylabel("Structure Count")
         ax.set_title("Maximum Force on Atom for Reference Structures")
         if self.save_plot:
-            fig.savefig(self.main_experiments_directory.parent / "mp_reference_analysis" / f"{self.formula}_fmax_histogram_{self.experimental_string}.png",
+            fig.savefig(self.save_path / f"{self.formula}_fmax_histogram_{self.experimental_string}.png",
                         format="png")
         else:
             fig.show()
@@ -223,7 +244,7 @@ class ReferenceAnalyser:
             fig.legend(loc="center right")
         plt.tight_layout()
         if self.save_plot:
-            fig.savefig(self.main_experiments_directory.parent / "mp_reference_analysis" / f"{self.formula}_symmetries_histogram_{self.experimental_string}.png",
+            fig.savefig(self.save_path / f"{self.formula}_symmetries_histogram_{self.experimental_string}.png",
                         format="png")
         else:
             fig.show()
@@ -240,7 +261,7 @@ class ReferenceAnalyser:
         ax.set_title("Minimum Non-Zero Cosine Distance Between Reference Structures Across References")
 
         if self.save_plot:
-            fig.savefig(self.main_experiments_directory.parent / "mp_reference_analysis" / f"{self.formula}_distances_histogram_{self.experimental_string}.png", format="png")
+            fig.savefig(self.save_path / f"{self.formula}_{self.max_n_atoms_in_cell}_distances_histogram_{self.experimental_string}.png", format="png")
         else:
             fig.show()
         plt.clf()
@@ -284,7 +305,7 @@ class ReferenceAnalyser:
 
         plt.tight_layout()
         if self.save_plot:
-            plt.savefig(self.main_experiments_directory.parent / "mp_reference_analysis" / f"{self.formula}_distances_heatmap_no_annotate_{self.experimental_string}.png", format="png")
+            plt.savefig(self.save_path / f"{self.formula}_distances_heatmap_no_annotate_{self.experimental_string}.png", format="png")
         else:
             plt.show()
         plt.clf()
@@ -297,7 +318,7 @@ class ReferenceAnalyser:
                 )
         plt.tight_layout()
         if self.save_plot:
-            plt.savefig(self.main_experiments_directory.parent / "mp_reference_analysis" / f"{self.formula}_structure_matcher_heatmap_{self.experimental_string}.png", format="png")
+            plt.savefig(self.save_path / f"{self.formula}_structure_matcher_heatmap_{self.experimental_string}.png", format="png")
         else:
             plt.show()
         plt.clf()
@@ -325,18 +346,44 @@ class ReferenceAnalyser:
             valid_spacegroups_for_combination.append(el)
 
         number_of_atoms = sum(atoms_counts)
-        with open(self.main_experiments_directory.parent / "mp_reference_analysis" / f"{self.formula}_{number_of_atoms}_allowed_symmetries.json", "w") as file:
+        with open(self.save_path / f"{self.formula}_{number_of_atoms}_allowed_symmetries.json", "w") as file:
             json.dump(valid_spacegroups_for_combination, file)
         return valid_spacegroups_for_combination
 
+    def write_base_config(self, bd_minimum_values: np.ndarray, bd_maximum_values: np.ndarray,
+                          fitness_limits: np.ndarray):
+
+        blocks = self.return_blocks_list()
+
+        experiment_parameters = ExperimentParameters.generate_default_to_populate()
+        experiment_parameters.system_name = self.formula
+        experiment_parameters.blocks = list(blocks)
+        experiment_parameters.cvt_run_parameters["bd_minimum_values"] = list(bd_minimum_values)
+        experiment_parameters.cvt_run_parameters["bd_maximum_values"] = list(bd_maximum_values)
+        experiment_parameters.fitness_min_max_values = list(fitness_limits)
+        experiment_parameters.save_as_json(self.save_path)
+
+    def return_blocks_list(self):
+        temp_atoms = Atoms(self.formula)
+        number_of_formula_units = int(self.max_n_atoms_in_cell / len(temp_atoms.get_atomic_numbers()))
+        temp_atoms = Atoms(self.formula * number_of_formula_units)
+        blocks = temp_atoms.get_atomic_numbers().tolist()
+        blocks.sort()
+        return blocks
+
+
 if __name__ == '__main__':
-    elements_list = [["C"], ["Si", "O"], ["Si"], ["Si", "C"]]
-    atoms_counts_list = [[24], [8, 16], [24], [12, 12]]
-    formulas = ["C", "SiO2", "Si", "SiC"]
+    elements_list = [["C"], ["Si", "O"], ["Si"], ["Si", "C"], ["Ti", "O"]]
+    atoms_counts_list = [[24], [8, 16], [24], [12, 12], [8, 16]]
+    formulas = ["C", "SiO2", "Si", "SiC", "TiO2"]
+
+    # elements_list = [["C"]]
+    # atoms_counts_list = [[24]]
+    # formulas = ["C"]
 
     dict_summary = {}
 
-    for filter_experiment in [True, False]:
+    for filter_experiment in [False]:
         for i, formula in enumerate(formulas):
             reference_analyser = ReferenceAnalyser(
                 formula=formula,
@@ -355,19 +402,24 @@ if __name__ == '__main__':
                 shear_moduli_limits=shear_moduli_limits,
             )
             fitness_limits = reference_analyser.propose_fitness_limits()
-            target_archive = reference_analyser.create_model_archive()
 
-            reference_analyser.plot_cvt_plot(
-                target_archive=target_archive,
+            reference_analyser.write_base_config(
                 bd_minimum_values=[band_gap_limits[0], shear_moduli_limits[0]],
                 bd_maximum_values=[band_gap_limits[1], shear_moduli_limits[1]],
                 fitness_limits=fitness_limits,
             )
-
-            reference_analyser.heatmap_structure_matcher_distances()
-            reference_analyser.plot_symmetries()
-            reference_analyser.plot_fmax()
-            dict_summary[f"{formula}_{filter_experiment}"] = len(reference_analyser.structures_to_consider)
-            print(dict_summary)
-    with open("dict_summary.json", "w") as file:
-        json.dump(dict_summary, file)
+            # target_archive = reference_analyser.create_model_archive(not filter_experiment)
+            #
+            # reference_analyser.plot_cvt_plot(
+            #     target_archive=target_archive,
+            #     bd_minimum_values=[band_gap_limits[0], shear_moduli_limits[0]],
+            #     bd_maximum_values=[band_gap_limits[1], shear_moduli_limits[1]],
+            #     fitness_limits=fitness_limits,
+            # )
+            # reference_analyser.heatmap_structure_matcher_distances()
+            # reference_analyser.plot_symmetries()
+            # reference_analyser.plot_fmax()
+            # dict_summary[f"{formula}_{filter_experiment}"] = len(reference_analyser.structures_to_consider)
+            # print(dict_summary)
+    # with open("../../.experiment.nosync/mp_reference_analysis/dict_summary.json", "w") as file:
+    #     json.dump(dict_summary, file)
