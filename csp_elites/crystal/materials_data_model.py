@@ -13,6 +13,8 @@ class MaterialProperties(str, Enum):
     ENERGY_FORMATION = "energy_formation"
     SHEAR_MODULUS = "shear_modulus"
     CONSTRAINT_FORCE = "constraint_force"
+    CONSTRAINT_BG = "constraint_band_gap"
+    CONSTRAINT_SHEAR = "constraint_shear"
 
 
 class StartGenerators(str, Enum):
