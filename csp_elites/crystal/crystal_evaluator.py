@@ -28,16 +28,20 @@ class CrystalEvaluator:
                  with_force_threshold=True,
                  constrained_qd=False,
                  relax_every_n_generations=0,
-                 fmax_threshold: float = 0.2,
+                 fmax_relaxation_convergence: float = 0.2,
+                 force_threshold_fmax: float = 1.0,
                  compute_gradients: bool = True,
                  ):
 
-        self.relaxer = MultiprocessOptimizer()
+        self.relaxer = MultiprocessOptimizer(
+            fmax_threshold=fmax_relaxation_convergence
+        )
         self.comparator = comparator
         self.band_gap_calculator = BandGapCalculator()
         self.shear_modulus_calculator = ShearModulusCalculator()
-        self.fmax_threshold = fmax_threshold
+        self.fmax_relaxation_convergence = fmax_relaxation_convergence
         self.with_force_threshold = with_force_threshold
+        self.force_threshold_fmax = force_threshold_fmax
         self.constrained_qd = constrained_qd
         self.relax_every_n_generations = relax_every_n_generations
         self.ground_state_data = {
@@ -114,29 +118,29 @@ class CrystalEvaluator:
 
         kill_list = self.check_atoms_in_cellbounds(list_of_atoms, cellbounds)
         # todo: filter evaluations to remove killed_individuals
-        if n_relaxation_steps == 0:
-            structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
-            fitness_scores, forces, relaxation_results = self.batch_compute_energy(
-                list_of_structures=structures,
-                really_relax=really_relax,
-                n_steps=n_relaxation_steps,
-            )
-            # forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
-            #                    range(len(relaxation_results))])
-            updated_atoms = list_of_atoms
-        else:
-            relaxation_results, updated_atoms = self.relaxer.relax(list_of_atoms, n_relaxation_steps)
-            energies = - np.array([relaxation_results[i]["trajectory"]["energies"] for i in range(len(relaxation_results))])
-            structures = [relaxation_results[i]["final_structure"] for i in range(len(relaxation_results))]
-            if self.with_force_threshold:
-                forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
-                            range(len(relaxation_results))])
+        # if n_relaxation_steps == 0:
+        #     structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
+        #     fitness_scores, forces, relaxation_results = self.batch_compute_energy(
+        #         list_of_structures=structures,
+        #         really_relax=really_relax,
+        #         n_steps=n_relaxation_steps,
+        #     )
+        #     # forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
+        #     #                    range(len(relaxation_results))])
+        #     updated_atoms = list_of_atoms
+        # else:
+        relaxation_results, updated_atoms = self.relaxer.relax(list_of_atoms, n_relaxation_steps)
+        energies = - np.array([relaxation_results[i]["trajectory"]["energies"] for i in range(len(relaxation_results))])
+        structures = [relaxation_results[i]["final_structure"] for i in range(len(relaxation_results))]
+        if self.with_force_threshold:
+            forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
+                        range(len(relaxation_results))])
 
-                fitness_scores = self._apply_force_threshold(energies, forces)
-            else:
-                fitness_scores = energies
-                forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
-                            range(len(relaxation_results))])
+            fitness_scores = self._apply_force_threshold(energies, forces)
+        else:
+            fitness_scores = energies
+            forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
+                        range(len(relaxation_results))])
 
 
         band_gaps, band_gap_gradients = self._batch_band_gap_compute(structures)
@@ -255,8 +259,8 @@ class CrystalEvaluator:
         fitnesses = np.array(energies)
         if self.with_force_threshold:
             fmax = self.compute_fmax(forces)
-            indices_above_threshold = np.argwhere(fmax > self.fmax_threshold).reshape(-1)
-            forces_above_threshold = -1 * np.abs(fmax[fmax > self.fmax_threshold] - self.fmax_threshold)
+            indices_above_threshold = np.argwhere(fmax > self.force_threshold_fmax).reshape(-1)
+            forces_above_threshold = -1 * np.abs(fmax[fmax > self.force_threshold_fmax] - self.force_threshold_fmax)
             np.put(fitnesses, indices_above_threshold, forces_above_threshold)
         return fitnesses
 
