@@ -86,11 +86,12 @@ class CrystalSystem:
         elif isinstance(self._start_generator, pyxtal):
             generate_structure = True
             while generate_structure:
+                species, counts = np.unique(Atoms(self.atom_numbers_to_optimise).get_chemical_symbols(), return_counts=True)
                 self._start_generator.from_random(
                     dim=3,
                     group=np.random.choice(self._possible_pyxtal_modes),
-                    species=["Ti", "O"],
-                    numIons=[self._atom_count["Ti"], self._atom_count["O"]]
+                    species=species.tolist(),
+                    numIons=counts.tolist()
                 )
                 generate_structure = not self._start_generator.valid
             individual = AseAtomsAdaptor.get_atoms(self._start_generator.to_pymatgen())
