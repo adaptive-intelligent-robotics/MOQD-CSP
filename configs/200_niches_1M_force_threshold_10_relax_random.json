@@ -60,18 +60,18 @@
       "band_gap",
       "shear_modulus"
     ],
-    "number_of_relaxation_steps": 0,
+    "number_of_relaxation_steps": 10,
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
     "seed": false,
     "profiling": false,
     "force_threshold": true
   },
-  "experiment_tag": "200_niches_1M_force_threshold_pyxtal",
+  "experiment_tag": "200_niches_1M_force_threshold_random_10_relax",
   "fitness_min_max_values": [
     -10,
     10
   ],
   "fitler_comparison_data_for_n_atoms": 24,
-  "start_generator": "pyxtal"
+  "start_generator": "random"
 }

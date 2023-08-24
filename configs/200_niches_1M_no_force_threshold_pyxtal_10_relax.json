@@ -60,14 +60,14 @@
       "band_gap",
       "shear_modulus"
     ],
-    "number_of_relaxation_steps": 0,
+    "number_of_relaxation_steps": 10,
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
     "seed": false,
     "profiling": false,
-    "force_threshold": true
+    "force_threshold": false
   },
-  "experiment_tag": "200_niches_1M_force_threshold_pyxtal",
+  "experiment_tag": "200_niches_1M_no_force_threshold_pyxtal_10_relax",
   "fitness_min_max_values": [
     -10,
     10
