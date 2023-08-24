@@ -7,6 +7,7 @@ import time
 from dataclasses import asdict
 
 import psutil
+import torch
 from ase.ga.ofp_comparator import OFPComparator
 
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
@@ -41,7 +42,7 @@ class HiddenPrints:
 def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
     # print(experiment_parameters)
     ### CODE TO RUN
-
+    print(torch.cuda.is_available())
     with HiddenPrints(hide_prints=hide_prints):
         print(f"Memory before object creation {psutil.virtual_memory()[3] / 1000000000}")
 
