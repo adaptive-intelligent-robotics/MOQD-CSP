@@ -38,7 +38,7 @@
 # import multiprocessing
 import gc
 import pickle
-from typing import List
+from typing import List, Dict, Union
 
 import numpy as np
 import psutil
@@ -95,6 +95,9 @@ class CVT:
         configuration_counter = 0
 
         relax_every_n_generations = run_parameters["relax_every_n_generations"] if "relax_every_n_generations" in run_parameters.keys() else 0
+        relax_archive_every_n_generations = run_parameters[
+            "relax_archive_every_n_generations"] if "relax_archive_every_n_generations" in run_parameters.keys() else 0
+
         generation_counter = 0
         rambar = tqdm(total=100, desc='ram%', position=0)
         rambar.n = psutil.virtual_memory().percent
@@ -125,6 +128,9 @@ class CVT:
                 with open(f'{experiment_directory_path}/starting_population.pkl', 'wb') as file:
                     pickle.dump(population, file)
 
+            elif (relax_archive_every_n_generations != 0) and (generation_counter % relax_archive_every_n_generations == 0) and (generation_counter != 0):
+                population = [species.x for species in list(archive.values())]
+
             else:  # variation/selection loop
                 keys = list(archive.keys())
                 rand1 = np.random.randint(len(keys), size=run_parameters['batch_size'])
@@ -151,11 +157,14 @@ class CVT:
             # Check population for isolated atoms
             # population = [individual for individual in population if self.graph_converter( on_isolated_atoms="warn") is not None]
 
-            if relax_every_n_generations != 0:
-                if generation_counter % relax_every_n_generations == 0:
+            if relax_every_n_generations != 0 and (relax_archive_every_n_generations == 0):
+                if generation_counter // relax_every_n_generations == 0:
                     n_relaxation_steps = 100
                 else:
                     n_relaxation_steps = run_parameters["number_of_relaxation_steps"]
+            elif (relax_archive_every_n_generations != 0) and (generation_counter % relax_archive_every_n_generations == 0):
+                n_relaxation_steps = 10
+
             else:
                 n_relaxation_steps = run_parameters["number_of_relaxation_steps"]
 
@@ -233,6 +242,9 @@ class CVT:
 
         return experiment_directory_path, archive
 
+
+    def get_all_individuals_from_archive(self, archive):
+        pass
 
     def compute(self,
                 number_of_niches,
