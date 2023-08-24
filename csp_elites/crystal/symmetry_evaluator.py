@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Tuple, Union
 
 import imageio
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
 from PIL import ImageDraw
@@ -13,6 +14,9 @@ from PIL import Image
 from ase import Atoms
 from ase.ga.ofp_comparator import OFPComparator
 from ase.spacegroup import get_spacegroup
+from matplotlib import cm
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from pymatgen.analysis.structure_matcher import StructureMatcher
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
@@ -21,6 +25,7 @@ from pymatgen.vis.structure_vtk import StructureVis
 
 from csp_elites.map_elites.archive import Archive
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
+from csp_elites.utils.plot import load_centroids, get_voronoi_finite_polygons_2d
 
 
 class SpaceGroups(str, Enum):
@@ -381,16 +386,29 @@ class SymmetryEvaluation:
                 )
 
                 if distance_to_known_structure <= 0.1 or structure_matcher_match or str(reference_id) in symmetry_match:
+
+                    if reference_data is not None:
+                        ref_band_gap = reference_data[reference_id]["band_gap"]
+                        ref_shear_modulus = reference_data[reference_id]["shear_modulus"]
+                        ref_energy = reference_data[reference_id]["energy"]
+                        ref_centroid = reference_data[reference_id]["shear_modulus"]
+                        error_to_bg = (ref_band_gap - archive.descriptors[structure_index][0]) / ref_band_gap * 100
+                        error_to_shear = (ref_shear_modulus - archive.descriptors[structure_index][1]) / ref_shear_modulus * 100
+                        error_to_energy = (ref_energy - archive.fitnesses[structure_index]) / ref_energy * 100
+                        distance_in_bd_space = np.sqrt((ref_band_gap - archive.descriptors[structure_index][0]) ** 2 + (ref_shear_modulus - archive.descriptors[structure_index][1]) **2)
+                    else:
+                        error_to_energy, error_to_bg, error_to_shear, ref_centroid, distance_in_bd_space = None, None, None, None, None
                     summary_row["matches"].append(
                         {reference_id:
                             {
                                 "symmetry": reference_id in symmetry_match,
                                 "structure_matcher": structure_matcher_match,
                                 "distance": distance_to_known_structure,
-                                "centroid": reference_data[reference_id]["centroid_id"]  if reference_data is not None else None,
-                                "reference energy": reference_data[reference_id]["energy"] if reference_data is not None else None,
-                                "reference_band_gap": reference_data[reference_id]["band_gap"]  if reference_data is not None else None,
-                                "reference_shear_modulus": reference_data[reference_id]["shear_modulus"]  if reference_data is not None else None,
+                                "centroid": ref_centroid,
+                                "reference_energy_perc_difference": error_to_energy,
+                                "reference_band_gap_perc_difference": error_to_bg,
+                                "reference_shear_modulus_perc_difference": error_to_shear,
+                                "euclidian_distance_in_bd_space": distance_in_bd_space,
 
                             }
                         }
@@ -409,7 +427,7 @@ class SymmetryEvaluation:
         df = pd.concat([df, df["match_info"].apply(pd.Series)], axis=1)
         df.drop(columns="match_info", inplace=True)
         df.to_csv(directory_to_save / "ind_executive_summary.csv")
-        print()
+        return df
 
     def _assign_confidence_level_in_match(self, match_dictionary):
         pass
@@ -486,6 +504,111 @@ class SymmetryEvaluation:
             image_path = temp_dir / plot_name
             image_path.unlink()
         temp_dir.rmdir()
+
+    def group_structures_by_symmetry(self, archive: Archive, experiment_directory_path: pathlib.Path):
+        structures = archive.get_individuals_as_structures()
+        groups = self.structure_matcher.group_structures(structures)
+        ids_by_group = []
+        for group in groups:
+            id_in_group = []
+            for el in group:
+                match = [structures[i] == el for i in range(len(structures))]
+                match_id = np.argwhere(np.array(match)).reshape(-1)
+                id_in_group.append(archive.centroid_ids[match_id[0]])
+            ids_by_group.append(id_in_group)
+
+        all_centroids = load_centroids(centroid_full_path)
+
+        color_indices = np.linspace(0, 1, len(ids_by_group))
+        cmap = cm.get_cmap('rainbow')
+        list_of_colors = []
+        for color_id in color_indices:
+            list_of_colors.append(cmap(color_id)[:3])
+
+        self.plot_2d_groups_of_structures(
+            centroids=all_centroids,
+            list_of_centroid_groups=ids_by_group,
+            list_of_colors=list_of_colors,
+            directory_string=experiment_directory_path,
+            filename="cvt_by_structure_similarity",
+            minval=[0, 0],
+            maxval=[100, 120],
+        )
+
+    def plot_2d_groups_of_structures(self,
+            centroids: np.ndarray,
+            list_of_centroid_groups: List[int],
+            list_of_colors: List[str],
+            minval: np.ndarray,
+            maxval: np.ndarray,
+            target_centroids: Optional[np.ndarray] = None,
+            directory_string: Optional[str] = None,
+            filename: Optional[str] = "cvt_plot",
+            axis_labels: List[str] = ["band_gap", "shear_modulus"],
+
+    ) -> Tuple[Optional[Figure], Axes]:
+        """Adapted from wdac plot 2d cvt centroids function"""
+        num_descriptors = centroids.shape[1]
+        if num_descriptors != 2:
+            raise NotImplementedError("Grid plot supports 2 descriptors only for now.")
+
+        my_cmap = cm.viridis
+
+        # set the parameters
+        font_size = 12
+        params = {
+            "axes.labelsize": font_size,
+            "legend.fontsize": font_size,
+            "xtick.labelsize": font_size,
+            "ytick.labelsize": font_size,
+            "text.usetex": False,
+            "figure.figsize": [10, 10],
+        }
+
+        mpl.rcParams.update(params)
+
+        # create the plot object
+        fig, ax = plt.subplots(facecolor="white", edgecolor="white")
+
+        if len(np.array(minval).shape) == 0 and len(np.array(maxval).shape) == 0:
+            ax.set_xlim(minval, maxval)
+            ax.set_ylim(minval, maxval)
+        else:
+            ax.set_xlim(minval[0], maxval[0])
+            ax.set_ylim(minval[1], maxval[1])
+
+        ax.set(adjustable="box", aspect="equal")
+
+        # create the regions and vertices from centroids
+        regions, vertices = get_voronoi_finite_polygons_2d(centroids)
+
+        # fill the plot with contours
+        for i, region in enumerate(regions):
+            polygon = vertices[region]
+            ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
+            if target_centroids is not None:
+                if centroids[i] in np.array(target_centroids):
+                    ax.fill(*zip(*polygon), edgecolor="red", facecolor="white", lw=4)
+        # fill the plot with the colors
+        for group_id, group in enumerate(list_of_centroid_groups):
+            for idx in group:
+                region = regions[idx]
+                polygon = vertices[region]
+                ax.fill(*zip(*polygon), alpha=0.8, color=list_of_colors[group_id])
+                ax.annotate(group_id, (centroids[idx, 0], centroids[idx, 1]))
+        np.set_printoptions(2)
+        # aesthetic
+        ax.set_xlabel(f"BD1 - {axis_labels[0]}")
+        ax.set_ylabel(f"BD2 - {axis_labels[1]}")
+
+        ax.set_title("MAP-Elites Grid")
+        ax.set_aspect("equal")
+
+        if directory_string is None:
+            plt.show()
+        else:
+            plt.savefig(f"{directory_string}/{filename}.png", format="png")
+        return fig, ax
 
 
 

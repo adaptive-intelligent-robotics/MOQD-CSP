@@ -46,8 +46,8 @@ class MultiprocessOptimizer:
 
         v = None
         Nsteps = 0
-        dt = np.full(len(list_of_atoms) , 0.1)
-        a = np.full(len(list_of_atoms) , 0.1)
+        dt = np.full(len(list_of_atoms), 0.1)
+        a = np.full(len(list_of_atoms), 0.1)
         n_relax_steps = np.zeros(len(list_of_atoms) )
         fmax_over_time = []
 
@@ -201,8 +201,8 @@ class MultiprocessOptimizer:
 
 if __name__ == '__main__':
 
-    n_relaxation_steps = 10
-    number_of_individuals = 100
+    n_relaxation_steps = 5
+    number_of_individuals = 1
     batch_size = 10
 
     optimizer = MultiprocessOptimizer(batch_size=batch_size)
@@ -215,21 +215,21 @@ if __name__ == '__main__':
     atoms_2.calc = CHGNetCalculator()
     atoms_2.rattle(0.1)
 
-    list_of_atoms = [copy.deepcopy(atoms_2) for i in range(number_of_individuals)]
+    # list_of_atoms = [copy.deepcopy(atoms_2) for i in range(number_of_individuals)]
+    #
+    # if n_relaxation_steps != 0:
+    #     time_ase = 0
+    #     for i in tqdm(range(number_of_individuals)):
+    #         ref_atoms = copy.deepcopy(atoms_2)
+    #         tic = time.time()
+    #         optimizer_ref.relax(ref_atoms, steps=n_relaxation_steps, verbose=False)
+    #         time_ase += time.time() - tic
+    #     print(f"{n_relaxation_steps} relaxation steps ase: {time_ase}")
+    #
+    # tic = time.time()
 
-    if n_relaxation_steps != 0:
-        time_ase = 0
-        for i in tqdm(range(number_of_individuals)):
-            ref_atoms = copy.deepcopy(atoms_2)
-            tic = time.time()
-            optimizer_ref.relax(ref_atoms, steps=n_relaxation_steps, verbose=False)
-            time_ase += time.time() - tic
-        print(f"{n_relaxation_steps} relaxation steps ase: {time_ase}")
-
-    tic = time.time()
-
-    relax_results, atoms_returned = optimizer.relax(list_of_atoms, n_relaxation_steps=n_relaxation_steps, verbose=False)
-    print(f"Time for {number_of_individuals} individual relax {time.time() - tic}")
+    # relax_results, atoms_returned = optimizer.relax(list_of_atoms, n_relaxation_steps=n_relaxation_steps, verbose=False)
+    # print(f"Time for {number_of_individuals} individual relax {time.time() - tic}")
 
 
     structure = [copy.deepcopy(AseAtomsAdaptor.get_structure(atoms_2)) for _ in range(number_of_individuals)]
