@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 from ase import Atoms
 from ase.ga.offspring_creator import OffspringCreator
@@ -5,6 +7,8 @@ from ase.ga.utilities import atoms_too_close, atoms_too_close_two_sets, closest_
 from chgnet.model import CHGNet, CHGNetCalculator
 from mp_api.client import MPRester
 from pymatgen.io.ase import AseAtomsAdaptor
+
+from csp_elites.map_elites.elites_utils import Species
 
 
 class GradientMutation(OffspringCreator):
@@ -114,10 +118,7 @@ class GradientMutation(OffspringCreator):
 
 
 class DQDMutation(OffspringCreator):
-    """An implementation of the rattle mutation as described in:
-
-    R.L. Johnston Dalton Transactions, Vol. 22,
-    No. 22. (2003), pp. 4193-4207
+    """
 
     Parameters:
 
@@ -154,10 +155,10 @@ class DQDMutation(OffspringCreator):
 
         self.descriptor = 'DQDMutation'
         self.min_inputs = 1
-        self.model = CHGNet.load()
+        # self.model = CHGNet.load()
         self.learning_rate = learning_rate
         self.rattle_prop = rattle_prop
-    def get_new_individual(self, parents):
+    def get_new_individual(self, parents: List[Species]):
         f = parents[0]
 
         indi = self.mutate(f)
@@ -165,14 +166,19 @@ class DQDMutation(OffspringCreator):
             return indi, 'mutation: DQD rattle'
 
         indi = self.initialize_individual(f, indi)
-        indi.info['data']['parents'] = [f.info['confid']]
+
+        if "confid" in f.x["info"].keys():
+            indi.info['data']['parents'] = [f.x["info"]['confid']]
+        else:
+            indi.info['data']['parents'] = [None]
 
         return self.finalize_individual(indi), 'mutation: DQD rattle'
 
-    def mutate(self, atoms):
+    def mutate(self, species: Species):
         """Does the actual mutation."""
-        prediction = self.model.predict_structure(AseAtomsAdaptor.get_structure(atoms))
-        forces = prediction["f"]
+        atoms = Atoms.fromdict(species.x)
+        forces = self.normalize_gradient(species.fitness_gradient)
+        descriptor_gradients = np.array([self.normalize_gradient(grad) for grad in species.descriptor_gradients])
 
         # N = len(atoms) if self.n_top is None else self.n_top
         N = len(atoms)
@@ -191,7 +197,13 @@ class DQDMutation(OffspringCreator):
         while too_close and count < maxcount:
             count += 1
             pos = pos_ref.copy()
-            coeficients = np.random.default_rng().normal(loc=0.0, scale=self.learning_rate, size=(1))
+            coeficients = np.random.default_rng().normal(loc=0.0, scale=self.learning_rate, size=(3))
+
+            gradient_mutation_amount = \
+                coeficients[0] * forces + \
+                coeficients[1] * descriptor_gradients[0] + \
+                coeficients[2] * descriptor_gradients[1]
+
             ok = False
             # too_close = False
             # pos += coeficients[0] * forces
@@ -200,7 +212,7 @@ class DQDMutation(OffspringCreator):
                 if self.rng.rand() < self.rattle_prop:
                     ok = True
                     # r = self.rng.rand(3)
-                    pos[select] += coeficients[0] * forces[select]
+                    pos[select] += coeficients[0] * gradient_mutation_amount[select]
 
             if not ok:
                 # Nothing got rattled
@@ -213,13 +225,13 @@ class DQDMutation(OffspringCreator):
                 too_close = atoms_too_close_two_sets(top, slab, self.blmin)
 
         if count == maxcount:
-            del prediction
             return None
 
-        del prediction
         mutant = slab + top
         return mutant
 
+    def normalize_gradient(self, gradient: np.ndarray):
+        return (gradient- np.min(gradient)) / (np.max(gradient) - np.min(gradient))
 
 
 

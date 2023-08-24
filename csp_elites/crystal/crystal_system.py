@@ -12,8 +12,9 @@ from chgnet.graph import CrystalGraphConverter
 from pymatgen.io.ase import AseAtomsAdaptor
 from pyxtal import pyxtal
 
-from csp_elites.crystal.force_mutation import GradientMutation
+from csp_elites.crystal.force_mutation import GradientMutation, DQDMutation
 from csp_elites.crystal.materials_data_model import StartGenerators
+from csp_elites.map_elites.elites_utils import Species
 
 
 class CrystalSystem:
@@ -27,6 +28,7 @@ class CrystalSystem:
                  compound_formula: Optional[str] = None,
                  start_generator: StartGenerators = StartGenerators.RANDOM,
                  alternative_operators: Optional[List[Tuple[str, int]]] = None,
+                 learning_rate: float = 0.001,
                  ):
 
         self.volume = volume
@@ -46,7 +48,8 @@ class CrystalSystem:
         self._permutation_mutation = None
         self._gradient_mutation = None
         self._rattle_mutation = None
-        self.operators = self._initialise_operators(operator_probabilities) if alternative_operators is None else self._initialise_alternative_operators(alternative_operators)
+        self._dqd_mutation = None
+        self.operators = self._initialise_operators(operator_probabilities) if alternative_operators is None else self._initialise_alternative_operators(alternative_operators, learning_rate)
         self.compound_formula = compound_formula
         self._possible_pyxtal_modes =  [
             1,  8, 11, 12, 14, 15, 25, 35, 59, 60, 61, 62, 63, 74, 87, 136,
@@ -133,7 +136,7 @@ class CrystalSystem:
             [self._cut_and_splice, self._soft_mutation, self._strain_mutation, self._permutation_mutation],
         )
 
-    def _initialise_alternative_operators(self, alternative_operators):
+    def _initialise_alternative_operators(self, alternative_operators, learning_rate: float):
         closest_distances = closest_distances_generator(atom_numbers=self.atomic_numbers, ratio_of_covalent_radii=self.ratio_of_covalent_radii)
         operator_probabilities = []
         operator_list = []
@@ -146,9 +149,17 @@ class CrystalSystem:
             elif operator == "gradient":
                 self._gradient_mutation = GradientMutation(
                     blmin=closest_distances, n_top=len(self.atomic_numbers),
-                    learning_rate=0.01
+                    learning_rate=learning_rate
                 )
                 operator_list.append(self._gradient_mutation)
+            elif operator == "dqd":
+                print(f"I'm doing DQD with {learning_rate} lr")
+                self._dqd_mutation = DQDMutation(
+                    blmin=closest_distances, n_top=len(self.atomic_numbers),
+                    learning_rate=learning_rate
+                )
+                operator_list.append(self._dqd_mutation)
+
             else:
                 raise NotImplementedError
 
@@ -159,6 +170,15 @@ class CrystalSystem:
             operator_list,
         )
 
+    def mutate(self, parents: List[Species]) -> Atoms:
+        mutator = self.operators.get_operator()
+        if isinstance(mutator, DQDMutation):
+            new_individual, _ = mutator.get_new_individual(parents)
+        else:
+            new_individual, _ = mutator.get_new_individual(
+                [Atoms.fromdict(parents[0].x), Atoms.fromdict(parents[1].x)])
+
+        return new_individual
     def update_operator_scaling_volumes(self, population: List[Atoms]):
         if self._strain_mutation in self.operators.oplist:
             self._strain_mutation.update_scaling_volume(population, w_adapt=0.5, n_adapt=4)

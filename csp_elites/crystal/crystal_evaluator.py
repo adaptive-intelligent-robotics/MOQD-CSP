@@ -13,7 +13,9 @@ from megnet.utils.models import load_model as megnet_load_model
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 
+from csp_elites.crystal.band_gap_calculator import BandGapCalculator
 from csp_elites.crystal.materials_data_model import BandGapEnum, MaterialProperties
+from csp_elites.crystal.shear_modulus_calculator import ShearModulusCalculator
 from csp_elites.map_elites.elites_utils import Species
 from csp_elites.parallel_relaxation.structure_optimizer import MultiprocessOptimizer
 
@@ -26,13 +28,15 @@ class CrystalEvaluator:
                  with_force_threshold=True,
                  constrained_qd=False,
                  relax_every_n_generations=0,
+                 fmax_threshold: float = 0.2,
+                 compute_gradients: bool = True,
                  ):
 
         self.relaxer = MultiprocessOptimizer()
         self.comparator = comparator
-        self.band_gap_calculator = matgl.load_model("MEGNet-MP-2019.4.1-BandGap-mfi")
-        self.shear_modulus_calculator = megnet_load_model("logG_MP_2018")
-        self.fmax_threshold = 0.2
+        self.band_gap_calculator = BandGapCalculator()
+        self.shear_modulus_calculator = ShearModulusCalculator()
+        self.fmax_threshold = fmax_threshold
         self.with_force_threshold = with_force_threshold
         self.constrained_qd = constrained_qd
         self.relax_every_n_generations = relax_every_n_generations
@@ -41,24 +45,29 @@ class CrystalEvaluator:
             "band_gap": 25.6479144096375,
             "shear_modulus": 53.100777,
         }
+        self.compute_gradients = compute_gradients
 
     def compute_band_gap(self, relaxed_structure, bandgap_type: Optional[
         BandGapEnum] = BandGapEnum.SCAN):
         if bandgap_type is None:
             for i, method in ((0, "PBE"), (1, "GLLB-SC"), (2, "HSE"), (3, "SCAN")):
                 graph_attrs = torch.tensor([i])
-                bandgap = self.band_gap_calculator.predict_structure(
-                    structure=relaxed_structure, state_feats=graph_attrs
+                bandgap, gradients = self.band_gap_calculator.compute_band_gap(
+                    structure=relaxed_structure, band_gap_type=graph_attrs,
+                    compute_gradients=self.compute_gradients
                 )
 
                 print(f"{method} band gap")
                 print(f"\tRelaxed STO = {float(bandgap):.2f} eV.")
         else:
             graph_attrs = torch.tensor([bandgap_type.value])
-            bandgap = self.band_gap_calculator.predict_structure(
-                structure=relaxed_structure, state_feats=graph_attrs
+
+            bandgap, gradients = self.band_gap_calculator.compute_band_gap(
+                structure=relaxed_structure, band_gap_type=graph_attrs,
+                compute_gradients=self.compute_gradients
             )
-        return float(bandgap) * 25 # TODO CHANGE THIS
+
+        return float(bandgap) * 25, gradients # TODO CHANGE THIS
 
     def compare_to_target_structures(self,
                                      generated_structures: List[Atoms],
@@ -97,8 +106,7 @@ class CrystalEvaluator:
 
     def batch_compute_fitness_and_bd(self,
                                      list_of_atoms: List[Dict[str, np.ndarray]], cellbounds: CellBounds,
-                                     really_relax: bool, behavioral_descriptor_names: List[
-                MaterialProperties],
+                                     really_relax: bool, behavioral_descriptor_names: List[MaterialProperties],
                                      n_relaxation_steps: int,
 
                                      ):
@@ -109,11 +117,13 @@ class CrystalEvaluator:
         # todo: filter evaluations to remove killed_individuals
         if n_relaxation_steps == 0:
             structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
-            fitness_scores, relaxation_results = self.batch_compute_energy(
+            fitness_scores, forces, relaxation_results = self.batch_compute_energy(
                 list_of_structures=structures,
                 really_relax=really_relax,
                 n_steps=n_relaxation_steps,
             )
+            # forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
+            #                    range(len(relaxation_results))])
             updated_atoms = list_of_atoms
         else:
             relaxation_results, updated_atoms = self.relaxer.relax(list_of_atoms, n_relaxation_steps)
@@ -127,8 +137,8 @@ class CrystalEvaluator:
             else:
                 fitness_scores = energies
 
-        band_gaps = self._batch_band_gap_compute(structures)
-        shear_moduli = self._batch_shear_modulus_compute(structures)
+        band_gaps, band_gap_gradients = self._batch_band_gap_compute(structures)
+        shear_moduli, shear_moduli_gradients = self._batch_shear_modulus_compute(structures)
 
         new_atoms_dict = [atoms.todict() for atoms in updated_atoms]
 
@@ -149,20 +159,33 @@ class CrystalEvaluator:
         del relaxation_results
         del structures
         del list_of_atoms
-        return updated_atoms, new_atoms_dict, fitness_scores, descriptors, kill_list
 
-    def batch_create_species(self, list_of_atoms, fitness_scores, descriptors, kill_list):
+        if self.compute_gradients:
+            all_gradients = [(forces[i], band_gap_gradients[i], shear_moduli_gradients[i]) for i in range(len(new_atoms_dict))]
+        else:
+            all_gradients=None
+        return updated_atoms, new_atoms_dict, fitness_scores, descriptors, kill_list, all_gradients
+
+    def batch_create_species(self, list_of_atoms, fitness_scores, descriptors, kill_list, all_gradients):
         # todo: here could do dict -> atoms conversion
 
         kill_list = np.array(kill_list)
         individual_indexes_to_add = np.arange(len(list_of_atoms))[~kill_list]
         species_list = []
+
         for i in individual_indexes_to_add:
+            if self.compute_gradients:
+                fitness_gradient = all_gradients[i][0]
+                descriptor_gradients = all_gradients[i][1:]
+            else:
+                fitness_gradient, descriptor_gradients = None, None
+
             new_specie = Species(
                 x=list_of_atoms[i],
                 fitness=fitness_scores[i],
-                desc=tuple([descriptors[j][i] for j in range(len(descriptors))])
-                # desc=(descriptors[0][i], descriptors[1][i])
+                desc=tuple([descriptors[j][i] for j in range(len(descriptors))]),
+                fitness_gradient=fitness_gradient,
+                descriptor_gradients=descriptor_gradients,
             )
             species_list.append(new_specie)
 
@@ -171,14 +194,23 @@ class CrystalEvaluator:
     def _batch_band_gap_compute(self, list_of_structures: List[Structure]):
         # structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
         band_gaps = []
+        all_gradients = []
         for i in range(len(list_of_structures)):
-            band_gap = self.compute_band_gap(relaxed_structure=list_of_structures[i])
+            band_gap, gradients = self.compute_band_gap(relaxed_structure=list_of_structures[i])
             band_gaps.append(band_gap)
-        return band_gaps
+            all_gradients.append(gradients)
+        return band_gaps, all_gradients
 
     def _batch_shear_modulus_compute(self, list_of_structures: List[Structure]):
-        shear_moduli = 10 ** self.shear_modulus_calculator.predict_structures(list_of_structures).ravel()
-        return shear_moduli
+        shear_moduli  = []
+        all_gradients = []
+        for structure in list_of_structures:
+            shear_modulus, gradients = self.shear_modulus_calculator.compute_shear_modulus(
+                structure, compute_gradients=self.compute_gradients,
+            )
+            shear_moduli.append(shear_modulus)
+            all_gradients.append(gradients)
+        return shear_moduli, all_gradients
 
     def check_atoms_in_cellbounds(self, list_of_atoms: List[Atoms],
                                   cellbounds: CellBounds,
@@ -215,7 +247,7 @@ class CrystalEvaluator:
             fitnesses = self._apply_force_threshold(energies, forces)
         else:
             fitnesses = -1 * energies
-        return fitnesses, reformated_output
+        return fitnesses, forces, reformated_output
 
     def _apply_force_threshold(self, energies: np.ndarray, forces: np.ndarray) -> np.ndarray:
         fitnesses = np.array(energies)

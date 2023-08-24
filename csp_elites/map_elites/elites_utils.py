@@ -49,11 +49,13 @@ from csp_elites.crystal.materials_data_model import MaterialProperties
 
 
 class Species:
-    def __init__(self, x, desc, fitness, centroid=None):
+    def __init__(self, x, desc, fitness, centroid=None, fitness_gradient=None, descriptor_gradients= None):
         self.x = x
         self.desc = desc
         self.fitness = fitness
         self.centroid = centroid
+        self.fitness_gradient = fitness_gradient
+        self.descriptor_gradients = descriptor_gradients
 
 def __centroids_filename(
     k: int, dim: int, bd_names: List[MaterialProperties],
