@@ -36,6 +36,11 @@ class CrystalEvaluator:
         self.with_force_threshold = with_force_threshold
         self.constrained_qd = constrained_qd
         self.relax_every_n_generations = relax_every_n_generations
+        self.ground_state_data = {
+            "energy": 9.407774,
+            "band_gap": 25.6479144096375,
+            "shear_modulus": 53.100777,
+        }
 
     def compute_band_gap(self, relaxed_structure, bandgap_type: Optional[
         BandGapEnum] = BandGapEnum.SCAN):
@@ -131,10 +136,13 @@ class CrystalEvaluator:
             new_atoms_dict[i]["info"] = list_of_atoms[i].info
 
         if self.constrained_qd:
-            forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
-                               range(len(relaxation_results))])
-            distance_to_0_force_normalised_to_100 = self.compute_fmax(forces) * 100 # TODO: change this normalisation
-            descriptors = (band_gaps, shear_moduli, distance_to_0_force_normalised_to_100)
+            distance_to_bg = self.ground_state_data["band_gap"] - np.array(band_gaps)
+            distance_to_shear = self.ground_state_data["shear_modulus"] - shear_moduli
+            descriptors = (distance_to_bg, distance_to_shear)
+            # forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
+            #                    range(len(relaxation_results))])
+            # distance_to_0_force_normalised_to_100 = self.compute_fmax(forces) * 100 # TODO: change this normalisation
+            # descriptors = (band_gaps, shear_moduli, distance_to_0_force_normalised_to_100)
         else:
             descriptors = (band_gaps, shear_moduli)
 
