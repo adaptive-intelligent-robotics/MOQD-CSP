@@ -41,10 +41,10 @@
   "maximum_evaluations": 100000,
   "cvt_run_parameters": {
     "cvt_samples": 25000,
-    "batch_size": 10,
+    "batch_size": 20,
     "random_init": 0,
-    "random_init_batch": 10,
-    "dump_period": 10,
+    "random_init_batch": 100,
+    "dump_period": 100,
     "parallel": true,
     "cvt_use_cache": true,
     "bd_minimum_values": [

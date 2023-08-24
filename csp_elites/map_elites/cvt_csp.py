@@ -37,6 +37,7 @@
 #| had knowledge of the CeCILL license and that you accept its terms.
 # import multiprocessing
 import gc
+import pickle
 from typing import List, Optional
 
 import numpy as np
@@ -76,6 +77,8 @@ class CVT:
         experiment_directory_path = make_experiment_folder(experiment_label)
         log_file = open(f'{experiment_directory_path}/{experiment_label}.dat', 'w')
         memory_log = open(f'{experiment_directory_path}/memory_log.dat', 'w')
+        with open(f'{experiment_directory_path}/experiment_parameters.dat', 'wb') as file:
+            pickle.dump(run_parameters, file)
 
         # create the CVT
         kdt = self._initialise_kdt_and_centroids(

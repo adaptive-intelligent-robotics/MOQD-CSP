@@ -9,14 +9,14 @@ import numpy as np
 from ase import Atoms
 # from chgnet.graph import CrystalGraphConverter
 from chgnet.model import CHGNet
-from chgnet.model.dynamics import TrajectoryObserver, CHGNetCalculator, StructOptimizer
+from chgnet.model.dynamics import TrajectoryObserver # CHGNetCalculator, StructOptimizer
 from mp_api.client import MPRester
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 
 from csp_elites.parallel_relaxation.fire import OverridenFire
-from csp_elites.parallel_relaxation.overloaded_chgnet import OverloadCHGnet
-from csp_elites.parallel_relaxation.structure_to_use import atoms_to_test
+# from csp_elites.parallel_relaxation.overloaded_chgnet import OverloadCHGnet
+# from csp_elites.parallel_relaxation.structure_to_use import atoms_to_test
 from csp_elites.parallel_relaxation.unit_cell_filter import AtomsFilterForRelaxation
 
 
@@ -164,52 +164,52 @@ class MultiprocessOptimizer:
         return (nsteps >= max_steps) or forces_mask.all()
 
 
-if __name__ == '__main__':
-
-    optimizer = MultiprocessOptimizer()
-
-    optimizer_ref = StructOptimizer()
-    # optimizer.relax(atoms_for_ref, fmax=0.1, steps=10)
-
-    with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
-        one_structure = mpr.get_structure_by_material_id("mp-1840", final=True)
-    atoms_2 = AseAtomsAdaptor.get_atoms(one_structure)
-    atoms_2.calc = CHGNetCalculator()
-    atoms_2.rattle(0.1)
-    # atoms_2_copy = copy.deepcopy(atoms_2)
-    # atoms_2_copy.calc = CHGNetCalculator()
-
-
-    # relax_results, atoms_returned = optimizer.relax([atoms_to_test], n_relaxation_steps=100, verbose=True)
-
-
-
-    # ase_times = []
-    # marta_times = []
-    # for i in range(10):
-    #     tic = time.time()
-    #     optimizer_ref.relax(copy.deepcopy(atoms_to_test), fmax=0.2, steps=n_relax_steps)
-    #     ase_times.append(time.time() - tic)
-    #     # print(f"Time for ase relax {time.time() - tic}")
-    #
-    #     tic = time.time()
-    #     relax_results, atoms_returned = optimizer.relax([copy.deepcopy(atoms_to_test)],
-    #                                                     n_relaxation_steps=n_relax_steps,
-    #                                                     verbose=True)
-    #     marta_times.append(time.time() - tic)
-    #
-    #
-    # print(f"ASE mean {np.array(ase_times).mean()}")
-    # print(f"Marta mean {np.array(marta_times).mean()}")
-
-
-    tic = time.time()
-    n_relax_steps = 1
-    optimizer.batch_size = 10
-    relax_results, atoms_returned = optimizer.relax([atoms_to_test], n_relaxation_steps=n_relax_steps, verbose=True)
-    print(f"Time for 100 individual relax {time.time() - tic}")
-
-    #
+# if __name__ == '__main__':
+#
+#     optimizer = MultiprocessOptimizer()
+#
+#     optimizer_ref = StructOptimizer()
+#     # optimizer.relax(atoms_for_ref, fmax=0.1, steps=10)
+#
+#     with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
+#         one_structure = mpr.get_structure_by_material_id("mp-1840", final=True)
+#     atoms_2 = AseAtomsAdaptor.get_atoms(one_structure)
+#     atoms_2.calc = CHGNetCalculator()
+#     atoms_2.rattle(0.1)
+#     # atoms_2_copy = copy.deepcopy(atoms_2)
+#     # atoms_2_copy.calc = CHGNetCalculator()
+#
+#
+#     # relax_results, atoms_returned = optimizer.relax([atoms_to_test], n_relaxation_steps=100, verbose=True)
+#
+#
+#
+#     # ase_times = []
+#     # marta_times = []
+#     # for i in range(10):
+#     #     tic = time.time()
+#     #     optimizer_ref.relax(copy.deepcopy(atoms_to_test), fmax=0.2, steps=n_relax_steps)
+#     #     ase_times.append(time.time() - tic)
+#     #     # print(f"Time for ase relax {time.time() - tic}")
+#     #
+#     #     tic = time.time()
+#     #     relax_results, atoms_returned = optimizer.relax([copy.deepcopy(atoms_to_test)],
+#     #                                                     n_relaxation_steps=n_relax_steps,
+#     #                                                     verbose=True)
+#     #     marta_times.append(time.time() - tic)
+#     #
+#     #
+#     # print(f"ASE mean {np.array(ase_times).mean()}")
+#     # print(f"Marta mean {np.array(marta_times).mean()}")
+#
+#
+#     tic = time.time()
+#     n_relax_steps = 1
+#     optimizer.batch_size = 10
+#     relax_results, atoms_returned = optimizer.relax([atoms_to_test], n_relaxation_steps=n_relax_steps, verbose=True)
+#     print(f"Time for 100 individual relax {time.time() - tic}")
+#
+#     #
     # tic = time.time()
     # relax_results, atoms_returned = optimizer.relax(
     #     [copy.deepcopy(atoms_to_test), copy.deepcopy(atoms_to_test), copy.deepcopy(atoms_to_test),
