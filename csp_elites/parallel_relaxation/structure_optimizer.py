@@ -43,21 +43,23 @@ class MultiprocessOptimizer:
     def relax(self, list_of_atoms: List[Atoms], n_relaxation_steps: int, verbose: bool = False):
         self.reset_timings()
         all_relaxed = False
-
+        # for i in range(len(list_of_atoms)):
+        #     list_of_atoms[i].calc = CHGNetCalculator()
         v = None
         Nsteps = 0
         dt = np.full(len(list_of_atoms), 0.1)
         a = np.full(len(list_of_atoms), 0.1)
-        n_relax_steps = np.zeros(len(list_of_atoms) )
+        n_relax_steps = np.zeros(len(list_of_atoms))
         fmax_over_time = []
 
-
-        trajectories = defaultdict(list)
+        converged_atoms = list(np.zeros(len(list_of_atoms)))
+        atom_list_indices = list(np.arange(len(list_of_atoms)))
+        original_cells = np.array([atoms.cell.array for atoms in list_of_atoms])
+        # trajectories = defaultdict(list)
         while not all_relaxed:
             forces, energies, stresses = self._evaluate_list_of_atoms(list_of_atoms)
 
             tic = time.time()
-            original_cells = np.array([atoms.cell.array for atoms in list_of_atoms])
 
             forces, _ = self.atoms_filter.get_forces_exp_cell_filter(
                 forces_from_chgnet=forces,
@@ -97,24 +99,61 @@ class MultiprocessOptimizer:
                                                                 np.array([1] * len(list_of_atoms)))
                 self.timings["vectorised"]["relax3_update_positions"] = time.time() - tic
                 tic = time.time()
-                converged_mask = self.overriden_optimizer.converged(forces, fmax)
+                converged_mask = self.overriden_optimizer.converged(forces, self.fmax_threshold)
+                converged_atoms_indices = np.argwhere(converged_mask).reshape(-1)
+
+                if bool(list(converged_atoms_indices)):
+                    true_indices = []
+                    for atom_index in converged_atoms_indices:
+                        true_atom_index = atom_list_indices[atom_index]
+                        true_indices.append(true_atom_index)
+                        converged_atoms[true_atom_index] = list_of_atoms[atom_index]
+
+                    list_of_atoms = [el for i, el in enumerate(list_of_atoms) if i not in converged_atoms_indices]
+                    atom_list_indices = [el for i, el in enumerate(atom_list_indices) if
+                                     i not in converged_atoms_indices]
+                    v = np.array([el for i, el in enumerate(v) if
+                                     i not in converged_atoms_indices])
+
+                    dt = np.array([el for i, el in enumerate(dt) if
+                                     i not in converged_atoms_indices])
+                    a = np.array([el for i, el in enumerate(a) if
+                                     i not in converged_atoms_indices])
+                    n_relax_steps = np.array([el for i, el in enumerate(n_relax_steps) if
+                                     i not in converged_atoms_indices])
+                    original_cells = np.array([el for i, el in enumerate(original_cells) if
+                                     i not in converged_atoms_indices])
+
+                    # list_of_atoms, atom_list_indices, v, dt, a, n_relax_steps, original_cells = list_of_atoms_1, atom_list_indices_1, v_1, dt_1, a_1, n_relax_steps_1, original_cells_1
+
                 Nsteps += 1
                 all_relaxed = self._end_relaxation(Nsteps, n_relaxation_steps, converged_mask)
+                if all_relaxed:
+                    if list_of_atoms:
+                        remaining_indices = atom_list_indices
+                        for atom_index, atom_object in zip(remaining_indices, list_of_atoms):
+                            # true_atom_index = atom_list_indices[atom_index]
+                            converged_atoms[atom_index] = atom_object
+                    list_of_atoms = converged_atoms
+
                 self.timings["vectorised"]["check_convergence"] = time.time() - tic
-            trajectories["forces"].append(forces)
-            trajectories["energies"].append(energies)
-            trajectories["stresses"].append(stresses)
+
+            # trajectories["forces"].append(forces)
+            # trajectories["energies"].append(energies)
+            # trajectories["stresses"].append(stresses)
 
         tic = time.time()
         final_structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
+        if n_relaxation_steps != 0:
+            forces, energies, stresses = self._evaluate_list_of_atoms(list_of_atoms)
         reformated_output = []
         for i in range(len(final_structures)):
             reformated_output.append(
                 {"final_structure": final_structures[i],
                  "trajectory": {
-                     "energies":trajectories["energies"][-1][i],
-                     "forces": trajectories["forces"][-1][i],
-                     "stresses": trajectories["stresses"][-1][i],
+                     "energies": energies[i],
+                     "forces": forces[i],
+                     "stresses": stresses[i],
                  }
                 }
             )
@@ -200,8 +239,7 @@ class MultiprocessOptimizer:
 
 
 if __name__ == '__main__':
-
-    n_relaxation_steps = 5
+    n_relaxation_steps = 150
     number_of_individuals = 1
     batch_size = 10
 
@@ -211,69 +249,85 @@ if __name__ == '__main__':
 
     with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
         one_structure = mpr.get_structure_by_material_id("mp-1840", final=True)
-    atoms_2 = AseAtomsAdaptor.get_atoms(one_structure)
-    atoms_2.calc = CHGNetCalculator()
-    atoms_2.rattle(0.1)
+        two_structure = mpr.get_structure_by_material_id("mp-1840", final=True)
+        three_structure = mpr.get_structure_by_material_id("mp-1840", final=True)
 
-    # list_of_atoms = [copy.deepcopy(atoms_2) for i in range(number_of_individuals)]
-    #
+
+    atoms_2 = AseAtomsAdaptor.get_atoms(one_structure)
+    atoms_3 = AseAtomsAdaptor.get_atoms(two_structure)
+    atoms_2.rattle(0.3)
+    atoms_3.rattle(0.1)
+    # assert (atoms_3.get_positions() == atoms_2.get_positions()).all()
+    # atoms_2.calc = CHGNetCalculator()
+    # atoms_3.calc = CHGNetCalculator()
+    # atoms_2.rattle(0.1)
+
+    # optimizer_ref.relax(atoms_2, steps=n_relaxation_steps, verbose=True, fmax=0.2)
+    # atoms_list = [atoms_2, atoms_3, copy.deepcopy(atoms_2), copy.deepcopy(atoms_3), copy.deepcopy(atoms_2),
+    #  copy.deepcopy(atoms_3), copy.deepcopy(atoms_2)]
+
+    atoms_list = [atoms_2, atoms_3, copy.deepcopy(atoms_2), copy.deepcopy(atoms_3)]
+    optimizer.relax(atoms_list, n_relaxation_steps=n_relaxation_steps, verbose=True)
+
+
     # if n_relaxation_steps != 0:
     #     time_ase = 0
     #     for i in tqdm(range(number_of_individuals)):
     #         ref_atoms = copy.deepcopy(atoms_2)
     #         tic = time.time()
-    #         optimizer_ref.relax(ref_atoms, steps=n_relaxation_steps, verbose=False)
+    #         optimizer_ref.relax(ref_atoms, steps=n_relaxation_steps, verbose=True, fmax=0.2)
     #         time_ase += time.time() - tic
     #     print(f"{n_relaxation_steps} relaxation steps ase: {time_ase}")
-    #
+    # #
     # tic = time.time()
 
-    # relax_results, atoms_returned = optimizer.relax(list_of_atoms, n_relaxation_steps=n_relaxation_steps, verbose=False)
+    # list_of_atoms = [copy.deepcopy(atoms_3) for i in range(number_of_individuals)]
+    # relax_results, atoms_returned = optimizer.relax(list_of_atoms, n_relaxation_steps=n_relaxation_steps, verbose=True)
     # print(f"Time for {number_of_individuals} individual relax {time.time() - tic}")
 
 
-    structure = [copy.deepcopy(AseAtomsAdaptor.get_structure(atoms_2)) for _ in range(number_of_individuals)]
-    tic = time.time()
-    optimizer.model.predict_structure(structure, batch_size=batch_size)
-    print(f"Time for chgnet object only {time.time() - tic}")
+    # structure = [copy.deepcopy(AseAtomsAdaptor.get_structure(atoms_2)) for _ in range(number_of_individuals)]
+    # tic = time.time()
+    # optimizer.model.predict_structure(structure, batch_size=batch_size)
+    # print(f"Time for chgnet object only {time.time() - tic}")
 
-    tic = time.time()
-    structures = [structure] if isinstance(structure, Structure) else structure
-    graphs = [optimizer.model.graph_converter(struct) for struct in structures]
-
-    optimizer.model.predict_graph(
-        graphs,
-        task="efs",
-        return_atom_feas=False,
-        return_crystal_feas=False,
-        batch_size=batch_size,
-    )
-    print(f"Time for chgnet  only {time.time() - tic}")
-
-
-    tic = time.time()
-    optimizer._evaluate_list_of_atoms(structures)
-    print(f"Time for evaluate fn {time.time() - tic}")
-
-
-    # initialise new model
-    model = CHGNet.load()
-    structure = [copy.deepcopy(AseAtomsAdaptor.get_structure(atoms_2)) for _ in range(number_of_individuals)]
-    tic = time.time()
-    model.predict_structure(structure, batch_size=batch_size)
-    print(f"Time for chgnet new model object only {time.time() - tic}")
-
-    tic = time.time()
-    structures = [structure] if isinstance(structure, Structure) else structure
-    graphs = [model.graph_converter(struct) for struct in structures]
-
-    model.predict_graph(
-        graphs,
-        task="efsm",
-        return_atom_feas=False,
-        return_crystal_feas=False,
-        batch_size=batch_size,
-    )
-    print(f"Time for chgnet new model objectonly {time.time() - tic}")
+    # tic = time.time()
+    # structures = [structure] if isinstance(structure, Structure) else structure]
+    # graphs = [optimizer.model.graph_converter(struct) for struct in structures]
+    #
+    # optimizer.model.predict_graph(
+    #     graphs,
+    #     task="efs",
+    #     return_atom_feas=False,
+    #     return_crystal_feas=False,
+    #     batch_size=batch_size,
+    # )
+    # print(f"Time for chgnet  only {time.time() - tic}")
+    #
+    #
+    # tic = time.time()
+    # optimizer._evaluate_list_of_atoms(structures)
+    # print(f"Time for evaluate fn {time.time() - tic}")
+    #
+    #
+    # # initialise new model
+    # model = CHGNet.load()
+    # structure = [copy.deepcopy(AseAtomsAdaptor.get_structure(atoms_2)) for _ in range(number_of_individuals)]
+    # tic = time.time()
+    # model.predict_structure(structure, batch_size=batch_size)
+    # print(f"Time for chgnet new model object only {time.time() - tic}")
+    #
+    # tic = time.time()
+    # structures = [structure] if isinstance(structure, Structure) else structure
+    # graphs = [model.graph_converter(struct) for struct in structures]
+    #
+    # model.predict_graph(
+    #     graphs,
+    #     task="efsm",
+    #     return_atom_feas=False,
+    #     return_crystal_feas=False,
+    #     batch_size=batch_size,
+    # )
+    # print(f"Time for chgnet new model objectonly {time.time() - tic}")
 
     print()
