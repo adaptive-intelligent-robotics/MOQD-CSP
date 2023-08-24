@@ -38,7 +38,7 @@
 # import multiprocessing
 import gc
 import pickle
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 import psutil
@@ -46,13 +46,12 @@ from ase import Atoms
 from chgnet.graph import CrystalGraphConverter
 from matplotlib import pyplot as plt
 from pymatgen.io.ase import AseAtomsAdaptor
-# from numba import jit, prange
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
 
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
-from csp_elites.map_elites.elites_utils import cvt, save_archive, evaluate, add_to_archive, \
+from csp_elites.map_elites.elites_utils import cvt, save_archive, add_to_archive, \
     write_centroids, make_experiment_folder, Species, evaluate_parallel
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 from csp_elites.utils.plot import load_archive_from_pickle
@@ -129,6 +128,8 @@ class CVT:
                 rand1 = np.random.randint(len(keys), size=run_parameters['batch_size'])
                 rand2 = np.random.randint(len(keys), size=run_parameters['batch_size'])
 
+                print(rand1)
+                print(rand2)
                 for n in range(0, run_parameters['batch_size']):
                     # parent selection
                     x = archive[keys[rand1[n]]]
@@ -138,10 +139,12 @@ class CVT:
                         [Atoms.fromdict(x.x), Atoms.fromdict(y.x)])
                     if z is None:
                         print(" z is none bug")
+
+                    elif self.graph_converter(AseAtomsAdaptor.get_structure(z), on_isolated_atoms="warn") is None:
+                        print("graph is None")
                     else:
-                        if self.graph_converter(AseAtomsAdaptor.get_structure(z), on_isolated_atoms="warn") is not None:
-                            z = z.todict()
-                            population += [z]
+                        z = z.todict()
+                        population += [z]
 
             # Check population for isolated atoms
             # population = [individual for individual in population if self.graph_converter( on_isolated_atoms="warn") is not None]
@@ -161,6 +164,7 @@ class CVT:
                 behavioral_descriptor_names=run_parameters["behavioural_descriptors"],
                 n_relaxation_steps=n_relaxation_steps
             )
+
             if population is not None:
                 self.crystal_system.update_operator_scaling_volumes(population=population_as_atoms)
                 del population_as_atoms

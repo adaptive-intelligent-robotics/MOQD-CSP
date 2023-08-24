@@ -3,24 +3,21 @@ import pathlib
 import pickle
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
 
+import matplotlib as mpl
 import numpy as np
 from matplotlib import pyplot as plt, cm
-# from jax import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
-import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.spatial import Voronoi
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
 
 from csp_elites.map_elites.elites_utils import make_hashable
-# from qdax.utils.plotting import get_voronoi_finite_polygons_2d
-
-
 from csp_elites.utils.asign_target_values_to_centroids import \
-    compute_centroids_for_target_solutions, reassign_data_from_pkl_to_new_centroids
+    reassign_data_from_pkl_to_new_centroids
+
 if TYPE_CHECKING:
     from csp_experiments.run_experiment import ExperimentParameters
 

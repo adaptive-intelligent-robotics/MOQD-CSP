@@ -9,7 +9,6 @@ from csp_elites.map_elites.elites_utils import make_hashable
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 
 
-
 # from csp_qdax.pymap_elites_csp.plot import convert_fitness_and_ddescriptors_to_plotting_format, \
 #     plot_2d_map_elites_repertoire_marta
 # from csp_qdax.pymap_elites_csp.plot import load_centroids, plot_2d_map_elites_repertoire_marta, \

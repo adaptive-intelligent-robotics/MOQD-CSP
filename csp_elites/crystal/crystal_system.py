@@ -1,5 +1,6 @@
 from typing import List, Dict, Tuple, Optional
 
+import numpy as np
 from ase import Atoms
 from ase.ga.cutandsplicepairing import CutAndSplicePairing
 from ase.ga.offspring_creator import OperationSelector
@@ -7,17 +8,12 @@ from ase.ga.soft_mutation import SoftMutation
 from ase.ga.standardmutations import StrainMutation, PermutationMutation, RattleMutation
 from ase.ga.startgenerator import StartGenerator
 from ase.ga.utilities import CellBounds, closest_distances_generator
-import numpy as np
 from chgnet.graph import CrystalGraphConverter
 from pymatgen.io.ase import AseAtomsAdaptor
 from pyxtal import pyxtal
 
-from csp_elites.crystal.materials_data_model import StartGenerators
 from csp_elites.crystal.force_mutation import GradientMutation
-
-
-# from jax import jit
-# from numba import prange, jit
+from csp_elites.crystal.materials_data_model import StartGenerators
 
 
 class CrystalSystem:

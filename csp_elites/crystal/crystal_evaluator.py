@@ -1,28 +1,22 @@
 import warnings
-from math import sqrt
-from multiprocessing.managers import BaseManager
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, List, Dict
 
 import matgl
 import numpy as np
-from chgnet.model.dynamics import TrajectoryObserver
-from megnet.utils.models import load_model as megnet_load_model
 import torch
 from ase import Atoms
-from ase.calculators.singlepoint import SinglePointCalculator
-from ase.ga import set_raw_score
+from ase.build import niggli_reduce
 from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.utilities import CellBounds
 from matplotlib import pyplot as plt
-# from numba import jit, njit, prange
+from megnet.utils.models import load_model as megnet_load_model
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 from csp_elites.crystal.materials_data_model import BandGapEnum, MaterialProperties
 from csp_elites.map_elites.elites_utils import Species
 from csp_elites.parallel_relaxation.structure_optimizer import MultiprocessOptimizer
-from ase.build import niggli_reduce
+
 warnings.simplefilter("ignore")
 
 

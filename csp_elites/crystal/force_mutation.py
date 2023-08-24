@@ -1,8 +1,7 @@
 import numpy as np
 from ase import Atoms
-from ase.calculators.lammpslib import convert_cell
 from ase.ga.offspring_creator import OffspringCreator
-from ase.ga.utilities import gather_atoms_by_tag, atoms_too_close, atoms_too_close_two_sets
+from ase.ga.utilities import atoms_too_close, atoms_too_close_two_sets
 from chgnet.model import CHGNet, CHGNetCalculator
 from mp_api.client import MPRester
 from pymatgen.io.ase import AseAtomsAdaptor

@@ -1,15 +1,6 @@
 from __future__ import annotations
 
-import warnings
-from functools import partial
-from typing import Tuple, List
-
 import numpy as np
-from ase import Atoms
-from ase.optimize import FIRE
-from ase.optimize.optimize import Optimizer
-from ase.stress import voigt_6_to_full_3x3_stress, full_3x3_to_voigt_6_stress
-
 
 
 class OverridenFire:

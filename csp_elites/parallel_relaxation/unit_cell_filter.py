@@ -3,15 +3,15 @@ from typing import List
 import numpy as np
 from ase import Atoms
 from ase.cell import Cell
-from ase.constraints import ExpCellFilter
 from ase.stress import voigt_6_to_full_3x3_stress, full_3x3_to_voigt_6_stress
 from scipy.linalg import logm, expm
+
+
 #
 
 class AtomsFilterForRelaxation:
     def __init__(self, scalar_pressure: float = 0):
         self.scalar_pressure = scalar_pressure
-        # self.model = CHGNet.load()
 
     @staticmethod
     def deform_grad(

@@ -41,11 +41,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict
 
-# import numba
 import numpy as np
-from ase import Atom, Atoms
-# from numba import jit
-# from numba.experimental import jitclass
+from ase import Atoms
 from sklearn.cluster import KMeans
 
 from csp_elites.crystal.materials_data_model import MaterialProperties
