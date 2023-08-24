@@ -15,10 +15,10 @@ from csp_experiments.run_experiment import ExperimentParameters
 if __name__ == '__main__':
 
     experiment_labels = [
-        "20230730_19_52_TiO2_200_niches_1M",
+        "20230731_18_08_TiO2_200_niches_1M_force_threshold",
     ]
     centroid_list = [
-        "centroids_200_2_shear_modulus_0_100_band_gap_0_100.dat",
+        "centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat",
     ]
 
     for i, experiment_label in tqdm(enumerate(experiment_labels)):

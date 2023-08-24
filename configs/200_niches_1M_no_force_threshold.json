@@ -65,9 +65,9 @@
     "filter_starting_Structures": 24,
     "seed": false,
     "profiling": false,
-    "force_threshold": true
+    "force_threshold": false
   },
-  "experiment_tag": "200_niches_1M_force_threshold_pyxtal",
+  "experiment_tag": "200_niches_1M_no_force_threshold_pyxtal",
   "fitness_min_max_values": [
     -10,
     10

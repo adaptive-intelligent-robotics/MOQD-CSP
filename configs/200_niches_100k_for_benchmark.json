@@ -60,7 +60,7 @@
       "band_gap",
       "shear_modulus"
     ],
-    "number_of_relaxation_steps": 0,
+    "number_of_relaxation_steps": 10,
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
     "seed": false,
