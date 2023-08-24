@@ -1,6 +1,7 @@
 import os
 import pathlib
 from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
 from typing import List, Dict, Optional, Tuple, Union
 
@@ -22,6 +23,8 @@ from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.vis.structure_vtk import StructureVis
+import matplotlib.colors as mcolors
+
 
 from csp_elites.map_elites.archive import Archive
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
@@ -32,10 +35,35 @@ class SpaceGroups(str, Enum):
     PYMATGEN = "pymatgen"
     SPGLIB = "spglib"
 
-class ConfidenceLevels(str, Enum):
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
+class ConfidenceLevels(int, Enum):
+    GOLD = 4
+    HIGH = 3
+    MEDIUM = 2
+    LOW = 1
+    NO_MATCH = 0
+
+    @staticmethod
+    def get_string(confidence_level):
+        confidence_dictionary = {
+            ConfidenceLevels.GOLD: "gold",
+            ConfidenceLevels.HIGH: "high",
+            ConfidenceLevels.MEDIUM: "medium",
+            ConfidenceLevels.LOW: "low",
+            ConfidenceLevels.NO_MATCH: "no match"
+        }
+        return confidence_dictionary[confidence_level]
+
+class PlottingMode(str, Enum):
+    MP_REFERENCE_VIEW = "mp_reference_view"
+    ARCHIVE_MATCHES_VIEW = "archive_matches_view"
+@dataclass
+class PlottingMatches:
+    centroid_index: List[int]
+    mp_reference: List[str]
+    confidence_level: List[ConfidenceLevels]
+    euclidian_distance: List[float]
+    descriptors: List[np.ndarray]
+    plotting_mode: PlottingMode
 
 
 class SymmetryEvaluation:
@@ -45,7 +73,8 @@ class SymmetryEvaluation:
         tolerance: float = 0.1,
         maximum_number_of_atoms_in_reference: int = 24,
         number_of_atoms_in_system: int = 24,
-        filter_for_experimental_structures: bool = True
+        filter_for_experimental_structures: bool = True,
+        reference_data_path: Optional[pathlib.Path] = None
     ):
         self.known_structures_docs = \
             self.initialise_reference_structures(
@@ -64,9 +93,8 @@ class SymmetryEvaluation:
                                    recalculate=False)
         self.structure_viewer = StructureVis(show_polyhedron=False, show_bonds=True)
         self.structure_matcher = StructureMatcher()
-
-        # self.fitness_threshold = fitness_threshold
-
+        self.fingerprint_distance_threshold = 0.1
+        self.reference_data = self._load_reference_data_path(reference_data_path)
 
     def initialise_reference_structures(self, formula: str = "TiO2", max_number_of_atoms: int=12, experimental:bool = True):
         docs, atom_objects = get_all_materials_with_formula(formula)
@@ -170,7 +198,7 @@ class SymmetryEvaluation:
         else:
             reference_string = "with_ref" if against_reference else ""
             plt.savefig(save_directory / f"ind_symmetries_histogram_{reference_string}.png", format="png")
-
+        plt.clf()
     def save_structure_visualisations(
         self, archive: Archive, structure_indices: List[int], directory_to_save: pathlib.Path,
         file_tag: str, save_primitive: bool = False,
@@ -249,110 +277,19 @@ class SymmetryEvaluation:
             )
         return spacegroup_to_reference_dictionary
 
-    def compare_archive_to_references(
-        self, archive: Archive, indices_to_compare: List[int], directory_to_save: pathlib.Path,
-    ) -> pd.DataFrame:
-        logging_data = []
-        summary_data = []
-
-        symmetry_to_material_id_dict = self.make_symmetry_to_material_id_dict()
-        for structure_index in indices_to_compare:
-            structure = AseAtomsAdaptor.get_structure(archive.individuals[structure_index])
-            primitive_structure = SpacegroupAnalyzer(structure).find_primitive()
-            summary_row = {
-                "individual_confid": archive.individuals[structure_index].info["confid"],
-                "centroid_index": archive.centroid_ids[structure_index],
-                "fitness": archive.fitnesses[structure_index],
-                "descriptors": archive.descriptors[structure_index],
-                "number_of_cells_in_primitive_cell": len(primitive_structure),
-                "symmetry_match": [],
-                "structure_matcher": {},
-                "distances": {},
-                "by_reference": None,
-            }
-
-            spacegroup = self.get_spacegroup_for_individual(archive.individuals[structure_index])
-            symmetry_match = symmetry_to_material_id_dict[spacegroup] if spacegroup in symmetry_to_material_id_dict.keys() else None
-            new_row = {
-                "individual_confid": archive.individuals[structure_index].info["confid"],
-                "centroid_index": archive.centroid_ids[structure_index],
-                "symmetry": spacegroup,
-                "symmetry_match": symmetry_match,
-                "fitness": archive.fitnesses[structure_index],
-                "descriptors": archive.descriptors[structure_index],
-                "number_of_cells_in_primitive_cell": len(primitive_structure),
-                "matches": {},
-                "distances": {},
-
-            }
-            if symmetry_match is not None:
-                summary_row["symmetry_match"] = new_row["symmetry_match"]
-
-            for known_structure in self.known_structures_docs:
-                reference_id = str(known_structure.material_id)
-                structure_matcher_match = self.structure_matcher.fit(structure, known_structure.structure)
-                new_row["matches"][str(known_structure.material_id)+"_match"] = structure_matcher_match
-
-                if len(primitive_structure) == len(known_structure.structure):
-                    primitive_structure.sort()
-                    known_structure.structure.sort()
-                    distance_to_known_structure = float(self.comparator._compare_structure(
-                            AseAtomsAdaptor.get_atoms(primitive_structure),
-                            AseAtomsAdaptor.get_atoms(known_structure.structure)))
-                else:
-                    distance_to_known_structure = 1
-
-                new_row["distances"][
-                    reference_id + "_distance_to"] = distance_to_known_structure
-
-                if distance_to_known_structure <= 0.15 or structure_matcher_match:
-                    summary_row["distances"][reference_id] = distance_to_known_structure
-                    summary_row["structure_matcher"][reference_id] = structure_matcher_match
-
-
-            # list_of_reference_matches = np.unique(list(summary_row["structure_matcher"]) + summary_row["symmetry_match"] + summary_row["distances"])
-
-            logging_data.append(new_row)
-            df_test = pd.DataFrame([{el: True for el in summary_row["symmetry_match"]}, summary_row["structure_matcher"], summary_row["distances"]])
-            df_test.index = [f"Symmetry", f"StructureMatcher", f"Distances"]
-
-            summary_row["by_reference"] = df_test.to_dict()
-            summary_data.append(summary_row)
-
-        df = pd.DataFrame(logging_data)
-        df = pd.concat([df, df["matches"].apply(pd.Series)], axis=1)
-        df.drop(columns="matches", inplace=True)
-        df = pd.concat([df, df["distances"].apply(pd.Series)], axis=1)
-        df.drop(columns="distances", inplace=True)
-        df.to_csv(str(directory_to_save / "ind_symmetry_statistic.csv"))
-
-        summary_df = pd.DataFrame(summary_data)
-        summary_df = pd.concat([summary_df, summary_df["by_reference"].apply(pd.Series)], axis=1)
-        summary_df.drop(columns="by_reference", inplace=True)
-        summary_df.drop(columns="symmetry_match", inplace=True)
-        summary_df.drop(columns="structure_matcher", inplace=True)
-        summary_df.drop(columns="distances", inplace=True)
-        for column_name in summary_df.columns:
-            if "mp-" in column_name:
-                unpacked_reference = summary_df[column_name].apply(pd.Series)
-                unpacked_reference.drop(columns=0, inplace=True)
-                unpacked_reference = unpacked_reference.add_prefix(f"{column_name}_")
-                summary_df = pd.concat([summary_df, unpacked_reference], axis=1)
-                summary_df.drop(columns=column_name, inplace=True)
-        summary_df.to_csv(str(directory_to_save / "ind_top_summary_statistics.csv"))
-
-        return df, summary_df
-
-    def executive_summary_csv(
-        self, archive: Archive, indices_to_compare: List[int], directory_to_save: pathlib.Path,
-            reference_data_path: Optional[pathlib.Path] = None
-    ) -> pd.DataFrame:
+    def _load_reference_data_path(self, reference_data_path: Optional[pathlib.Path]):
         if reference_data_path is not None:
             reference_data = pd.read_csv(reference_data_path)
             reference_data.index = reference_data["Unnamed: 0"].to_list()
             reference_data.drop(columns="Unnamed: 0", inplace=True)
         else:
             reference_data = None
+        return reference_data
+    def executive_summary_csv(
+        self, archive: Archive, indices_to_compare: List[int], directory_to_save: pathlib.Path,
+            reference_data_path: Optional[pathlib.Path] = None
+    ) -> pd.DataFrame:
+        reference_data = self._load_reference_data_path(reference_data_path)
         summary_data = []
 
         symmetry_to_material_id_dict = self.make_symmetry_to_material_id_dict()
@@ -386,12 +323,11 @@ class SymmetryEvaluation:
                 )
 
                 if distance_to_known_structure <= 0.1 or structure_matcher_match or str(reference_id) in symmetry_match:
-
                     if reference_data is not None:
                         ref_band_gap = reference_data[reference_id]["band_gap"]
                         ref_shear_modulus = reference_data[reference_id]["shear_modulus"]
                         ref_energy = reference_data[reference_id]["energy"]
-                        ref_centroid = reference_data[reference_id]["shear_modulus"]
+                        ref_centroid = reference_data[reference_id]["centroid_id"]
                         error_to_bg = (ref_band_gap - archive.descriptors[structure_index][0]) / ref_band_gap * 100
                         error_to_shear = (ref_shear_modulus - archive.descriptors[structure_index][1]) / ref_shear_modulus * 100
                         error_to_energy = (ref_energy - archive.fitnesses[structure_index]) / ref_energy * 100
@@ -427,10 +363,85 @@ class SymmetryEvaluation:
         df = pd.concat([df, df["match_info"].apply(pd.Series)], axis=1)
         df.drop(columns="match_info", inplace=True)
         df.to_csv(directory_to_save / "ind_executive_summary.csv")
-        return df
+        return df, individuals_with_matches
 
-    def _assign_confidence_level_in_match(self, match_dictionary):
-        pass
+    def matches_for_plotting(self, individuals_with_matches):
+        centroids_with_matches = []
+        mp_reference_of_matches = []
+        confidence_levels = []
+        euclidian_distance_to_matches = []
+        all_descriptors = []
+        true_centroid_indices = []
+        for i, individual in enumerate(individuals_with_matches):
+            sorted_matches = sorted(individual["matches"], key=lambda x: list(x.values())[0][
+                "euclidian_distance_in_bd_space"])
+            match = sorted_matches[0]
+            match_dictionary = list(match.values())[0]
+            centroids_with_matches.append(int(individual["centroid_index"]))
+            mp_reference_of_matches.append(list(match.keys())[0])
+            confidence_levels.append(self._assign_confidence_level_in_match(match_dictionary, individual["centroid_index"]))
+            euclidian_distance_to_matches.append(match_dictionary["euclidian_distance_in_bd_space"])
+            all_descriptors.append(individual["descriptors"])
+            true_centroid_indices.append(match_dictionary["centroid"])
+
+        plotting_matches_from_archive = PlottingMatches(
+            centroids_with_matches,
+            mp_reference_of_matches,
+            confidence_levels,
+            euclidian_distance_to_matches,
+            all_descriptors,
+            PlottingMode.ARCHIVE_MATCHES_VIEW,
+        )
+
+        unique_matches, counts = np.unique(mp_reference_of_matches, return_counts=True)
+
+        ref_centroids_with_matches = []
+        ref_mp_reference_of_matches = []
+        ref_confidence_levels = []
+        ref_euclidian_distance_to_matches = []
+        ref_all_descriptors = []
+        for match_mp_ref in unique_matches:
+            match_indices = np.argwhere(np.array(mp_reference_of_matches) == match_mp_ref).reshape(-1)
+            confidence_levels_for_ref = [confidence_levels[i].value for i in match_indices]
+            if len(np.argwhere(np.array(confidence_levels_for_ref) == max(confidence_levels_for_ref))) == 0:
+                best_match_index = np.argwhere(confidence_levels_for_ref == max(confidence_levels_for_ref))[0]
+            else:
+                euclidian_distances = [euclidian_distance_to_matches[i] for i in match_indices]
+                best_match_index = np.argwhere(euclidian_distances == min(euclidian_distances)).reshape(-1)[0]
+
+            index_in_archive_list = match_indices[best_match_index]
+            ref_centroids_with_matches.append(int(true_centroid_indices[index_in_archive_list]))
+            ref_mp_reference_of_matches.append(match_mp_ref)
+            ref_confidence_levels.append(confidence_levels[index_in_archive_list])
+            ref_euclidian_distance_to_matches.append(euclidian_distance_to_matches[index_in_archive_list])
+            ref_all_descriptors.append(all_descriptors[index_in_archive_list])
+
+        plotting_matches_from_mp = PlottingMatches(
+            ref_centroids_with_matches,
+            ref_mp_reference_of_matches,
+            ref_confidence_levels,
+            ref_euclidian_distance_to_matches,
+            ref_all_descriptors,
+            PlottingMode.MP_REFERENCE_VIEW)
+
+        return plotting_matches_from_archive, plotting_matches_from_mp
+
+    def _assign_confidence_level_in_match(self, match_dictionary, centroid_id: int):
+        structure_matcher_match = match_dictionary["structure_matcher"]
+        ff_distance_match = match_dictionary["structure_matcher"] <= self.fingerprint_distance_threshold
+        symmetry_match = match_dictionary["symmetry"]
+        centroid_match = match_dictionary["centroid"] == centroid_id
+
+        if structure_matcher_match:
+            if centroid_match:
+                return ConfidenceLevels.GOLD
+            else:
+                return ConfidenceLevels.HIGH
+        else:
+            if ff_distance_match and symmetry_match:
+                return ConfidenceLevels.MEDIUM
+            else:
+                return ConfidenceLevels.LOW
 
     def _compute_distance(self, structure_to_check: Structure, reference_structure: Structure):
         if len(structure_to_check) == len(reference_structure):
@@ -505,7 +516,7 @@ class SymmetryEvaluation:
             image_path.unlink()
         temp_dir.rmdir()
 
-    def group_structures_by_symmetry(self, archive: Archive, experiment_directory_path: pathlib.Path):
+    def group_structures_by_symmetry(self, archive: Archive, experiment_directory_path: pathlib.Path, centroid_full_path):
         structures = archive.get_individuals_as_structures()
         groups = self.structure_matcher.group_structures(structures)
         ids_by_group = []
@@ -605,12 +616,126 @@ class SymmetryEvaluation:
         ax.set_aspect("equal")
 
         if directory_string is None:
-            plt.show()
+            fig.show()
         else:
-            plt.savefig(f"{directory_string}/{filename}.png", format="png")
+            fig.savefig(f"{directory_string}/{filename}.png", format="png")
+        plt.clf()
+        return fig, ax
+    def plot_matches_mapped_to_references(self,
+        plotting_matches: PlottingMatches,
+        centroids: np.ndarray,
+        minval: np.ndarray,
+        maxval: np.ndarray,
+        centroids_from_archive: Optional[np.ndarray]= None,
+        directory_string: Optional[str] = None,
+        filename: Optional[str] = "cvt_matches_from_archive",
+        axis_labels: List[str] = ["band_gap", "shear_modulus"],
+        ):
+        """Adapted from wdac plot 2d cvt centroids function"""
+        if centroids_from_archive is None:
+            centroids_from_archive = []
+
+        num_descriptors = centroids.shape[1]
+        if num_descriptors != 2:
+            raise NotImplementedError("Grid plot supports 2 descriptors only for now.")
+
+        # my_cmap = cm.viridis
+        my_cmap =cm.get_cmap('inferno', 5)
+
+        # set the parameters
+        font_size = 12
+        params = {
+            "axes.labelsize": font_size,
+            "legend.fontsize": font_size,
+            "xtick.labelsize": font_size,
+            "ytick.labelsize": font_size,
+            "text.usetex": False,
+            "figure.figsize": [10, 10],
+        }
+
+        mpl.rcParams.update(params)
+
+        # create the plot object
+        fig, ax = plt.subplots(facecolor="white", edgecolor="white")
+
+        if len(np.array(minval).shape) == 0 and len(np.array(maxval).shape) == 0:
+            ax.set_xlim(minval, maxval)
+            ax.set_ylim(minval, maxval)
+        else:
+            ax.set_xlim(minval[0], maxval[0])
+            ax.set_ylim(minval[1], maxval[1])
+
+        ax.set(adjustable="box", aspect="equal")
+
+        # create the regions and vertices from centroids
+        regions, vertices = get_voronoi_finite_polygons_2d(centroids)
+
+        colour_dict = {
+            ConfidenceLevels.GOLD: mcolors.TABLEAU_COLORS['tab:purple'],
+            ConfidenceLevels.HIGH: mcolors.TABLEAU_COLORS["tab:green"],
+            ConfidenceLevels.MEDIUM: mcolors.TABLEAU_COLORS["tab:orange"],
+            ConfidenceLevels.LOW: mcolors.TABLEAU_COLORS["tab:red"],
+            ConfidenceLevels.NO_MATCH: mcolors.TABLEAU_COLORS["tab:gray"],
+        }
+
+        # fill the plot with contours
+        target_centroid_ids = np.array(self.reference_data.loc["centroid_id"].array)
+        for i, region in enumerate(regions):
+            polygon = vertices[region]
+            ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
+            if i in target_centroid_ids:
+                ax.fill(*zip(*polygon), edgecolor="gray", facecolor="none", lw=4)
+
+            if (i in centroids_from_archive) and (i not in plotting_matches.centroid_index) and plotting_matches.plotting_mode == PlottingMode.ARCHIVE_MATCHES_VIEW:
+                ax.fill(*zip(*polygon), facecolor=colour_dict[ConfidenceLevels.NO_MATCH], alpha=0.3,
+                        label= ConfidenceLevels.get_string(ConfidenceLevels.NO_MATCH)
+                        )
+
+        for list_index, centroid_index in enumerate(plotting_matches.centroid_index):
+            region = regions[centroid_index]
+            polygon = vertices[region]
+
+
+            ax.fill(*zip(*polygon),
+                    alpha=0.8,
+                    color=colour_dict[plotting_matches.confidence_level[list_index]],
+                    label=ConfidenceLevels.get_string(plotting_matches.confidence_level[list_index]))
+            ax.annotate(plotting_matches.mp_reference[list_index], (centroids[centroid_index, 0], centroids[centroid_index, 1]))
+
+        self.legend_without_duplicate_labels(fig, ax)
+
+        if plotting_matches.plotting_mode == PlottingMode.MP_REFERENCE_VIEW:
+            descriptor_matches = np.array(plotting_matches.descriptors)
+            ref_band_gaps = [self.reference_data.loc["band_gap"][ref] for ref in plotting_matches.mp_reference]
+            ref_shear_moduli = [self.reference_data.loc["shear_modulus"][ref] for ref in plotting_matches.mp_reference]
+            ax.scatter(descriptor_matches[:, 0], descriptor_matches[:, 1], color="gray")
+            ax.scatter(ref_band_gaps, ref_shear_moduli, color="gray")
+            for match_id in range(len(descriptor_matches)):
+                ax.plot([descriptor_matches[match_id][0], ref_band_gaps[match_id]],
+                         [descriptor_matches[match_id][1], ref_shear_moduli[match_id]],
+                'bo', linestyle="--")
+
+        ax.set_xlabel(f"BD1 - {axis_labels[0]}")
+        ax.set_ylabel(f"BD2 - {axis_labels[1]}")
+
+        ax.set_title(f"MAP-Elites Grid {plotting_matches.plotting_mode.value}")
+        ax.set_aspect("equal")
+
+        if directory_string is None:
+            fig.show()
+        else:
+            fig.savefig(f"{directory_string}/{filename}_{plotting_matches.plotting_mode.value}.png", format="png")
+        plt.clf()
         return fig, ax
 
-
+    def legend_without_duplicate_labels(self, fig, ax):
+        """https://stackoverflow.com/questions/19385639/duplicate-items-in-legend-in-matplotlib"""
+        handles, labels = ax.get_legend_handles_labels()
+        unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+        sorting_match = np.array(["gold", "high", "medium", "low", "no match"]) # todo: get this from ConfidenceLevels Enum
+        unique = sorted(unique, key=lambda x: np.argwhere(sorting_match == x[1]).reshape(-1)[0])
+        # ax.legend(*zip(*unique))
+        fig.legend(*zip(*unique))
 
 if __name__ == '__main__':
 
@@ -628,9 +753,31 @@ if __name__ == '__main__':
 
     archive = Archive.from_archive(unrelaxed_archive_location, centroid_filepath=centroid_full_path)
 
-    symmetry_evaluation = SymmetryEvaluation()
-    # symmetry_evaluation.quick_view_structure(archive, structure_number)
-    symmetry_evaluation.executive_summary_csv(archive, list(range(20)), experiment_directory_path, target_data_path)
+    symmetry_evaluation = SymmetryEvaluation(reference_data_path=target_data_path)
+    df, individuals_with_matches = symmetry_evaluation.executive_summary_csv(archive, list(range(len(archive.individuals))), experiment_directory_path, target_data_path)
+
+    plotting_from_archive, plotting_from_mp = symmetry_evaluation.matches_for_plotting(individuals_with_matches)
+
+    symmetry_evaluation.plot_matches_mapped_to_references(
+        plotting_matches=plotting_from_archive,
+        centroids=load_centroids(centroid_full_path),
+        centroids_from_archive=archive.centroid_ids,
+        minval=[0, 0],
+        maxval=[100, 120],
+        directory_string=None,
+    )
+    symmetry_evaluation.plot_matches_mapped_to_references(
+        plotting_matches=plotting_from_mp,
+        centroids=load_centroids(centroid_full_path),
+        centroids_from_archive=archive.centroid_ids,
+        minval=[0, 0],
+        maxval=[100, 120],
+        directory_string=None,
+    )
+
+
+
+
     # symmetry_evaluation.executive_summary_csv(experiment_directory_path / "ind_top_summary_statistics.csv")
     print()
     # symmetry_evaluation.gif_centroid_over_time(

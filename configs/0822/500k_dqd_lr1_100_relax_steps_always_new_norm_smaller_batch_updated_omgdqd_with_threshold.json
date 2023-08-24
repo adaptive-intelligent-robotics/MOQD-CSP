@@ -31,17 +31,17 @@
   "splits": "DUMMY",
   "cellbounds": "DUMMY",
   "operator_probabilities": [
-    0.0,
     0,
-    5.0,
-    5.0
+    0,
+    3.0,
+    2.0
   ],
   "n_behavioural_descriptor_dimensions": 2,
   "number_of_niches": 200,
   "maximum_evaluations": 5000,
   "cvt_run_parameters": {
     "cvt_samples": 25000,
-    "batch_size": 20,
+    "batch_size": 10,
     "random_init": 0.1,
     "random_init_batch": 20,
     "dump_period": 200,
@@ -64,12 +64,22 @@
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
     "seed": false,
-    "profiling": true
+    "profiling": false,
+    "force_threshold": true,
+    "force_threshold_exp_fmax": 5.0,
+    "constrained_qd": false,
+    "relax_every_n_generations": 0,
+    "relax_archive_every_n_generations": 0,
+    "alternative_operators": [
+      ["dqd", 10]
+    ],
+    "dqd": true,
+    "dqd_learning_rate": 1
   },
-  "experiment_tag": "200_niches_for benchmark_100_relax_1_20_batch",
+  "experiment_tag": "500k_lr1_100_relax_steps_always_new_normalisation_batch_10_new_dqd_force_threshold",
   "fitness_min_max_values": [
     6.5,
-    9
+    10
   ],
   "fitler_comparison_data_for_n_atoms": 24,
     "start_generator": "pyxtal"

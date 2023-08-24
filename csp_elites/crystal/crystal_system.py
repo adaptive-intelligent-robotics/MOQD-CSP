@@ -1,3 +1,5 @@
+import json
+import pathlib
 from typing import List, Dict, Tuple, Optional
 
 import numpy as np
@@ -54,12 +56,24 @@ class CrystalSystem:
 
         self.operators = self._initialise_operators(operator_probabilities) if alternative_operators is None else self._initialise_alternative_operators(alternative_operators, learning_rate)
         self.compound_formula = compound_formula
-        self._possible_pyxtal_modes =  [
-            1,  8, 11, 12, 14, 15, 25, 35, 59, 60, 61, 62, 63, 74, 87, 136,
-            141, 156, 186, 189, 194, 205, 227,
-        ]
+        self.main_experiment_directory = pathlib.Path(__file__).parent.parent.parent / "experiments"
+        self._possible_pyxtal_modes = self.load_possible_pyxtal_spacegroups()
 
         self.graph_converter = CrystalGraphConverter()
+
+
+
+    def load_possible_pyxtal_spacegroups(self):
+        if self.compound_formula is None:
+            return [1,  8, 11, 12, 14, 15, 25, 35, 59, 60, 61, 62, 63, 74, 87, 136,
+                    141, 156, 186, 189, 194, 205, 227]
+        else:
+            reference_tag = f"{self.compound_formula}_{len(self.atom_numbers_to_optimise)}"
+            with open(self.main_experiment_directory.parent / "mp_reference_analysis" / reference_tag / f"{reference_tag}_allowed_symmetries.json", "r") as file:
+                valid_spacegroups_for_combination = json.load(file)
+
+            return valid_spacegroups_for_combination
+
 
     def create_one_individual(self, individual_id: Optional[int]):
         if isinstance(self._start_generator, StartGenerator):
@@ -72,11 +86,12 @@ class CrystalSystem:
         elif isinstance(self._start_generator, pyxtal):
             generate_structure = True
             while generate_structure:
+                species, counts = np.unique(Atoms(self.atom_numbers_to_optimise).get_chemical_symbols(), return_counts=True)
                 self._start_generator.from_random(
                     dim=3,
                     group=np.random.choice(self._possible_pyxtal_modes),
-                    species=["Ti", "O"],
-                    numIons=[self._atom_count["Ti"], self._atom_count["O"]]
+                    species=species.tolist(),
+                    numIons=counts.tolist()
                 )
                 generate_structure = not self._start_generator.valid
             individual = AseAtomsAdaptor.get_atoms(self._start_generator.to_pymatgen())

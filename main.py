@@ -60,6 +60,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
             volume=experiment_parameters.volume,
             ratio_of_covalent_radii=experiment_parameters.ratio_of_covalent_radii,
             splits=experiment_parameters.splits,
+            compound_formula=experiment_parameters.system_name,
             operator_probabilities=experiment_parameters.operator_probabilities,
             start_generator=experiment_parameters.start_generator,
             alternative_operators=alternative_operators,
@@ -117,6 +118,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
             bd_names=experiment_parameters.cvt_run_parameters["behavioural_descriptors"],
             bd_minimum_values=experiment_parameters.cvt_run_parameters["bd_minimum_values"],
             bd_maximum_values=experiment_parameters.cvt_run_parameters["bd_maximum_values"],
+            formula=experiment_parameters.system_name,
         )
         centroid_filename = f"{pathlib.Path(experiment_directory_path).parent}{centroid_filename}"
 
