@@ -50,6 +50,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
         experiment_label = \
             f"{current_time_label}_{experiment_parameters.system_name}_{experiment_parameters.experiment_tag}"
 
+        print(experiment_label)
         alternative_operators = experiment_parameters.cvt_run_parameters["alternative_operators"] if "alternative_operators" in experiment_parameters.cvt_run_parameters.keys() else None
         learning_rate = experiment_parameters.cvt_run_parameters["dqd_learning_rate"] if "dqd_learning_rate" in experiment_parameters.cvt_run_parameters.keys() else 0.0001
 
