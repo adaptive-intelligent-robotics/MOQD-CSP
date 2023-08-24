@@ -8,13 +8,6 @@ from sklearn.neighbors import KDTree
 from csp_elites.map_elites.elites_utils import make_hashable
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 
-
-# from csp_qdax.pymap_elites_csp.plot import convert_fitness_and_ddescriptors_to_plotting_format, \
-#     plot_2d_map_elites_repertoire_marta
-# from csp_qdax.pymap_elites_csp.plot import load_centroids, plot_2d_map_elites_repertoire_marta, \
-#     convert_fitness_and_ddescriptors_to_plotting_format
-
-
 def compute_centroids_for_target_solutions(centroids_file: str,
                                            target_data_file: str,
                                            filter_for_number_of_atoms: Optional[int]):
@@ -63,7 +56,7 @@ def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
 
     if filter_for_number_of_atoms is not None:
         for i, atoms in enumerate(individuals):
-            if len(atoms.get_positions()) == 24:
+            if len(atoms.get_positions()) <= filter_for_number_of_atoms:
                 fitnesses_to_enumerate.append(fitnesses[i])
                 formation_energies.append(descriptors[i][0])
                 band_gaps.append(descriptors[i][1])

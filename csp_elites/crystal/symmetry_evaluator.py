@@ -1,12 +1,15 @@
-
+import os
 import pathlib
 from collections import defaultdict
 from enum import Enum
 from typing import List, Dict, Optional, Tuple
 
+import imageio
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from PIL import ImageDraw
+from PIL import Image
 from ase import Atoms
 from ase.ga.ofp_comparator import OFPComparator
 from ase.spacegroup import get_spacegroup
@@ -33,7 +36,7 @@ class SymmetryEvaluation:
         number_of_atoms_in_system: int = 24,
         filter_for_experimental_structures: bool = True
     ):
-        self.known_structures_docs, self.known_atoms = \
+        self.known_structures_docs = \
             self.initialise_reference_structures(
                 formula, maximum_number_of_atoms_in_reference, filter_for_experimental_structures)
         self.material_ids = [self.known_structures_docs[i].material_id for i in range(len(self.known_structures_docs))]
@@ -61,16 +64,14 @@ class SymmetryEvaluation:
                                        (not docs[i].theoretical) and
                                        (len(docs[i].structure) <= max_number_of_atoms)
                                        ]
-            experimetnally_observed_atoms = [AseAtomsAdaptor.get_atoms(docs[i].structure) for i in
-                                             range(len(experimentally_observed))]
-            return experimentally_observed, experimetnally_observed_atoms
+
+            return experimentally_observed
         else:
             references_filtered_for_size = [docs[i] for i in range(len(docs)) if
                                        (len(docs[i].structure) <= max_number_of_atoms)
                                        ]
-            atoms_filtered_for_size = [AseAtomsAdaptor.get_atoms(docs[i].structure) for i in
-                                             range(len(references_filtered_for_size))]
-            return references_filtered_for_size, atoms_filtered_for_size
+
+            return references_filtered_for_size
     def find_individuals_with_reference_symmetries(
         self,
         individuals: List[Atoms],
@@ -89,13 +90,14 @@ class SymmetryEvaluation:
         return archive_to_reference_mapping, spacegroup_dictionary
 
     def compute_symmetries_from_individuals(
-        self, individuals: List[Atoms], indices_to_check: Optional[List[int]] = None,
+        self, individuals: List[Atoms], archive_indices_to_check: Optional[List[int]] = None,
     ) -> Dict[str, List[int]]:
-        if indices_to_check is None:
-            indices_to_check = range(len(individuals))
+        # todo: change to take in archive?
+        if archive_indices_to_check is None:
+            archive_indices_to_check = range(len(individuals))
 
         spacegroup_dictionary = defaultdict(list)
-        for index in indices_to_check:
+        for index in archive_indices_to_check:
             spacegroup = self.get_spacegroup_for_individual(individuals[index])
             if spacegroup is not None:
                 spacegroup_dictionary[spacegroup].append(index)
@@ -112,11 +114,14 @@ class SymmetryEvaluation:
 
     def _get_reference_spacegroups(self, tolerance: float):
         pymatgen_spacegeroups = [self.known_structures_docs[i].structure.get_space_group_info() for i in
-                                     range(len(self.known_atoms))]
+                                     range(len(self.known_structures_docs))
+                                 ]
 
         spglib_spacegroups = []
-        for el in self.known_atoms:
-            spglib_spacegroups.append(get_spacegroup(el, symprec=tolerance).symbol)
+        for el in self.known_structures_docs:
+            spglib_spacegroups.append(get_spacegroup(
+                AseAtomsAdaptor.get_atoms(el.structure),
+                symprec=tolerance).symbol)
 
         return pymatgen_spacegeroups, spglib_spacegroups
 
@@ -167,11 +172,12 @@ class SymmetryEvaluation:
             self.structure_viewer.set_structure(individual_as_structure)
             individual_confid = archive.individuals[individual_index].info["confid"]
 
-
+            filename = f"ind_{archive.centroid_ids[individual_index]}_{file_tag}_{individual_confid}{primitive_string}.png"
             self.structure_viewer.write_image(
-                str(directory_to_save / f"{file_tag}_{individual_confid}_list_index_{individual_index}{primitive_string}.png"),
+                str(directory_to_save / filename),
                 magnification=5,
             )
+        return filename
 
     def save_best_structures_by_energy(
         self, archive: Archive, fitness_range: Optional[Tuple[float, float]],
@@ -191,7 +197,7 @@ class SymmetryEvaluation:
                 archive=archive,
                 structure_indices=list(indices_to_check),
                 directory_to_save=directory_to_save,
-                file_tag="ind_best_by_energy_confid",
+                file_tag="best_by_energy",
                 save_primitive=save_primitive,
             )
         return list(indices_to_check)
@@ -212,7 +218,7 @@ class SymmetryEvaluation:
                     archive=archive,
                     structure_indices=list(indices_to_check),
                     directory_to_save=directory_to_save,
-                    file_tag=f"ind_best_by_symmetry_{desired_symmetry}",
+                    file_tag=f"best_by_symmetry_{desired_symmetry}",
                     save_primitive=save_primitive,
                 )
 
@@ -222,76 +228,190 @@ class SymmetryEvaluation:
 
         return structure_indices
 
+    def make_symmetry_to_material_id_dict(self):
+        spacegroup_to_reference_dictionary = defaultdict(list)
+
+        for el in self.known_structures_docs:
+            spacegroup = self.get_spacegroup_for_individual(AseAtomsAdaptor.get_atoms(el.structure))
+            spacegroup_to_reference_dictionary[spacegroup].append(
+                str(el.material_id)
+            )
+        return spacegroup_to_reference_dictionary
+
     def compare_archive_to_references(
         self, archive: Archive, indices_to_compare: List[int], directory_to_save: pathlib.Path,
     ) -> pd.DataFrame:
         logging_data = []
+        summary_data = []
 
+        symmetry_to_material_id_dict = self.make_symmetry_to_material_id_dict()
         for structure_index in indices_to_compare:
             structure = AseAtomsAdaptor.get_structure(archive.individuals[structure_index])
             primitive_structure = SpacegroupAnalyzer(structure).find_primitive()
+            summary_row = {
+                "individual_confid": archive.individuals[structure_index].info["confid"],
+                "centroid_index": archive.centroid_ids[structure_index],
+                "fitness": archive.fitnesses[structure_index],
+                "descriptors": archive.descriptors[structure_index],
+                "number_of_cells_in_primitive_cell": len(primitive_structure),
+                "symmetry_match": [],
+                "structure_matcher": {},
+                "distances": {},
+                "by_reference": None,
+            }
+
+            spacegroup = self.get_spacegroup_for_individual(archive.individuals[structure_index])
+            symmetry_match = symmetry_to_material_id_dict[spacegroup] if spacegroup in symmetry_to_material_id_dict.keys() else None
             new_row = {
                 "individual_confid": archive.individuals[structure_index].info["confid"],
-                "list_index": structure_index,
-                "symmetry": self.get_spacegroup_for_individual(archive.individuals[structure_index]),
+                "centroid_index": archive.centroid_ids[structure_index],
+                "symmetry": spacegroup,
+                "symmetry_match": symmetry_match,
                 "fitness": archive.fitnesses[structure_index],
                 "descriptors": archive.descriptors[structure_index],
                 "number_of_cells_in_primitive_cell": len(primitive_structure),
                 "matches": {},
                 "distances": {},
+
             }
+            if symmetry_match is not None:
+                summary_row["symmetry_match"] = new_row["symmetry_match"]
 
             for known_structure in self.known_structures_docs:
-                new_row["matches"][str(known_structure.material_id)+"_match"] = \
-                    self.structure_matcher.fit(structure, known_structure.structure)
+                reference_id = str(known_structure.material_id)
+                structure_matcher_match = self.structure_matcher.fit(structure, known_structure.structure)
+                new_row["matches"][str(known_structure.material_id)+"_match"] = structure_matcher_match
+
                 if len(primitive_structure) == len(known_structure.structure):
                     primitive_structure.sort()
                     known_structure.structure.sort()
-                    new_row["distances"][str(known_structure.material_id) + "_distance_to"] = \
-                        float(self.comparator._compare_structure(
+                    distance_to_known_structure = float(self.comparator._compare_structure(
                             AseAtomsAdaptor.get_atoms(primitive_structure),
                             AseAtomsAdaptor.get_atoms(known_structure.structure)))
-
                 else:
-                    new_row["distances"][
-                        str(known_structure.material_id) + "_distance_to"] = 1
+                    distance_to_known_structure = 1
+
+                new_row["distances"][
+                    reference_id + "_distance_to"] = distance_to_known_structure
+
+                if distance_to_known_structure <= 0.15 or structure_matcher_match:
+                    summary_row["distances"][reference_id] = distance_to_known_structure
+                    summary_row["structure_matcher"][reference_id] = structure_matcher_match
+
+
+            # list_of_reference_matches = np.unique(list(summary_row["structure_matcher"]) + summary_row["symmetry_match"] + summary_row["distances"])
+
             logging_data.append(new_row)
+            df_test = pd.DataFrame([{el: True for el in summary_row["symmetry_match"]}, summary_row["structure_matcher"], summary_row["distances"]])
+            df_test.index = [f"Symmetry", f"StructureMatcher", f"Distances"]
+
+            summary_row["by_reference"] = df_test.to_dict()
+            summary_data.append(summary_row)
 
         df = pd.DataFrame(logging_data)
         df = pd.concat([df, df["matches"].apply(pd.Series)], axis=1)
         df.drop(columns="matches", inplace=True)
         df = pd.concat([df, df["distances"].apply(pd.Series)], axis=1)
         df.drop(columns="distances", inplace=True)
-        df.to_csv(str(directory_to_save / "ind_top_symmetry_statistic.csv"))
-        return df
+        df.to_csv(str(directory_to_save / "ind_symmetry_statistic.csv"))
+
+        summary_df = pd.DataFrame(summary_data)
+        summary_df = pd.concat([summary_df, summary_df["by_reference"].apply(pd.Series)], axis=1)
+        summary_df.drop(columns="by_reference", inplace=True)
+        summary_df.drop(columns="symmetry_match", inplace=True)
+        summary_df.drop(columns="structure_matcher", inplace=True)
+        summary_df.drop(columns="distances", inplace=True)
+        for column_name in summary_df.columns:
+            if "mp-" in column_name:
+                unpacked_reference = summary_df[column_name].apply(pd.Series)
+                unpacked_reference.drop(columns=0, inplace=True)
+                unpacked_reference = unpacked_reference.add_prefix(f"{column_name}_")
+                summary_df = pd.concat([summary_df, unpacked_reference], axis=1)
+                summary_df.drop(columns=column_name, inplace=True)
+        summary_df.to_csv(str(directory_to_save / "ind_top_summary_statistics.csv"))
+
+        # return df
 
     def quick_view_structure(self, archive: Archive, individual_index: int):
         structure = AseAtomsAdaptor.get_structure(archive.individuals[individual_index])
         self.structure_viewer.set_structure(structure)
         self.structure_viewer.show()
 
+    def gif_centroid_over_time(
+        self, experiment_directory_path: pathlib.Path, centroid_filepath: pathlib.Path,
+            centroid_index: int,
+        save_primitive: bool = False, number_of_frames_for_gif: int = 50,
+    ):
+        list_of_files = [name for name in os.listdir(f"{experiment_directory_path}") if
+                         not os.path.isdir(name)]
+        list_of_archives = [filename for filename in list_of_files if
+                            ("archive_" in filename) and (".pkl" in filename)]
+
+        temp_dir = experiment_directory_path / "tempdir"
+        temp_dir.mkdir(exist_ok=False)
+
+        archive_ids = []
+        plots = []
+        for i, filename in enumerate(list_of_archives):
+            if "relaxed_" in filename:
+                continue
+            else:
+                archive_id = list_of_archives[i].lstrip("relaxed_archive_").rstrip(".pkl")
+                archive = Archive.from_archive(pathlib.Path(experiment_directory_path / filename),
+                                               centroid_filepath=centroid_filepath)
+                archive_ids.append(archive_id)
+
+                plot_name = self.save_structure_visualisations(
+                    archive=archive,
+                    structure_indices=[centroid_index],
+                    directory_to_save=temp_dir,
+                    file_tag=archive_id,
+                    save_primitive=save_primitive,
+                )
+                plots.append(plot_name)
+
+        frames = []
+        sorting_ids = np.argsort(np.array(archive_ids, dtype=int))
+        for id in sorting_ids:
+            img = Image.open(str(temp_dir / plots[id]))
+            # Call draw Method to add 2D graphics in an image
+            I1 = ImageDraw.Draw(img)
+            # Add Text to an image
+            I1.text((28, 36), archive_ids[id], fill=(255, 0, 0))
+            # Display edited image
+            img.show()
+            # Save the edited image
+            img.save(str(temp_dir / plots[id]))
+
+
+            image = imageio.v2.imread(str(temp_dir / plots[id]))
+            frames.append(image)
+
+        imageio.mimsave(f"{experiment_directory_path}/structure_over_time_{centroid_index}.gif",  # output gif
+                        frames, duration=400, )
+        for plot_name in plots:
+            image_path = temp_dir / plot_name
+            image_path.unlink()
+        temp_dir.rmdir()
+
+
 
 if __name__ == '__main__':
 
-    # get_spacegroup()
-    # experiment_tag = "20230807_19_56_TiO2_200_niches_relax_every_10_generations"
-    # archive_number = 61062
-
-    experiment_tag = "20230807_19_31_TiO2_200_niches_for benchmark_100_relax"
+    experiment_tag = "20230809_22_24_TiO2_rattle_50_relax_steps_100_init_batch"
+    centroid_path = "centroids_200_2_band_gap_0_100_shear_modulus_0_120.dat"
     archive_number = 4284
-    structure_number = 42
+    structure_number = 53
+    experiment_directory_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag
+    centroid_full_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids" / centroid_path
     # relaxed_archive_location = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag / f"relaxed_archive_{archive_number}.pkl"
-    unrelaxed_archive_location = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag / f"archive_{archive_number}.pkl"
-
-    archive = Archive.from_archive(unrelaxed_archive_location)
-
-    symmetry_evaluation = SymmetryEvaluation()
-    symmetry_evaluation.quick_view_structure(archive, structure_number)
-    # relaxed_dict = symmetry_evaluation.compute_symmetries_from_individuals(
-    #     individuals=archive.individuals,
-    #     fitnesses=archive.fitnesses,
-    # )
-    # symmetry_evaluation.plot_histogram(relaxed_dict, False)
+    # unrelaxed_archive_location = experiment_directory_path / f"archive_{archive_number}.pkl"
+    # #
+    # archive = Archive.from_archive(unrelaxed_archive_location, centroid_filepath=centroid_full_path)
     #
-    # symmetry_mapping_to_references = symmetry_evaluation.find_individuals_with_reference_symmetries(individuals=archive.individuals, fitnesses=archive.fitnesses)
-    # print(symmetry_mapping_to_references)
+    symmetry_evaluation = SymmetryEvaluation()
+    # symmetry_evaluation.quick_view_structure(archive, structure_number)
+
+    symmetry_evaluation.gif_centroid_over_time(
+        experiment_directory_path=experiment_directory_path, centroid_filepath=centroid_full_path, centroid_index=85,
+    )
