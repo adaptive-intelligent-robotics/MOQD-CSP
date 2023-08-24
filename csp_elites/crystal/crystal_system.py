@@ -1,36 +1,33 @@
 from typing import List, Dict, Tuple, Optional
 
+import numpy as np
 from ase import Atoms
 from ase.ga.cutandsplicepairing import CutAndSplicePairing
 from ase.ga.offspring_creator import OperationSelector
 from ase.ga.soft_mutation import SoftMutation
-from ase.ga.standardmutations import StrainMutation, PermutationMutation
+from ase.ga.standardmutations import StrainMutation, PermutationMutation, RattleMutation
 from ase.ga.startgenerator import StartGenerator
 from ase.ga.utilities import CellBounds, closest_distances_generator
-import numpy as np
 from chgnet.graph import CrystalGraphConverter
 from pymatgen.io.ase import AseAtomsAdaptor
 from pyxtal import pyxtal
 
-from csp_elites.crystal.materials_data_model import StartGenerators
 from csp_elites.crystal.force_mutation import GradientMutation
-
-
-# from jax import jit
-# from numba import prange, jit
+from csp_elites.crystal.materials_data_model import StartGenerators
 
 
 class CrystalSystem:
     def __init__(self,
-        atom_numbers_to_optimise: List[float],
-        volume: int = 240,
-        ratio_of_covalent_radii: float = 0.5,
-        splits: Dict[Tuple[int], int] = None,
-        cellbounds: CellBounds = None,
-        operator_probabilities: List[float] = (4., 2., 2., 2.),
-        compound_formula: Optional[str] = None,
-        start_generator: StartGenerators = StartGenerators.RANDOM
-    ):
+                 atom_numbers_to_optimise: List[float],
+                 volume: int = 240,
+                 ratio_of_covalent_radii: float = 0.5,
+                 splits: Dict[Tuple[int], int] = None,
+                 cellbounds: CellBounds = None,
+                 operator_probabilities: List[float] = (4., 2., 2., 2.),
+                 compound_formula: Optional[str] = None,
+                 start_generator: StartGenerators = StartGenerators.RANDOM,
+                 alternative_operators: Optional[List[Tuple[str, int]]] = None,
+                 ):
 
         self.volume = volume
         self.atom_numbers_to_optimise = atom_numbers_to_optimise
@@ -48,7 +45,8 @@ class CrystalSystem:
         self._soft_mutation = None
         self._permutation_mutation = None
         self._gradient_mutation = None
-        self.operators = self._initialise_operators(operator_probabilities)
+        self._rattle_mutation = None
+        self.operators = self._initialise_operators(operator_probabilities) if alternative_operators is None else self._initialise_alternative_operators(alternative_operators)
         self.compound_formula = compound_formula
         self._possible_pyxtal_modes =  [
             1,  8, 11, 12, 14, 15, 25, 35, 59, 60, 61, 62, 63, 74, 87, 136,
@@ -83,11 +81,17 @@ class CrystalSystem:
 
     def create_n_individuals(self, number_of_individuals: int) -> List[Dict[str, np.ndarray]]:
         individuals = []
+        print("generating individuals")
         for i in range(number_of_individuals):
             new_individual = self.create_one_individual(individual_id=i)
-            if self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn") is not None:
+            graph = self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn")
+            print(graph)
+            if graph is not None:
+            # if self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn") is not None:
                 new_individual = new_individual.todict()
                 individuals.append(new_individual)
+            else:
+                print("isolated bluu")
         return individuals
 
     def _initialise_start_generator(self, start_generator : StartGenerators):
@@ -123,12 +127,39 @@ class CrystalSystem:
 
         self._permutation_mutation = PermutationMutation(len(self.atom_numbers_to_optimise))
 
-        self._gradient_mutation = GradientMutation
+
         return OperationSelector(
             operator_probabilities,
             [self._cut_and_splice, self._soft_mutation, self._strain_mutation, self._permutation_mutation],
         )
 
+    def _initialise_alternative_operators(self, alternative_operators):
+        closest_distances = closest_distances_generator(atom_numbers=self.atomic_numbers, ratio_of_covalent_radii=self.ratio_of_covalent_radii)
+        operator_probabilities = []
+        operator_list = []
+        for operator, probability in alternative_operators:
+            if operator == "rattle":
+                self._rattle_mutation = RattleMutation(
+                    blmin=closest_distances, n_top=len(self.atomic_numbers),
+                )
+                operator_list.append(self._rattle_mutation)
+            elif operator == "gradient":
+                self._gradient_mutation = GradientMutation(
+                    blmin=closest_distances, n_top=len(self.atomic_numbers),
+                )
+                operator_list.append(self._gradient_mutation)
+            else:
+                raise NotImplementedError
+
+            operator_probabilities.append(probability)
+
+        return OperationSelector(
+            operator_probabilities,
+            operator_list,
+        )
+
     def update_operator_scaling_volumes(self, population: List[Atoms]):
-        self._strain_mutation.update_scaling_volume(population, w_adapt=0.5, n_adapt=4)
-        self._cut_and_splice.update_scaling_volume(population, w_adapt=0.5, n_adapt=4)
+        if self._strain_mutation in self.operators.oplist:
+            self._strain_mutation.update_scaling_volume(population, w_adapt=0.5, n_adapt=4)
+        if self._cut_and_splice in self.operators.oplist:
+            self._cut_and_splice.update_scaling_volume(population, w_adapt=0.5, n_adapt=4)

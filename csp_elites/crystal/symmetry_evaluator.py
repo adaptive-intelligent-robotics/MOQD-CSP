@@ -1,10 +1,8 @@
-# from spglib import get_spacegroup
-import copy
+
 import pathlib
-import pickle
 from collections import defaultdict
 from enum import Enum
-from typing import List, Dict, Tuple
+from typing import List, Dict, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,7 +12,7 @@ from pymatgen.io.ase import AseAtomsAdaptor
 
 from csp_elites.map_elites.archive import Archive
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
-from csp_elites.utils.plot import load_archive_from_pickle
+
 
 class SpaceGroups(str, Enum):
     PYMATGEN = "pymatgen"
@@ -46,7 +44,7 @@ class SymmetryEvaluation:
             if key in spacegroup_dictionary.keys():
                 archive_to_reference_mapping[key] += spacegroup_dictionary[key]
 
-        return archive_to_reference_mapping
+        return archive_to_reference_mapping, spacegroup_dictionary
 
     def compute_symmetries_from_individuals(self, individuals: List[Atoms], fitnesses: np.ndarray) -> Dict[str, List[int]]:
         indices_to_check = self._get_indices_to_check(fitnesses)
@@ -86,6 +84,7 @@ class SymmetryEvaluation:
         spacegroup_dictionary: Dict[str, List[int]],
         against_reference: bool = True,
         spacegroup_type: SpaceGroups = SpaceGroups.SPGLIB,
+        save_directory: Optional[pathlib.Path] = None
     ):
         if against_reference:
             spacegroups = self.spacegroup_matching[spacegroup_type]
@@ -102,7 +101,10 @@ class SymmetryEvaluation:
         plt.bar(spacegroups, spacegroup_counts)
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.show()
+        if save_directory is None:
+            plt.show()
+        else:
+            plt.savefig(save_directory / "symmetries_histogram.png", format="png")
 
 if __name__ == '__main__':
 
@@ -115,11 +117,11 @@ if __name__ == '__main__':
     archive = Archive.from_archive(unrelaxed_archive_location)
 
     symmetry_evaluation = SymmetryEvaluation()
-    # relaxed_dict = symmetry_evaluation.compute_symmetries_from_individuals(
-    #     individuals=archive.individuals,
-    #     fitnesses=archive.fitnesses,
-    # )
-    # symmetry_evaluation.plot_histogram(relaxed_dict, False)
+    relaxed_dict = symmetry_evaluation.compute_symmetries_from_individuals(
+        individuals=archive.individuals,
+        fitnesses=archive.fitnesses,
+    )
+    symmetry_evaluation.plot_histogram(relaxed_dict, False)
 
     symmetry_mapping_to_references = symmetry_evaluation.find_individuals_with_reference_symmetries(individuals=archive.individuals, fitnesses=archive.fitnesses)
     print(symmetry_mapping_to_references)
