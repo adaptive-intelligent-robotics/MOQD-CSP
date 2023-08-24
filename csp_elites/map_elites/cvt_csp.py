@@ -437,6 +437,7 @@ class CVT:
                 experiment_directory_path,
                 run_parameters["behavioural_descriptors"],
                 run_parameters['cvt_use_cache'],
+                formula=self.crystal_system.compound_formula,
                 )
         kdt = KDTree(c, leaf_size=30, metric='euclidean')
         write_centroids(
@@ -444,6 +445,7 @@ class CVT:
             bd_names=run_parameters["behavioural_descriptors"],
             bd_minimum_values=run_parameters["bd_minimum_values"],
             bd_maximum_values=run_parameters["bd_maximum_values"],
+            formula=self.crystal_system.compound_formula
         )
         del c
         return kdt

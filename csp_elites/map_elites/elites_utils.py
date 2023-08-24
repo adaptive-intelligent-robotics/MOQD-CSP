@@ -59,21 +59,26 @@ class Species:
 
 def __centroids_filename(
     k: int, dim: int, bd_names: List[MaterialProperties],
-    bd_minimum_values: List[float], bd_maximum_values: List[float],
+    bd_minimum_values: List[float], bd_maximum_values: List[float], formula: str
 ):
-    bd_tag = ""
+    if formula == "TiO2" or formula is None:
+        bd_tag = ""
+    else:
+        bd_tag = "_" + formula
+
     for i, bd_name in enumerate(bd_names):
         bd_tag += f"_{bd_name.value}_{bd_minimum_values[i]}_{bd_maximum_values[i]}"
+
     return '/centroids/centroids_' + str(k) + '_' + str(dim) + bd_tag +'.dat'
 
 
 def write_centroids(
     centroids, experiment_folder, bd_names: List[MaterialProperties],
-        bd_minimum_values: List[float], bd_maximum_values: List[float],
+        bd_minimum_values: List[float], bd_maximum_values: List[float], formula: str
 ):
     k = centroids.shape[0]
     dim = centroids.shape[1]
-    filename = __centroids_filename(k, dim, bd_names, bd_minimum_values, bd_maximum_values)
+    filename = __centroids_filename(k, dim, bd_names, bd_minimum_values, bd_maximum_values, formula)
     file_path = Path(experiment_folder).parent
     with open(f"{file_path}{filename}", 'w') as f:
         for p in centroids:
@@ -83,9 +88,9 @@ def write_centroids(
 
 
 def cvt(k, number_of_bd_dimensions, samples, bd_minimum_values, bd_maximum_values,
-        experiment_folder, bd_names: List[MaterialProperties], cvt_use_cache=True,):
+        experiment_folder, bd_names: List[MaterialProperties], cvt_use_cache=True, formula: str=""):
     # check if we have cached values
-    fname = __centroids_filename(k, number_of_bd_dimensions, bd_names, bd_minimum_values, bd_maximum_values)
+    fname = __centroids_filename(k, number_of_bd_dimensions, bd_names, bd_minimum_values, bd_maximum_values, formula=formula)
     file_location = pathlib.Path(experiment_folder).parent
     if cvt_use_cache:
         if Path(f"{file_location}/{fname}").is_file():
@@ -106,7 +111,7 @@ def cvt(k, number_of_bd_dimensions, samples, bd_minimum_values, bd_maximum_value
                      n_init=1, verbose=1)#,algorithm="full") ##  n_jobs=-1,
     k_means.fit(x)
     write_centroids(k_means.cluster_centers_, experiment_folder,
-                    bd_names, bd_minimum_values, bd_maximum_values)
+                    bd_names, bd_minimum_values, bd_maximum_values, formula=formula)
 
     return k_means.cluster_centers_
 
