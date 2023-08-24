@@ -164,7 +164,7 @@ class CVT:
                 else:
                     n_relaxation_steps = run_parameters["number_of_relaxation_steps"]
             elif (relax_archive_every_n_generations != 0) and (generation_counter % relax_archive_every_n_generations == 0):
-                n_relaxation_steps = 10
+                n_relaxation_steps = run_parameters["relax_archive_every_n_generations_n_relaxation_steps"] if "relax_archive_every_n_generations_n_relaxation_steps" in run_parameters.keys() else 10
 
             else:
                 n_relaxation_steps = run_parameters["number_of_relaxation_steps"]

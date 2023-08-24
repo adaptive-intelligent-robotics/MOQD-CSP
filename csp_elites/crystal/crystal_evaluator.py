@@ -136,6 +136,9 @@ class CrystalEvaluator:
                 fitness_scores = self._apply_force_threshold(energies, forces)
             else:
                 fitness_scores = energies
+                forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
+                            range(len(relaxation_results))])
+
 
         band_gaps, band_gap_gradients = self._batch_band_gap_compute(structures)
         shear_moduli, shear_moduli_gradients = self._batch_shear_modulus_compute(structures)

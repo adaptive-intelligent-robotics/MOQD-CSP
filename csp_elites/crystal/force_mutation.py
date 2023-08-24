@@ -178,6 +178,7 @@ class DQDMutation(OffspringCreator):
         """Does the actual mutation."""
         atoms = Atoms.fromdict(species.x)
         forces = self.normalize_gradient(species.fitness_gradient)
+        forces = forces[:len(species.x["positions"]), :]
         descriptor_gradients = np.array([self.normalize_gradient(grad) for grad in species.descriptor_gradients])
 
         # N = len(atoms) if self.n_top is None else self.n_top
@@ -254,7 +255,7 @@ if __name__ == '__main__':
 
     gradient_mutator = DQDMutation(blmin=closest_distances, n_top=len(one_structure.atomic_numbers))
 
-    mutant = gradient_mutator.mutate(atoms_2)
+    mutant = gradient_mutator.mutate(atoms_2.todict())
 
     print((target_atoms.get_positions() - mutant.get_positions()).sum() - initial_distance)
     a = 2

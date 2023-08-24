@@ -38,13 +38,13 @@
   ],
   "n_behavioural_descriptor_dimensions": 2,
   "number_of_niches": 200,
-  "maximum_evaluations": 500000,
+  "maximum_evaluations": 5000,
   "cvt_run_parameters": {
     "cvt_samples": 25000,
-    "batch_size": 100,
+    "batch_size": 10,
     "random_init": 0.1,
     "random_init_batch": 20,
-    "dump_period": 500,
+    "dump_period": 200,
     "parallel": true,
     "cvt_use_cache": true,
     "bd_minimum_values": [
@@ -60,7 +60,7 @@
       "band_gap",
       "shear_modulus"
     ],
-    "number_of_relaxation_steps": 10,
+    "number_of_relaxation_steps": 100,
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
     "seed": false,
@@ -68,14 +68,15 @@
     "force_threshold": false,
     "constrained_qd": false,
     "relax_every_n_generations": 0,
-    "relax_archive_every_n_generations": 0,
+    "relax_archive_every_n_generations": 5,
+    "relax_archive_every_n_generations_n_relaxation_steps": 50,
     "alternative_operators": [
       ["dqd", 10]
     ],
     "dqd": true,
-    "dqd_learning_rate": 0.00001
+    "dqd_learning_rate": 0.05
   },
-  "experiment_tag": "500k_lr-5_10_ten_relax_steps_always",
+  "experiment_tag": "5k_dqd_lr05_10_steps_relax_and_50_every_5_generations",
   "fitness_min_max_values": [
     6.5,
     10

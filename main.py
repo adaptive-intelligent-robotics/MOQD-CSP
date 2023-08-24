@@ -51,6 +51,9 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
             f"{current_time_label}_{experiment_parameters.system_name}_{experiment_parameters.experiment_tag}"
 
         alternative_operators = experiment_parameters.cvt_run_parameters["alternative_operators"] if "alternative_operators" in experiment_parameters.cvt_run_parameters.keys() else None
+        learning_rate = experiment_parameters.cvt_run_parameters["dqd_learning_rate"] if "dqd_learning_rate" in experiment_parameters.cvt_run_parameters.keys() else 0.0001
+
+
         crystal_system = CrystalSystem(
             atom_numbers_to_optimise=experiment_parameters.blocks,
             volume=experiment_parameters.volume,
@@ -59,6 +62,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
             operator_probabilities=experiment_parameters.operator_probabilities,
             start_generator=experiment_parameters.start_generator,
             alternative_operators=alternative_operators,
+            learning_rate=learning_rate,
         )
 
         comparator = OFPComparator(n_top=len(experiment_parameters.blocks), dE=1.0,
@@ -69,10 +73,13 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
         force_threshold = experiment_parameters.cvt_run_parameters["force_threshold"] if "force_threshold" in experiment_parameters.cvt_run_parameters.keys() else False
         constrained_qd = experiment_parameters.cvt_run_parameters["constrained_qd"] if "constrained_qd" in experiment_parameters.cvt_run_parameters.keys() else False
 
+        compute_gradients = experiment_parameters.cvt_run_parameters["dqd"] if "dqd" in experiment_parameters.cvt_run_parameters.keys() else False
         crystal_evaluator = CrystalEvaluator(
             comparator=comparator,
             with_force_threshold=force_threshold,
             constrained_qd=constrained_qd,
+            fmax_threshold=fmax_threshold,
+            compute_gradients=compute_gradients,
         )
 
         cvt = CVT(

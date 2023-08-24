@@ -3438,6 +3438,22 @@ files = [
 ]
 
 [[package]]
+name = "numpy-groupies"
+version = "0.9.22"
+description = "Optimised tools for group-indexing operations: aggregated sum and more."
+optional = false
+python-versions = "*"
+files = [
+    {file = "numpy_groupies-0.9.22.tar.gz", hash = "sha256:fd50026552280ca717722f17d4231390667505bb572de564de1362b40487d34a"},
+]
+
+[package.dependencies]
+numpy = "*"
+
+[package.extras]
+tests = ["pytest"]
+
+[[package]]
 name = "nvidia-ml-py3"
 version = "7.352.0"
 description = "Python Bindings for the NVIDIA Management Library"
@@ -4695,6 +4711,33 @@ files = [
 ]
 
 [[package]]
+name = "ribs"
+version = "0.5.2"
+description = "A bare-bones Python library for quality diversity optimization."
+optional = false
+python-versions = ">=3.7.0"
+files = [
+    {file = "ribs-0.5.2-py3-none-any.whl", hash = "sha256:ed44cfc157151706eb0856570977af399f27a3b2690bc059e61f4f994059bea8"},
+    {file = "ribs-0.5.2.tar.gz", hash = "sha256:7c06faf1830c33de13f5e019a397db0ac137c50c0ac23b2e2c29e511261f4d00"},
+]
+
+[package.dependencies]
+numba = ">=0.51.0"
+numpy = ">=1.17.0"
+numpy-groupies = ">=0.9.16"
+pandas = ">=1.0.0"
+scikit-learn = ">=0.20.0"
+scipy = ">=1.4.0"
+semantic-version = ">=2.10"
+sortedcontainers = ">=2.0.0"
+threadpoolctl = ">=3.0.0"
+
+[package.extras]
+all = ["matplotlib (>=3.0.0)"]
+dev = ["Sphinx (==4.5.0)", "bump2version (==1.0.1)", "check-wheel-contents (==0.4.0)", "myst-nb (==0.17.1)", "pip (>=20.3)", "pylint (==2.8.3)", "pytest (==7.0.1)", "pytest-benchmark (==3.4.1)", "pytest-cov (==3.0.0)", "pytest-xdist (==2.5.0)", "sphinx-autobuild (==2021.3.14)", "sphinx-autodoc-typehints (==1.18.2)", "sphinx-codeautolink (==0.12.1)", "sphinx-copybutton (==0.3.1)", "sphinx-material (==0.0.32)", "sphinx-toolbox (==3.1.0)", "twine (==4.0.2)", "wheel (==0.40.0)", "yapf"]
+visualize = ["matplotlib (>=3.0.0)"]
+
+[[package]]
 name = "rich"
 version = "13.4.2"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
@@ -4909,6 +4952,21 @@ docs = ["ipykernel", "nbconvert", "numpydoc", "pydata_sphinx_theme (==0.10.0rc2)
 stats = ["scipy (>=1.3)", "statsmodels (>=0.10)"]
 
 [[package]]
+name = "semantic-version"
+version = "2.10.0"
+description = "A library implementing the 'SemVer' scheme."
+optional = false
+python-versions = ">=2.7"
+files = [
+    {file = "semantic_version-2.10.0-py2.py3-none-any.whl", hash = "sha256:de78a3b8e0feda74cabc54aab2da702113e33ac9d9eb9d2389bcf1f58b7d9177"},
+    {file = "semantic_version-2.10.0.tar.gz", hash = "sha256:bdabb6d336998cbb378d4b9db3a4b56a1e3235701dc05ea2690d9a997ed5041c"},
+]
+
+[package.extras]
+dev = ["Django (>=1.11)", "check-manifest", "colorama (<=0.4.1)", "coverage", "flake8", "nose2", "readme-renderer (<25.0)", "tox", "wheel", "zest.releaser[recommended]"]
+doc = ["Sphinx", "sphinx-rtd-theme"]
+
+[[package]]
 name = "send2trash"
 version = "1.8.2"
 description = "Send file to trash natively under Mac OS X, Windows and Linux"
@@ -4960,6 +5018,17 @@ python-versions = ">=3.7"
 files = [
     {file = "sniffio-1.3.0-py3-none-any.whl", hash = "sha256:eecefdce1e5bbfb7ad2eeaabf7c1eeb404d7757c379bd1f7e5cce9d8bf425384"},
     {file = "sniffio-1.3.0.tar.gz", hash = "sha256:e60305c5e5d314f5389259b7f22aaa33d8f7dee49763119234af3755c55b9101"},
+]
+
+[[package]]
+name = "sortedcontainers"
+version = "2.4.0"
+description = "Sorted Containers -- Sorted List, Sorted Dict, Sorted Set"
+optional = false
+python-versions = "*"
+files = [
+    {file = "sortedcontainers-2.4.0-py2.py3-none-any.whl", hash = "sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0"},
+    {file = "sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88"},
 ]
 
 [[package]]
@@ -5890,4 +5959,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8, <3.11"
-content-hash = "b50f58a63fc192911611212a7479acbe93068174cc4cae5c9d7d835bf6520c13"
+content-hash = "7d7d38c1c92ddedab01a7099c883d97fc24e68aea29db9e9be05cd373d2c09f4"
