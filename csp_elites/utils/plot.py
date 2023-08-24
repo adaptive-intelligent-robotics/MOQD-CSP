@@ -1,7 +1,7 @@
 import os
 import pathlib
 import pickle
-from typing import Optional, Tuple, List, Dict, TYPE_CHECKING
+from typing import Optional, Tuple, List, Dict, TYPE_CHECKING, Union
 
 import matplotlib as mpl
 import numpy as np
@@ -104,7 +104,9 @@ def plot_2d_map_elites_repertoire_marta(
     target_centroids: Optional[np.ndarray] = None,
     directory_string: Optional[str]= None,
     filename: Optional[str] = "cvt_plot",
-    axis_labels: List[str] = ["band_gap", "shear_modulus"]
+    axis_labels: List[str] = ["band_gap", "shear_modulus"],
+    annotations: Optional[Union[List[str], np.ndarray]] = None
+
 ) -> Tuple[Optional[Figure], Axes]:
     """Plot a visual representation of a 2d map elites repertoire.
 
@@ -211,8 +213,12 @@ def plot_2d_map_elites_repertoire_marta(
             zorder=0,
         )
         for i in range(len(fitnesses)):
-            if fitnesses[i] != -np.inf:
-                ax.annotate(str(fitnesses[i])[:5], (centroids[i, 0], centroids[i, 1]))
+            if annotations is None:
+                annotations = np.around(fitnesses, decimals=3)
+            if isinstance(annotations[i], str) and annotations[i] != "-inf":
+                ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]))
+            elif isinstance(annotations[i], float) and annotations[i] != -np.inf:
+                ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]))
     # aesthetic
     ax.set_xlabel(f"BD1 - {axis_labels[0]}")
     ax.set_ylabel(f"BD2 - {axis_labels[1]}")
@@ -442,7 +448,7 @@ def plot_all_maps_in_archive(
             )
 
 if __name__ == '__main__':
-    centroid_filename = "centroids_200_2_band_gap_0_100_shear_modulus_0_100_slurm.dat"
+    centroid_filename = "centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat"
     centroids_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids" / centroid_filename
 
     centroids = load_centroids(centroids_path)
@@ -453,23 +459,27 @@ if __name__ == '__main__':
 
 
 
-    # archive_number = 910020
+    archive_number = 20
     # directory_string = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /"20230727_03_43_TiO2_test"
-    #
-    # # a = [name for name in os.listdir(f"{directory_string}") if
-    # #  not os.path.isdir(name)]
-    #
-    # # Variables setting
+
+    directory_string = pathlib.Path(
+        __file__).parent.parent.parent / "experiments" / "20230813_23_20_TiO2_constrained_test"
+
+    # a = [name for name in os.listdir(f"{directory_string}") if
+    #  not os.path.isdir(name)]
+
+    # Variables setting
     # archive_filename = directory_string / f"archive_{archive_number}.pkl"
-    # centroid_filename = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids"/ "centroids_200_2_band_gap_0_100_shear_modulus_0_100_old.dat"
+    # centroid_filename = pathlib.Path(__file__).parent.parent.parent / "experiments" / "centroids"/ "centroids_200_2_constraint_band_gap_-60_30_constraint_shear_-70_50.dat"
     # # centroid_filename = pathlib.Path(
     # #     __file__).parent.parent.parent / ".experiment.nosync" / "backup_centroids" / "centroids"/ "centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat"
     # reassign_centroids = True
-    # comparison_data = "../../experiments/target_data/ti02_band_gap_shear_modulus.pkl"
-    # filename_for_save = f"cvt_plot_{archive_number}"
-    # fitness_plotting_filename = "TiO2_dat.dat"  # TODO: get fitness from the right place - is this it
-    # descriptor_minimum_values = np.array([0, 0])
-    # descriptor_maximum_values = np.array([100, 100])
+    # # comparison_data = "../../experiments/target_data/ti02_band_gap_shear_modulus.pkl"
+    # # filename_for_save = f"cvt_plot_{archive_number}"
+    # filename_for_save = None
+    # # fitness_plotting_filename = "TiO2_dat.dat"  # TODO: get fitness from the right place - is this it
+    # descriptor_minimum_values = np.array([-60, -70])
+    # descriptor_maximum_values = np.array([30, 50])
     # fitness_min_max_values = (6.5, 10)
     # target_centroids = None
     #
@@ -480,12 +490,12 @@ if __name__ == '__main__':
     # #     filter_for_number_of_atoms=24
     # # )
     #
-    # comparison_data_packed = load_archive_from_pickle(comparison_data)
-    # target_centroids = reassign_data_from_pkl_to_new_centroids(
-    #     centroids_file=centroid_filename,
-    #     target_data=comparison_data_packed,
-    #     filter_for_number_of_atoms=24,
-    # )
+    # # comparison_data_packed = load_archive_from_pickle(comparison_data)
+    # # target_centroids = reassign_data_from_pkl_to_new_centroids(
+    # #     centroids_file=centroid_filename,
+    # #     target_data=comparison_data_packed,
+    # #     filter_for_number_of_atoms=24,
+    # # )
     #
     # # with open(archive_filename, "rb") as file:
     # #     fitnesses, centroids, descriptors, individuals = pickle.load(file)

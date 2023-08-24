@@ -86,3 +86,6 @@ class Archive:
         stresses = [prediction["s"] for prediction in predictions]
         del model
         return np.array(forces), np.array(energies), np.array(stresses)
+
+    def get_individuals_as_structures(self):
+        return [AseAtomsAdaptor.get_structure(atoms) for atoms in self.individuals]

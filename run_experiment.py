@@ -26,7 +26,7 @@ if __name__ == '__main__':
                 # we evaluate in batches to paralleliez
                 "batch_size": 1,
                 # proportion of niches to be filled before starting
-                "random_init": 0.1,
+                "random_init": 0,
                 # batch for random initialization
                 "random_init_batch": 2,
                 # when to write results (one generation = one batch)
@@ -40,14 +40,20 @@ if __name__ == '__main__':
                 "bd_maximum_values": (100, 120),
                 "relaxation_probability": 0,
                 "behavioural_descriptors": [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS],
-                "number_of_relaxation_steps": 0,
+                "number_of_relaxation_steps": 3,
                 "curiosity_weights": True,
                 "filter_starting_Structures": 24,
                 "seed": False,
                 "profiling": False,
                 "force_threshold": True,
-                "constrained_qd": True,
-                "relax_every_n_generations": 2
+                "constrained_qd": False,
+                "relax_every_n_generations": 0,
+                "alternative_operators": [("dqd", 10)],
+                "relax_archive_every_n_generations": 2,
+                "relax_archive_every_n_generations_n_relaxation_steps": 100,
+                "fmax_threshold": 0.4,
+                "dqd": True,
+                "dqd_learning_rate": 0.0001,
             },
         system_name="TiO2",
         blocks = [22] * 8 + [8] * 16,
@@ -59,7 +65,7 @@ if __name__ == '__main__':
                     'c': [2, 40]}),
         operator_probabilities=[0., 0, 5., 5.],
         ### CVT PARAMETERS ###
-        n_behavioural_descriptor_dimensions=3,
+        n_behavioural_descriptor_dimensions=2,
         fitness_min_max_values=[0, 10],
     )
 

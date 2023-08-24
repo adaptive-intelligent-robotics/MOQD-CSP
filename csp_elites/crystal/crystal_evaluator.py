@@ -108,7 +108,6 @@ class CrystalEvaluator:
                                      list_of_atoms: List[Dict[str, np.ndarray]], cellbounds: CellBounds,
                                      really_relax: bool, behavioral_descriptor_names: List[MaterialProperties],
                                      n_relaxation_steps: int,
-
                                      ):
 
         list_of_atoms = [Atoms.fromdict(atoms) for atoms in list_of_atoms]
