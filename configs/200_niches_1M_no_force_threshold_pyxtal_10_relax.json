@@ -36,7 +36,7 @@
     2.0,
     2.0
   ],
-  "n_behavioural_descriptor_dimensions": 2,
+  "n_behavioural_descriptor_dimensions": 3,
   "number_of_niches": 200,
   "maximum_evaluations": 1000000,
   "cvt_run_parameters": {
@@ -49,16 +49,19 @@
     "cvt_use_cache": true,
     "bd_minimum_values": [
       0,
+      0,
       0
     ],
     "bd_maximum_values": [
       100,
-      120
+      120,
+      100
     ],
     "relaxation_probability": 0,
     "behavioural_descriptors": [
       "band_gap",
-      "shear_modulus"
+      "shear_modulus",
+      "constraint_force"
     ],
     "number_of_relaxation_steps": 10,
     "curiosity_weights": true,
