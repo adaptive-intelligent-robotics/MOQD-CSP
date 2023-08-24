@@ -15,12 +15,12 @@ if __name__ == '__main__':
             "20230813_01_49_TiO2_200_niches_for benchmark_100_relax_5",
             "20230813_12_14_TiO2_200_niches_for benchmark_100_relax_1",
         ],
-        # [
-        #     "20230813_01_53_TiO2_200_niches_for benchmark_100_relax_1_with_threshold",
-        #     "20230813_01_53_TiO2_200_niches_for benchmark_100_relax_2_with_threshold",
-        #     "20230813_01_53_TiO2_200_niches_for benchmark_100_relax_5_with_threshold",
-        #     "20230813_12_14_TiO2_200_niches_for benchmark_100_relax_3_with_threshold"
-        # ]
+        [
+            "20230813_01_53_TiO2_200_niches_for benchmark_100_relax_1_with_threshold",
+            "20230813_01_53_TiO2_200_niches_for benchmark_100_relax_2_with_threshold",
+            "20230813_01_53_TiO2_200_niches_for benchmark_100_relax_5_with_threshold",
+            "20230813_12_14_TiO2_200_niches_for benchmark_100_relax_3_with_threshold"
+        ]
 
     ]
 
@@ -79,7 +79,7 @@ if __name__ == '__main__':
             ax.set_ylabel(metric_names[metric_id])
             ax.set_title(f"{metric_names[metric_id]} {plot_title_tag}")
         fig.legend()
-        fig.show()
+        fig.savefig(path_to_experiments / "20230813_00_00_200_niches_for_benchmark_100_relax_combined" / f"comp_with_threshold_{metric_names[metric_id]}.png")
 
 
 

@@ -59,3 +59,30 @@ class Archive:
             centroid_ids.append(centroid_id)
 
         return centroid_ids
+
+    def convert_fitness_and_descriptors_to_plotting_format(self, all_centroids: np.ndarray):
+        fitness_for_plotting = np.full((len(all_centroids)), -np.inf)
+        descriptors_for_plotting = np.full((len(all_centroids), len(self.descriptors[0])),
+                                           -np.inf)
+        labels_for_plotting = np.full((len(all_centroids)), -np.inf)
+        labels_for_plotting = labels_for_plotting.astype(str)
+
+        for i in range(len(self.centroids)):
+            present_centroid = np.argwhere(all_centroids == self.centroids[i])
+            fitness_for_plotting[present_centroid[0][0]] = self.fitnesses[i]
+            descriptors_for_plotting[present_centroid[0][0]] = self.descriptors[i]
+            if self.labels is not None:
+                labels_for_plotting[present_centroid[0][0]] = str(self.labels[i])
+
+        return fitness_for_plotting, descriptors_for_plotting, labels_for_plotting
+
+
+    def compute_chgnet_metrics_on_archive(self):
+        model = CHGNet.load()
+        predictions = model.predict_structure([AseAtomsAdaptor.get_structure(atoms) for atoms in self.individuals],
+                                               batch_size=10)
+        forces = [prediction["f"] for prediction in predictions]
+        energies = [prediction["e"] for prediction in predictions]
+        stresses = [prediction["s"] for prediction in predictions]
+        del model
+        return np.array(forces), np.array(energies), np.array(stresses)
