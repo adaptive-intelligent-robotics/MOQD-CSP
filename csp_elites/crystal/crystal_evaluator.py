@@ -9,7 +9,6 @@ from chgnet.model.dynamics import TrajectoryObserver
 from megnet.utils.models import load_model as megnet_load_model
 import torch
 from ase import Atoms
-from ase.build import niggli_reduce
 from ase.calculators.singlepoint import SinglePointCalculator
 from ase.ga import set_raw_score
 from ase.ga.ofp_comparator import OFPComparator
@@ -23,101 +22,24 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from csp_elites.crystal.materials_data_model import BandGapEnum, MaterialProperties
 from csp_elites.map_elites.elites_utils import Species
 from csp_elites.parallel_relaxation.structure_optimizer import MultiprocessOptimizer
-
+from ase.build import niggli_reduce
 warnings.simplefilter("ignore")
 
 
 class CrystalEvaluator:
     def __init__(self,
-        comparator: OFPComparator = None,
+                 comparator: OFPComparator = None,
                  with_force_threshold=True,
+                 constrained_qd=False
+                 ):
 
-):
-
-        # self.relaxer = StructOptimizer()
         self.relaxer = MultiprocessOptimizer()
         self.comparator = comparator
         self.band_gap_calculator = matgl.load_model("MEGNet-MP-2019.4.1-BandGap-mfi")
         self.shear_modulus_calculator = megnet_load_model("logG_MP_2018")
-        self.property_to_function_mapping = {
-            MaterialProperties.BAND_GAP: self.compute_band_gap,
-            MaterialProperties.ENERGY_FORMATION: self.compute_formation_energy,
-            MaterialProperties.SHEAR_MODULUS: self.compute_shear_modulus
-        }
-        # self.model = CHGNet.load()
         self.fmax_threshold = 0.2
-        self.with_force_threshold= with_force_threshold
-        self.element_to_number_map = {
-            "Ti": 22,
-            "O": 8,
-            "S": 16,
-        }
-
-    # todo:  @jit(cache=True)
-    def compute_energy(self, atoms: Atoms, really_relax, n_steps: int = 10) -> Tuple[float, Dict[str, np.ndarray]]:
-        relaxation_results = self.relaxer.relax(atoms, n_relaxation_steps=n_steps)
-
-        energy = float(
-            relaxation_results["trajectory"].energies[-1] / len(atoms.get_atomic_numbers()))
-        forces = relaxation_results["trajectory"].forces[-1]
-        stresses = relaxation_results["trajectory"].stresses[-1]
-        self._finalize_atoms(atoms, energy=energy, forces=forces, stress=stresses)
-
-        if self.with_force_threshold:
-            fmax = self.compute_fmax(np.array([forces]))
-            if fmax > self.fmax_threshold:
-                fitness = - (np.abs(fmax) - self.fmax_threshold)
-            else:
-                fitness = float(-atoms.get_potential_energy())
-        else:
-            fitness = float(-atoms.get_potential_energy())
-        return fitness, relaxation_results
-
-
-    def _threshold_forces_on_atoms(self, forces: np.ndarray):
-        pass
-
-    #todo: @jit(parallel=True, cache=True)
-    # @jit(parallel=True)
-    def compute_fitness_and_bd(self,
-                               atoms: Dict[str, np.ndarray],
-                               cellbounds: CellBounds,
-                               really_relax: bool,
-                               behavioral_descriptor_names: List[MaterialProperties],
-                               n_relaxation_steps: int,
-                               ) -> Tuple[float, Tuple[float, float], bool]:
-        # convert dictionary to atoms object
-        # print(atoms)
-        atoms = Atoms.fromdict(atoms)
-        if not cellbounds.is_within_bounds(atoms.get_cell()):
-            niggli_reduce(atoms)
-            if not cellbounds.is_within_bounds(atoms.get_cell()):
-                return 0, (0, 0), True
-
-        # Compute fitness (i.e. energy)
-        fitness_score, relaxation_results = self.compute_energy(atoms=atoms, really_relax=really_relax,
-                                                                n_steps=n_relaxation_steps)
-
-        cell = atoms.get_cell()
-
-        # Check whether the individual is valid to be added to the archive
-        kill_individual = False
-        if not cellbounds.is_within_bounds(cell):
-            kill_individual = True
-
-        # Compute bd dimension
-
-        behavioral_descriptor_values = []
-
-        for i in range(len(behavioral_descriptor_names)):
-            bd_value = self.property_to_function_mapping[behavioral_descriptor_names[i]](relaxed_structure=relaxation_results["final_structure"])
-            behavioral_descriptor_values.append(bd_value)
-
-        updated_atoms = AseAtomsAdaptor.get_atoms(relaxation_results["final_structure"])
-        new_atoms_dict = updated_atoms.todict()
-        del relaxation_results
-        new_atoms_dict["info"] = atoms.info
-        return new_atoms_dict, fitness_score, behavioral_descriptor_values, kill_individual
+        self.with_force_threshold = with_force_threshold
+        self.constrained_qd = constrained_qd
 
     def compute_band_gap(self, relaxed_structure, bandgap_type: Optional[
         BandGapEnum] = BandGapEnum.SCAN):
@@ -137,29 +59,18 @@ class CrystalEvaluator:
             )
         return float(bandgap) * 25 # TODO CHANGE THIS
 
-    def compute_formation_energy(self, relaxed_structure):
-        return float(self.formation_energy_calculator.predict_structure(relaxed_structure))
-
-    def _finalize_atoms(self, atoms, energy=None, forces=None, stress=None):
-        # atoms.wrap() # todo: what does atoms.wrap() do? Why does it not work with M3gnetx
-        calc = SinglePointCalculator(atoms, energy=energy, forces=forces,
-                                     stress=stress)
-        atoms.calc = calc
-        raw_score = float(-atoms.get_potential_energy())
-        set_raw_score(atoms, raw_score)
-
     def compare_to_target_structures(self,
-        generated_structures: List[Atoms],
-        target_structures: Dict[str, List[Atoms]],
-        directory_string: str,
-    ):
+                                     generated_structures: List[Atoms],
+                                     target_structures: Dict[str, List[Atoms]],
+                                     directory_string: str,
+                                     ):
         scores = []
 
         for target_id, target_structure in target_structures.items():
             scores_for_target = []
             for generated_structure in generated_structures:
                 cosine_distance = self.comparator._compare_structure(generated_structure,
-                                                                target_structure)
+                                                                     target_structure)
                 scores_for_target.append(cosine_distance)
                 if cosine_distance <= 0.15:
                     print(f"cosine distance {cosine_distance}")
@@ -183,57 +94,6 @@ class CrystalEvaluator:
         predicted_G = 10 ** self.shear_modulus_calculator.predict_structure(relaxed_structure).ravel()[0]
         return predicted_G
 
-    def reduce_structure_to_conventional(self, atoms: Atoms):
-        structure = AseAtomsAdaptor.get_structure(atoms)
-        conventional_structure = SpacegroupAnalyzer(structure=structure)
-        return conventional_structure
-
-    def compute_local_order(self, atoms: Atoms):
-        all_local_orders = self.comparator.get_local_orders(atoms)
-        pass
-
-    def compute_mixing_energy(
-            self, crystal_energy: float,
-            crystal_1_proportion: float,
-            edge_crystal_1_energy: float,
-            edge_crystal_2_energy: float,
-    ):
-        return crystal_energy * (
-                (1 - crystal_1_proportion) * edge_crystal_2_energy +
-                crystal_1_proportion * edge_crystal_1_energy
-        )
-
-    def compute_fitness_and_bd_mixing_system(
-            self, atoms: Atoms, cellbounds, really_relax: bool, crystal_1_proportion: float,
-            edge_crystal_1_energy: float, edge_crystal_2_energy: float,
-    ):
-        if not cellbounds.is_within_bounds(atoms.get_cell()):
-            niggli_reduce(atoms)
-            if not cellbounds.is_within_bounds(atoms.get_cell()):
-                return 0, (0, 0), True
-
-        # Compute fitness (i.e. energy)
-        crystal_energy, relaxation_results = self.compute_energy(atoms=atoms,
-                                                                 really_relax=really_relax)
-
-        cell = atoms.get_cell()
-
-        # Check whether the individual is valid to be added to the archive
-        kill_individual = False
-        if not cellbounds.is_within_bounds(cell):
-            kill_individual = True
-
-        fitness_score = self.compute_mixing_energy(
-            crystal_energy=crystal_energy,
-            crystal_1_proportion=crystal_1_proportion,
-            edge_crystal_1_energy=edge_crystal_1_energy,
-            edge_crystal_2_energy=edge_crystal_2_energy,
-        )
-
-        band_gap = self.compute_band_gap(relaxed_structure=relaxation_results["final_structure"])
-
-        return fitness_score(band_gap, crystal_energy), kill_individual
-
     def batch_compute_fitness_and_bd(self,
                                      list_of_atoms: List[Dict[str, np.ndarray]], cellbounds: CellBounds,
                                      really_relax: bool, behavioral_descriptor_names: List[
@@ -254,34 +114,41 @@ class CrystalEvaluator:
                 n_steps=n_relaxation_steps,
             )
             updated_atoms = list_of_atoms
+            fitness_scores *= -1
         else:
             relaxation_results, updated_atoms = self.relaxer.relax(list_of_atoms, n_relaxation_steps)
-            fitness_scores = [relaxation_results[i]["trajectory"]["energies"] for i in range(len(relaxation_results))]
+            energies = - np.array([relaxation_results[i]["trajectory"]["energies"] for i in range(len(relaxation_results))])
             structures = [relaxation_results[i]["final_structure"] for i in range(len(relaxation_results))]
-            # fitness_scores, relaxation_results = [], []
-            # for i in range(len(list_of_atoms)):
-            #     fitness_score, one_relaxation_results = self.compute_energy(
-            #         atoms=list_of_atoms[i],
-            #         really_relax=None,
-            #         n_steps=n_relaxation_steps,
-            #     )
-            #     fitness_scores.append(fitness_score)
-            #     relaxation_results.append(one_relaxation_results)
+            if self.with_force_threshold:
+                forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
+                            range(len(relaxation_results))])
+
+                fitness_scores = self._apply_force_threshold(energies, forces)
+            else:
+                fitness_scores = energies
 
         band_gaps = self._batch_band_gap_compute(structures)
         shear_moduli = self._batch_shear_modulus_compute(structures)
-        # todo: finalise atoms here? currently no need
-        # updated_atoms = [AseAtomsAdaptor.get_atoms(relaxation_results[i]["final_structure"])
-        #                  for i in range(len(list_of_atoms))]
 
         new_atoms_dict = [atoms.todict() for atoms in updated_atoms]
 
         for i in range(len(list_of_atoms)):
             new_atoms_dict[i]["info"] = list_of_atoms[i].info
+
+        if self.constrained_qd:
+            forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
+                               range(len(relaxation_results))])
+            distance_to_0_force_normalised_to_100 = self.compute_fmax(forces) * 100 # TODO: change this normalisation
+            descriptors = (band_gaps, shear_moduli, distance_to_0_force_normalised_to_100)
+            # print(descriptors)
+            # print(fitness_scores)
+        else:
+            descriptors = (band_gaps, shear_moduli)
+
         del relaxation_results
         del structures
         del list_of_atoms
-        return updated_atoms, new_atoms_dict, fitness_scores, (band_gaps, shear_moduli), kill_list
+        return updated_atoms, new_atoms_dict, fitness_scores, descriptors, kill_list
 
     def batch_create_species(self, list_of_atoms, fitness_scores, descriptors, kill_list):
         # todo: here could do dict -> atoms conversion
@@ -293,7 +160,8 @@ class CrystalEvaluator:
             new_specie = Species(
                 x=list_of_atoms[i],
                 fitness=fitness_scores[i],
-                desc=(descriptors[0][i], descriptors[1][i])
+                desc=tuple([descriptors[j][i] for j in range(len(descriptors))])
+                # desc=(descriptors[0][i], descriptors[1][i])
             )
             species_list.append(new_specie)
 
@@ -329,8 +197,6 @@ class CrystalEvaluator:
         return kill_list
 
     def batch_compute_energy(self, list_of_structures: List[Structure], really_relax, n_steps: int = 10) -> float:
-
-        # forces, energies, stresses = self._evaluate_list_of_atoms(list_of_structures)
         forces, energies, stresses = self.relaxer._evaluate_list_of_atoms(list_of_structures)
         reformated_output = []
         for i in range(len(list_of_structures)):
@@ -343,36 +209,18 @@ class CrystalEvaluator:
                  },
                  }
             )
-        fitnesses = -1 * energies
-        if self.with_force_threshold:
-            fmax = self.compute_fmax(forces)
-            indices_above_threshold = np.argwhere(fmax > self.fmax_threshold).reshape(-1)
-            forces_above_threshold = -1 * np.abs(fmax[fmax > self.fmax_threshold] - 0.1)
-            np.put(fitnesses, indices_above_threshold, forces_above_threshold)
+        fitnesses = self._apply_force_threshold(energies, forces)
 
         return fitnesses, reformated_output
 
-    # def _evaluate_list_of_atoms(self, list_of_structures: List[Structure]):
-    #     # list_of_structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
-    #
-    #     predictions = self.model.predict_structure(list_of_structures,
-    #                                                batch_size=len(list_of_structures))
-    #     if isinstance(predictions, dict):
-    #         predictions = [predictions]
-    #
-    #     forces = np.array([pred["f"] for pred in predictions])
-    #     energies = np.array([pred["e"] for pred in predictions])
-    #     stresses = np.array([pred["s"] for pred in predictions])
-    #     return forces, energies, stresses
-
-    def _update_trajectories(self, trajectories: List[TrajectoryObserver], forces, energies,
-                             stresses) -> List[TrajectoryObserver]:
-        for i in range(len(trajectories)):
-            trajectories[i].energies.append(energies[i])
-            trajectories[i].forces.append(forces)
-            trajectories[i].stresses.append(stresses)
-
-        return trajectories
+    def _apply_force_threshold(self, energies: np.ndarray, forces: np.ndarray) -> np.ndarray:
+        fitnesses = np.array(energies)
+        if self.with_force_threshold:
+            fmax = self.compute_fmax(forces)
+            indices_above_threshold = np.argwhere(fmax > self.fmax_threshold).reshape(-1)
+            forces_above_threshold = -1 * np.abs(fmax[fmax > self.fmax_threshold] - self.fmax_threshold)
+            np.put(fitnesses, indices_above_threshold, forces_above_threshold)
+        return fitnesses
 
     def compute_composition(self, element_blocks: List[List[int]]):
         element_blocks = np.array(element_blocks)
@@ -384,16 +232,81 @@ class CrystalEvaluator:
     def compute_fmax(self, forces: np.ndarray):
         return np.max((forces ** 2).sum(axis=2), axis=1) ** 0.5
 
-
     def compute_structure_density(self, list_of_structures: List[Structure]):
         density_list = []
         for i in range(len(list_of_structures)):
             density_list.append(list_of_structures[i].density)
         return density_list
 
-def compute_composition_test(element_blocks: List[List[int]]):
-    element_blocks = np.array(element_blocks)
-    counts = np.unique(element_blocks, return_counts=True, axis=1)
-    oxygen_count = np.sum(np.array(counts[0] == 8, int) * counts[1], axis=1)
-    non_titanium = np.sum(np.array(counts[0]!=22, int) * counts[1], axis =1)
-    return oxygen_count / non_titanium
+
+
+
+
+
+
+
+
+    # def compute_local_order(self, atoms: Atoms):
+    #     all_local_orders = self.comparator.get_local_orders(atoms)
+    #     pass
+
+    # def compute_mixing_energy(
+    #         self, crystal_energy: float,
+    #         crystal_1_proportion: float,
+    #         edge_crystal_1_energy: float,
+    #         edge_crystal_2_energy: float,
+    # ):
+    #     return crystal_energy * (
+    #             (1 - crystal_1_proportion) * edge_crystal_2_energy +
+    #             crystal_1_proportion * edge_crystal_1_energy
+    #     )
+    #
+    # def compute_fitness_and_bd_mixing_system(
+    #         self, atoms: Atoms, cellbounds, really_relax: bool, crystal_1_proportion: float,
+    #         edge_crystal_1_energy: float, edge_crystal_2_energy: float,
+    # ):
+    #     if not cellbounds.is_within_bounds(atoms.get_cell()):
+    #         niggli_reduce(atoms)
+    #         if not cellbounds.is_within_bounds(atoms.get_cell()):
+    #             return 0, (0, 0), True
+    #
+    #     # Compute fitness (i.e. energy)
+    #     crystal_energy, relaxation_results = self.compute_energy(atoms=atoms,
+    #                                                              really_relax=really_relax)
+    #
+    #     cell = atoms.get_cell()
+    #
+    #     # Check whether the individual is valid to be added to the archive
+    #     kill_individual = False
+    #     if not cellbounds.is_within_bounds(cell):
+    #         kill_individual = True
+    #
+    #     fitness_score = self.compute_mixing_energy(
+    #         crystal_energy=crystal_energy,
+    #         crystal_1_proportion=crystal_1_proportion,
+    #         edge_crystal_1_energy=edge_crystal_1_energy,
+    #         edge_crystal_2_energy=edge_crystal_2_energy,
+    #     )
+    #
+    #     band_gap = self.compute_band_gap(relaxed_structure=relaxation_results["final_structure"])
+    #
+    #     return fitness_score(band_gap, crystal_energy), kill_individual
+
+    # def _update_trajectories(self, trajectories: List[TrajectoryObserver], forces, energies,
+    #                          stresses) -> List[TrajectoryObserver]:
+    #     for i in range(len(trajectories)):
+    #         trajectories[i].energies.append(energies[i])
+    #         trajectories[i].forces.append(forces)
+    #         trajectories[i].stresses.append(stresses)
+    #
+    #     return trajectories
+
+    # def _finalize_atoms(self, atoms, energy=None, forces=None, stress=None):
+    #     # atoms.wrap() # todo: what does atoms.wrap() do? Why does it not work with M3gnetx
+    #     calc = SinglePointCalculator(atoms, energy=energy, forces=forces,
+    #                                  stress=stress)
+    #     atoms.calc = calc
+    #     raw_score = float(-atoms.get_potential_energy())
+    #     set_raw_score(atoms, raw_score)
+    # def compute_formation_energy(self, relaxed_structure):
+    #     return float(self.formation_energy_calculator.predict_structure(relaxed_structure))

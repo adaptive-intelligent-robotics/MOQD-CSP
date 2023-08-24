@@ -24,4 +24,4 @@ if __name__ == '__main__':
         [MaterialProperties(value) for value in experiment_parameters.cvt_run_parameters["behavioural_descriptors"]]
 
     experiment_parameters.start_generator = StartGenerators(experiment_parameters.start_generator)
-    main(experiment_parameters)
+    main(experiment_parameters, hide_prints=True)
