@@ -143,8 +143,9 @@ class CVT:
                     x = archive[keys[rand1[n]]]
                     y = archive[keys[rand2[n]]]
                     # copy & add variation
-                    z, _ = self.crystal_system.operators.get_new_individual(
-                        [Atoms.fromdict(x.x), Atoms.fromdict(y.x)])
+                    z = self.crystal_system.mutate([x, y])
+                    # z, _ = self.crystal_system.operators.get_new_individual(
+                    #     [Atoms.fromdict(x.x), Atoms.fromdict(y.x)])
                     if z is None:
                         print(" z is none bug")
 
@@ -163,12 +164,12 @@ class CVT:
                 else:
                     n_relaxation_steps = run_parameters["number_of_relaxation_steps"]
             elif (relax_archive_every_n_generations != 0) and (generation_counter % relax_archive_every_n_generations == 0):
-                n_relaxation_steps = 10
+                n_relaxation_steps = run_parameters["relax_archive_every_n_generations_n_relaxation_steps"] if "relax_archive_every_n_generations_n_relaxation_steps" in run_parameters.keys() else 10
 
             else:
                 n_relaxation_steps = run_parameters["number_of_relaxation_steps"]
 
-            population_as_atoms, population, fitness_scores, descriptors, kill_list = self.crystal_evaluator.batch_compute_fitness_and_bd(
+            population_as_atoms, population, fitness_scores, descriptors, kill_list, gradients = self.crystal_evaluator.batch_compute_fitness_and_bd(
                 list_of_atoms=population,
                 cellbounds=self.crystal_system.cellbounds,
                 really_relax=None,
@@ -180,7 +181,7 @@ class CVT:
                 self.crystal_system.update_operator_scaling_volumes(population=population_as_atoms)
                 del population_as_atoms
             # todo: make sure population ok after relaxation
-            s_list = self.crystal_evaluator.batch_create_species(population, fitness_scores, descriptors, kill_list)
+            s_list = self.crystal_evaluator.batch_create_species(population, fitness_scores, descriptors, kill_list, gradients)
             # count evals
             evaluations_performed = len(population)
             n_evals += evaluations_performed

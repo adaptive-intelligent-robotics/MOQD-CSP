@@ -57,7 +57,7 @@ if __name__ == '__main__':
             pickle.dump(relaxed_archive, file)
 
     relaxed_structures_as_dict = [AseAtomsAdaptor.get_atoms(result["final_structure"]).todict() for result in relaxed_archive]
-    _, new_atoms_dict, energy_batch, bds_batch, _ = crystal_evaluator.batch_compute_fitness_and_bd(
+    _, new_atoms_dict, energy_batch, bds_batch, _, _ = crystal_evaluator.batch_compute_fitness_and_bd(
         list_of_atoms=relaxed_structures_as_dict,
         cellbounds=CellBounds(
             bounds={'phi': [20, 160], 'chi': [20, 160], 'psi': [20, 160], 'a': [2, 40],
