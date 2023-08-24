@@ -146,6 +146,7 @@ class CrystalSystem:
             elif operator == "gradient":
                 self._gradient_mutation = GradientMutation(
                     blmin=closest_distances, n_top=len(self.atomic_numbers),
+                    learning_rate=0.01
                 )
                 operator_list.append(self._gradient_mutation)
             else:
