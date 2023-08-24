@@ -119,7 +119,7 @@ class MultiprocessOptimizer:
                 }
             )
         self.timings["for_loop"]["reformating_output"] = time.time() - tic
-        pprint(self.timings)
+        # pprint(self.timings)
         self.timings_list.append(copy.deepcopy(self.timings))
         return reformated_output, list_of_atoms
 
@@ -133,16 +133,23 @@ class MultiprocessOptimizer:
 
         hotfix_graphs = False
         tic = time.time()
-        graphs = [self.model.graph_converter(struct) for struct in list_of_structures]
+        graphs = [self.model.graph_converter(struct, on_isolated_atoms="warn") for struct in list_of_structures]
         self.timings["list_comprehension"]["convert_structures_to_graphs"] = time.time() - tic
 
         tic = time.time()
         if None in graphs:
+            print("isolated atomssss")
+            print(f"graphs starting length {len(graphs)}")
             hotfix_graphs = True
             indices_to_update = []
             for i in range(len(graphs)):
+                print(i)
                 if graphs[i] is None:
                     indices_to_update.append(i)
+                    graphs.pop(i)
+
+            print(f"graphs end length {len(graphs)}")
+
         self.timings["for_loop"]["check_graph_for_isolated"] = time.time() - tic
 
         tic = time.time()
@@ -233,7 +240,7 @@ if __name__ == '__main__':
 
     optimizer.model.predict_graph(
         graphs,
-        task="efsm",
+        task="efs",
         return_atom_feas=False,
         return_crystal_feas=False,
         batch_size=batch_size,

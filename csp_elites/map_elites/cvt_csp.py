@@ -122,14 +122,16 @@ class CVT:
                             individuals.append(atoms)
                     del known_atoms
                 population += individuals
+                with open(f'{experiment_directory_path}/starting_population.pkl', 'wb') as file:
+                    pickle.dump(population, file)
 
             else:  # variation/selection loop
                 keys = list(archive.keys())
                 rand1 = np.random.randint(len(keys), size=run_parameters['batch_size'])
                 rand2 = np.random.randint(len(keys), size=run_parameters['batch_size'])
 
-                print(rand1)
-                print(rand2)
+                # print(rand1)
+                # print(rand2)
                 for n in range(0, run_parameters['batch_size']):
                     # parent selection
                     x = archive[keys[rand1[n]]]

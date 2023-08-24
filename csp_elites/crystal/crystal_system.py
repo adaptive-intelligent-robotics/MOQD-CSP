@@ -85,7 +85,7 @@ class CrystalSystem:
         for i in range(number_of_individuals):
             new_individual = self.create_one_individual(individual_id=i)
             graph = self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn")
-            print(graph)
+            # print(graph)
             if graph is not None:
             # if self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn") is not None:
                 new_individual = new_individual.todict()

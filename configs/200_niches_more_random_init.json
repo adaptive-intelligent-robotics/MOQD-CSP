@@ -53,7 +53,7 @@
     ],
     "bd_maximum_values": [
       100,
-      100
+      120
     ],
     "relaxation_probability": 0,
     "behavioural_descriptors": [
@@ -63,9 +63,11 @@
     "number_of_relaxation_steps": 0,
     "curiosity_weights": true,
     "filter_starting_Structures": 24,
-    "seed": false
+    "seed": false,
+    "force_threshold": true,
+    "relax_every_n_generations": 0
   },
-  "experiment_tag": "200_niches_0_2_init",
+  "experiment_tag": "200_niches_0_2_init_relax_every_100_gen",
   "fitness_min_max_values": [
     6.5,
     9
