@@ -1,7 +1,6 @@
 import warnings
 from typing import Optional, List, Dict
 
-import matgl
 import numpy as np
 import torch
 from ase import Atoms
@@ -9,15 +8,13 @@ from ase.build import niggli_reduce
 from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.utilities import CellBounds
 from matplotlib import pyplot as plt
-from megnet.utils.models import load_model as megnet_load_model
 from pymatgen.core import Structure
-from pymatgen.io.ase import AseAtomsAdaptor
 
-from csp_elites.crystal.band_gap_calculator import BandGapCalculator
+from csp_elites.property_calculators.band_gap_calculator import BandGapCalculator
 from csp_elites.crystal.materials_data_model import BandGapEnum, MaterialProperties
-from csp_elites.crystal.shear_modulus_calculator import ShearModulusCalculator
+from csp_elites.property_calculators.shear_modulus_calculator import ShearModulusCalculator
 from csp_elites.map_elites.elites_utils import Species
-from csp_elites.parallel_relaxation.structure_optimizer import MultiprocessOptimizer
+from csp_elites.property_calculators.structure_optimizer import MultiprocessOptimizer
 
 warnings.simplefilter("ignore")
 
@@ -56,7 +53,7 @@ class CrystalEvaluator:
         if bandgap_type is None:
             for i, method in ((0, "PBE"), (1, "GLLB-SC"), (2, "HSE"), (3, "SCAN")):
                 graph_attrs = torch.tensor([i])
-                bandgap, gradients = self.band_gap_calculator.compute_band_gap(
+                bandgap, gradients = self.band_gap_calculator.compute(
                     structure=relaxed_structure, band_gap_type=graph_attrs,
                     compute_gradients=self.compute_gradients
                 )
@@ -66,7 +63,7 @@ class CrystalEvaluator:
         else:
             graph_attrs = torch.tensor([bandgap_type.value])
 
-            bandgap, gradients = self.band_gap_calculator.compute_band_gap(
+            bandgap, gradients = self.band_gap_calculator.compute(
                 structure=relaxed_structure, band_gap_type=graph_attrs,
                 compute_gradients=self.compute_gradients
             )
@@ -211,7 +208,7 @@ class CrystalEvaluator:
         shear_moduli  = []
         all_gradients = []
         for structure in list_of_structures:
-            shear_modulus, gradients = self.shear_modulus_calculator.compute_shear_modulus(
+            shear_modulus, gradients = self.shear_modulus_calculator.compute(
                 structure, compute_gradients=self.compute_gradients,
             )
             shear_moduli.append(shear_modulus)

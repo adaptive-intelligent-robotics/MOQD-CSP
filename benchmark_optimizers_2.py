@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import pickle
 import time
 
 from chgnet.model import StructOptimizer
@@ -10,7 +9,7 @@ from mp_api.client import MPRester
 from pymatgen.io.ase import AseAtomsAdaptor
 from tqdm import tqdm
 
-from csp_elites.parallel_relaxation.structure_optimizer import MultiprocessOptimizer
+from csp_elites.property_calculators.structure_optimizer import MultiprocessOptimizer
 
 
 if __name__ == '__main__':

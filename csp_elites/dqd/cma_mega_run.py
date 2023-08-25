@@ -1,3 +1,5 @@
+from csp_elites.crystal.materials_data_model import StartGenerators, MaterialProperties
+
 print("inside main cma")
 from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.utilities import CellBounds

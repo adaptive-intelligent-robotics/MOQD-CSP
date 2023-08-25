@@ -18,7 +18,7 @@ class ShearModulusCalculator:
         self.graph_converter_torch = Structure2Graph(element_types=DEFAULT_ELEMENT_TYPES, cutoff=4.0) # todo: find where default cutoff loaded from
         self.bond_converter = BondConverterTorch()
 
-    def compute_shear_modulus(self, structure: Structure, compute_gradients: bool = False):
+    def compute(self, structure: Structure, compute_gradients: bool = False):
         if compute_gradients:
             log_shear_modulus, gradients = self._compute_log_shear_modulus_with_gradients(structure)
         else:
@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
     with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
         structure = mpr.get_structure_by_material_id("mp-1840", final=True)
-    shear_no_grad, _ = shear_calculator.compute_shear_modulus(structure, compute_gradients=False)
-    shear_with_grad, gradient = shear_calculator.compute_shear_modulus(structure, compute_gradients=True)
+    shear_no_grad, _ = shear_calculator.compute(structure, compute_gradients=False)
+    shear_with_grad, gradient = shear_calculator.compute(structure, compute_gradients=True)
     assert shear_no_grad == shear_with_grad
     print(gradient)

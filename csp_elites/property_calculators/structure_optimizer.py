@@ -237,6 +237,14 @@ class MultiprocessOptimizer:
         return (nsteps > max_steps) or forces_mask.all()
 
 
+    def compute(self, structure, compute_gradients: bool = False):
+        """This is a utility method for testing of gradients and should not be used beyond this."""
+        forces, energies, stresses = self._evaluate_list_of_atoms([structure])
+        if not compute_gradients:
+            forces = [None for el in forces]
+
+        return energies[0] * -1, forces[0]
+
 if __name__ == '__main__':
     n_relaxation_steps = 150
     number_of_individuals = 1

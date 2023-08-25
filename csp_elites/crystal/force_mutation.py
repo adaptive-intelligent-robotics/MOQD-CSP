@@ -379,8 +379,6 @@ class DQDMutationOMGMEGA(OffspringCreator):
         self.learning_rate = learning_rate
         self.rattle_prop = rattle_prop
 
-
-
     def get_new_individual(self, parents: List[Species]):
         f = parents[0]
 

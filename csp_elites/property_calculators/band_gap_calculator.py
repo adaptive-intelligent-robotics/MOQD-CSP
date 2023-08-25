@@ -16,11 +16,11 @@ class BandGapCalculator:
             cutoff=self.model_wrapper.model.cutoff,
         )
 
-    def compute_band_gap(self,
-        structure: Structure,
-        band_gap_type: torch.Tensor,
-        compute_gradients: bool = False,
-    ):
+    def compute(self,
+                structure: Structure,
+                band_gap_type: torch.Tensor = torch.tensor([3]),
+                compute_gradients: bool = False,
+                ):
         if compute_gradients:
             model_output, gradients_wrt_positions = self._compute_band_gap_with_gradients(
                 structure=structure, band_gap_type=band_gap_type,
@@ -30,7 +30,7 @@ class BandGapCalculator:
                 structure=structure, band_gap_type=band_gap_type,
             )
             gradients_wrt_positions = None
-        return model_output, gradients_wrt_positions
+        return model_output.detach().numpy()[0], gradients_wrt_positions
 
     def _compute_band_gap_no_gradients(self, structure: Structure, band_gap_type: torch.Tensor):
         return self.model_wrapper.predict_structure(
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
         structure = mpr.get_structure_by_material_id("mp-1840", final=True)
-    bg_no_grad, _ = shear_calculator.compute_band_gap(structure, compute_gradients=False, band_gap_type=torch.tensor([3]))
-    bg_with_grad, gradient = shear_calculator.compute_band_gap(structure, compute_gradients=True, band_gap_type=torch.tensor([3]))
+    bg_no_grad, _ = shear_calculator.compute(structure, compute_gradients=False, band_gap_type=torch.tensor([3]))
+    bg_with_grad, gradient = shear_calculator.compute(structure, compute_gradients=True, band_gap_type=torch.tensor([3]))
     assert bg_no_grad == bg_with_grad
     print(gradient)
