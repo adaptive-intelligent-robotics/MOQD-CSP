@@ -9,9 +9,7 @@ from matplotlib import pyplot as plt
 from mp_api.client import MPRester
 from pymatgen.io.ase import AseAtomsAdaptor
 
-from csp_elites.parallel_relaxation.structure_optimizer import MultiprocessOptimizer
-from csp_elites.parallel_relaxation.structure_to_use import atoms_to_test
-
+from csp_elites.property_calculators.structure_optimizer import MultiprocessOptimizer
 
 if __name__ == '__main__':
     chgnet = CHGNet.load()

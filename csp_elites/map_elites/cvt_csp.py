@@ -139,9 +139,6 @@ class CVT:
             population_as_atoms, population, fitness_scores, descriptors, kill_list, gradients = \
                 self.crystal_evaluator.batch_compute_fitness_and_bd(
                     list_of_atoms=population,
-                    cellbounds=self.crystal_system.cellbounds,
-                    really_relax=None,
-                    behavioral_descriptor_names=run_parameters["behavioural_descriptors"],
                     n_relaxation_steps=n_relaxation_steps
                 )
 
@@ -162,7 +159,7 @@ class CVT:
 
     def initialise_known_atoms(self):
         _, known_atoms = get_all_materials_with_formula(self.crystal_system.compound_formula)
-        individuals= []
+        individuals = []
         for atoms in known_atoms:
             if len(atoms.get_atomic_numbers()) == self.run_parameters["filter_starting_Structures"]:
                 atoms.rattle()

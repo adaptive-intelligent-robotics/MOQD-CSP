@@ -14,8 +14,7 @@ from chgnet.graph import CrystalGraphConverter
 from pymatgen.io.ase import AseAtomsAdaptor
 from pyxtal import pyxtal
 
-from csp_elites.crystal.force_mutation import GradientMutation, DQDMutationOMGMEGA, \
-    DQDMutationCMAMEGA
+from csp_elites.crystal.force_mutation import GradientMutation, DQDMutationOMGMEGA
 from csp_elites.crystal.materials_data_model import StartGenerators
 from csp_elites.map_elites.elites_utils import Species
 
@@ -52,7 +51,6 @@ class CrystalSystem:
         self._gradient_mutation = None
         self._rattle_mutation = None
         self._dqd_mutation = None
-        self._dqd_cma_mutation = None
 
         self.operators = self._initialise_operators(operator_probabilities) if alternative_operators is None else self._initialise_alternative_operators(alternative_operators, learning_rate)
         self.compound_formula = compound_formula
@@ -191,7 +189,7 @@ class CrystalSystem:
 
     def mutate(self, parents: List[Species]) -> Atoms:
         mutator = self.operators.get_operator()
-        if isinstance(mutator, DQDMutationOMGMEGA) or isinstance(mutator, DQDMutationCMAMEGA):
+        if isinstance(mutator, DQDMutationOMGMEGA):
             new_individual, _ = mutator.get_new_individual(parents)
         else:
             new_individual, _ = mutator.get_new_individual(

@@ -84,7 +84,6 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
 
         compute_gradients = experiment_parameters.cvt_run_parameters["dqd"] if "dqd" in experiment_parameters.cvt_run_parameters.keys() else False
         crystal_evaluator = CrystalEvaluator(
-            comparator=comparator,
             with_force_threshold=force_threshold,
             constrained_qd=constrained_qd,
             fmax_relaxation_convergence=fmax_threshold,

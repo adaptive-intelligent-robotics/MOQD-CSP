@@ -52,7 +52,6 @@ class CMAMEGALOOP:
         )
         self.crystal_evaluator = CrystalEvaluator(
             compute_gradients=True,
-            comparator=None,
             constrained_qd=False,
             force_threshold_fmax=1,
             with_force_threshold=False,
@@ -120,9 +119,6 @@ class CMAMEGALOOP:
             #3: f, ∇f , m, ∇m ← evaluate(θ)
             _, population, fitness_scores, descriptors, kill_list, gradients = self.crystal_evaluator.batch_compute_fitness_and_bd(
                 list_of_atoms=[solution_theta],
-                cellbounds=self.crystal_system.cellbounds,
-                really_relax=None,
-                behavioral_descriptor_names=run_parameters["behavioural_descriptors"],
                 n_relaxation_steps=self.n_relaxation_steps
             )
             solution_theta = population[0]
@@ -154,7 +150,7 @@ class CMAMEGALOOP:
 
             # 10: f ′, ∗, m′, ∗ ← evaluate(θ′ i)
             updated_atoms, population, fitness_scores, descriptors, kill_list, all_gradients = self.crystal_evaluator.batch_compute_fitness_and_bd(
-                new_atoms, cellbounds= self.cellbounds, really_relax=None, behavioral_descriptor_names=None,
+                new_atoms,
                 n_relaxation_steps=self.n_relaxation_steps,
             )
 
