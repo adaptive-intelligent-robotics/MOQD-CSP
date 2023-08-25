@@ -26,14 +26,20 @@ class CrystalEvaluator:
                  force_threshold_fmax: float = 1.0,
                  compute_gradients: bool = True,
                  cellbounds: Optional[CellBounds] = None,
-                 bd_normalisation: Union[List[Optional[Tuple[float, float]]]] = (None, None),
+                 bd_normalisation: Union[List[Optional[Tuple[float, float]]]] = None,
                  ):
 
         self.relaxer = MultiprocessOptimizer(
             fmax_threshold=fmax_relaxation_convergence
         )
-        self.band_gap_calculator = BandGapCalculator((bd_normalisation[0][0], bd_normalisation[1][0]))
-        self.shear_modulus_calculator = ShearModulusCalculator((bd_normalisation[0][1], bd_normalisation[1][1]))
+        if bd_normalisation is not None:
+            band_gap_normalisation = (bd_normalisation[0][0], bd_normalisation[1][0])
+            shear_modulus_normalisation = (bd_normalisation[0][1], bd_normalisation[1][1])
+        else:
+            band_gap_normalisation, shear_modulus_normalisation = None, None
+
+        self.band_gap_calculator = BandGapCalculator(band_gap_normalisation)
+        self.shear_modulus_calculator = ShearModulusCalculator(shear_modulus_normalisation)
         self.fmax_relaxation_convergence = fmax_relaxation_convergence
         self.with_force_threshold = with_force_threshold
         self.force_threshold_fmax = force_threshold_fmax

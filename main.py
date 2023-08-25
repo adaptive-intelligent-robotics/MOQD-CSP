@@ -82,7 +82,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
         fmax_threshold = experiment_parameters.cvt_run_parameters[
             "fmax_threshold"] if "fmax_threshold" in experiment_parameters.cvt_run_parameters.keys() else 0.2
 
-        normalise_bd = experiment_parameters.cvt_run_parameters["normalise_bd"] if experiment_parameters.cvt_run_parameters["normalise_bd"] in experiment_parameters.cvt_run_parameters.keys() else False
+        normalise_bd = experiment_parameters.cvt_run_parameters["normalise_bd"] if "normalise_bd" in experiment_parameters.cvt_run_parameters.keys() else False
 
 
         compute_gradients = experiment_parameters.cvt_run_parameters["dqd"] if "dqd" in experiment_parameters.cvt_run_parameters.keys() else False
@@ -92,7 +92,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
             fmax_relaxation_convergence=fmax_threshold,
             force_threshold_fmax=force_threshold_exp_fmax,
             compute_gradients=compute_gradients,
-            bd_normalisation=(experiment_parameters.cvt_run_parameters["bd_minimum_values"], experiment_parameters.cvt_run_parameters["bd_maximum_values"]) if normalise_bd else (None, None)
+            bd_normalisation=(experiment_parameters.cvt_run_parameters["bd_minimum_values"], experiment_parameters.cvt_run_parameters["bd_maximum_values"]) if normalise_bd else None
         )
 
         cvt = CVT(
