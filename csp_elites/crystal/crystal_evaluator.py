@@ -1,19 +1,17 @@
 import warnings
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict
 
 import numpy as np
 import torch
 from ase import Atoms
 from ase.build import niggli_reduce
-from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.utilities import CellBounds
-from matplotlib import pyplot as plt
 from pymatgen.core import Structure
 
-from csp_elites.property_calculators.band_gap_calculator import BandGapCalculator
-from csp_elites.crystal.materials_data_model import BandGapEnum, MaterialProperties
-from csp_elites.property_calculators.shear_modulus_calculator import ShearModulusCalculator
+from csp_elites.crystal.materials_data_model import BandGapEnum
 from csp_elites.map_elites.elites_utils import Species
+from csp_elites.property_calculators.band_gap_calculator import BandGapCalculator
+from csp_elites.property_calculators.shear_modulus_calculator import ShearModulusCalculator
 from csp_elites.property_calculators.structure_optimizer import MultiprocessOptimizer
 
 warnings.simplefilter("ignore")
