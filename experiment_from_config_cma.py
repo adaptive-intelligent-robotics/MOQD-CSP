@@ -1,9 +1,12 @@
 import json
 import sys
 
+print("cellbounds")
 from ase.ga.utilities import CellBounds
 
+print("data model")
 from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
+print("main cma")
 from csp_elites.dqd.cma_mega_run import main_cma
 # from csp_elites.plot import load_centroids, load_archive_from_pickle
 from csp_elites.utils.experiment_parameters import ExperimentParameters

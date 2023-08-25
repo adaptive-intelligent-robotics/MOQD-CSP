@@ -56,7 +56,7 @@ if __name__ == '__main__':
                 "dqd": True,
                 "dqd_learning_rate": 0.0001,
             },
-        system_name="TiO2",
+        system_name="SiO2",
         blocks = [22] * 8 + [8] * 16,
         volume=450,
         ratio_of_covalent_radii = 0.4,

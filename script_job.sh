@@ -6,7 +6,9 @@ export PATH=/vol/bitbucket/${USER}/myvenv/bin/:$PATH
 source activate
 source /vol/cuda/11.4.120-cudnn8.2.4/setup.sh
 
-python3 experiment_from_config_cma.py configs/0823/cma_50_relaxation_lr1_sigma_1_with_threshold_batch_10.json
+#python3 experiment_from_config_cma.py configs/0823/cma_50_relaxation_lr1_sigma_1_with_threshold_batch_10.json
+python3 experiment_from_config.py configs/0815/200_niches_5k_for_benchmark_100_relax_1.json
+#python3 debugger.py
 
 TERM=vt100 # or TERM=xterm
 /usr/bin/nvidia-smi

@@ -50,6 +50,8 @@ class ShearModulusCalculator:
 
         graph_gradient_wrt_bond_distances = tape.gradient(model_output, inputs[1])
         del tape
+        del graph
+        del inputs
         graph_gradient_wrt_bond_distances = np.array(graph_gradient_wrt_bond_distances[0])
         derivatives_multiplied = bond_distance_gradient_wrt_positions * \
                                  graph_gradient_wrt_bond_distances.reshape((-1, 100, 1, 1))

@@ -20,8 +20,6 @@ class OverridenFire:
         self.fa = fa
         self.a = a
 
-        self.fmax = 0.1
-
     def step_override(
         self,
         f: np.ndarray,
@@ -84,4 +82,4 @@ class OverridenFire:
 
     def converged(self, forces, fmax):
         """Did the optimization converge?"""
-        return np.max((forces ** 2).sum(axis=2), axis=1) < 0.2 ** 2
+        return np.max((forces ** 2).sum(axis=2), axis=1) < fmax ** 2

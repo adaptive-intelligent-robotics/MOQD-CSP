@@ -1,10 +1,14 @@
+print("inside main cma")
 from ase.ga.ofp_comparator import OFPComparator
 from ase.ga.utilities import CellBounds
 
+print("evaluator")
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
+print("system")
 from csp_elites.crystal.crystal_system import CrystalSystem
-from csp_elites.crystal.materials_data_model import StartGenerators, MaterialProperties
+print("mega loop")
 from csp_elites.dqd.cma_mega_loop import CMAMEGALOOP
+print("exp parameters")
 from csp_elites.map_elites.elites_utils import make_current_time_string
 from csp_elites.utils.experiment_parameters import ExperimentParameters
 

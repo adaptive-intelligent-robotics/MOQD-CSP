@@ -4,9 +4,10 @@ from typing import List, Optional
 
 import numpy as np
 from ase import Atoms
+from chgnet.model import CHGNet
+from pymatgen.io.ase import AseAtomsAdaptor
 
 from csp_elites.utils.plot import load_archive_from_pickle, load_centroids
-
 
 class Archive:
     def __init__(
@@ -15,13 +16,15 @@ class Archive:
         centroids: np.ndarray,
         descriptors: np.ndarray,
         individuals: List[Atoms],
-        centroid_ids: Optional[np.ndarray]
+        centroid_ids: Optional[np.ndarray],
+        labels: Optional[List[str]] = None
     ):
         self.fitnesses = fitnesses
         self.centroids = centroids
         self.descriptors = descriptors
         self.individuals = individuals
         self.centroid_ids = centroid_ids
+        self.lavels = labels
 
     @classmethod
     def from_archive(cls, archive_path: pathlib.Path, centroid_filepath: Optional[pathlib.Path] = None):

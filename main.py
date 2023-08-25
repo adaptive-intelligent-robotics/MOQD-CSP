@@ -78,6 +78,10 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
         force_threshold_exp_fmax= experiment_parameters.cvt_run_parameters[
             "force_threshold_exp_fmax"] if "force_threshold_exp_fmax" in experiment_parameters.cvt_run_parameters.keys() else 1.0
 
+        fmax_threshold = experiment_parameters.cvt_run_parameters[
+            "fmax_threshold"] if "fmax_threshold" in experiment_parameters.cvt_run_parameters.keys() else 0.2
+
+
         compute_gradients = experiment_parameters.cvt_run_parameters["dqd"] if "dqd" in experiment_parameters.cvt_run_parameters.keys() else False
         crystal_evaluator = CrystalEvaluator(
             comparator=comparator,

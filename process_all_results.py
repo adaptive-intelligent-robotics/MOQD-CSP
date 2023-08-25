@@ -6,22 +6,23 @@ import numpy as np
 from retrieve_results.folder_name_processing import ExperimentProcessor, ExperimentOrganiser
 
 if __name__ == '__main__':
-    date_list = ["0820", "0821", "0822", "0823"]
+    date_list = ["0822"]
 
     for date in date_list:
         save_structure_images = False
         filter_for_experimental_structures = False
         always_run_plotting = True
-        try:
-            experiment_organiser = ExperimentOrganiser()
-            folder_list = experiment_organiser.get_all_folders_with_date(date)
-            config_mapping, config_dict_csv = experiment_organiser.get_config_data(date)
-            config_names = list(config_mapping.keys())
-            experiment_tags_list = list(config_mapping.values())
-            experiment_organiser.map_config_data_to_experiment(folder_list, config_dict_csv, date)
-            folders_done = []
-            manual_check = {}
-            for folder in folder_list:
+
+        experiment_organiser = ExperimentOrganiser()
+        folder_list = experiment_organiser.get_all_folders_with_date(date)
+        config_mapping, config_dict_csv = experiment_organiser.get_config_data(date)
+        config_names = list(config_mapping.keys())
+        experiment_tags_list = list(config_mapping.values())
+        experiment_organiser.map_config_data_to_experiment(folder_list, config_dict_csv, date)
+        folders_done = []
+        manual_check = {}
+        for folder in folder_list:
+            try:
                 print(folder)
                 if experiment_organiser.is_experiment_valid(folder):
                     centroid_name = experiment_organiser.get_centroid_name(folder)
@@ -68,6 +69,9 @@ if __name__ == '__main__':
                                 experiment_processor.process_symmetry()
                             except ValueError:
                                 print(f"problem with plotting folder {folder}")
-        except Exception as e:
-            print(f"{folder}: {traceback.format_exc()}")
+            except Exception as e:
+                print(f"{traceback.format_exc()}")
+                continue
+
+
         print(manual_check)

@@ -739,12 +739,13 @@ class SymmetryEvaluation:
 
 if __name__ == '__main__':
 
-    experiment_tag = "20230813_01_48_TiO2_200_niches_for benchmark_100_relax_2"
+    # experiment_tag = "20230813_01_48_TiO2_200_niches_for benchmark_100_relax_2"
+    experiment_tag = "20230822_22_00_TiO2_cma_100_relaxation_lr1_sigma1"
     centroiid_tag = "centroids_200_2_band_gap_0_100_shear_modulus_0_120"
     centroid_path = f"{centroiid_tag}.dat"
     target_data_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "target_data" / f"target_data_{centroiid_tag}.csv"
 
-    archive_number = 5079
+    archive_number = 2400
     # structure_number = 53
     experiment_directory_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / experiment_tag
     centroid_full_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids" / centroid_path
