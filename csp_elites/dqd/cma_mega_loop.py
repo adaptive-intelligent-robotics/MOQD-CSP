@@ -272,7 +272,6 @@ class CMAMEGALOOP:
         random_index = np.random.randint(0, len(individuals))
         return individuals[random_index]
 
-
     def _check_restart(self, num_parents):
         """Emitter-side checks for restarting the optimizer.
 

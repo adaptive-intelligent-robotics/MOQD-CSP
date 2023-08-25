@@ -105,17 +105,12 @@ class CrystalSystem:
         print("generating individuals")
         for i in range(number_of_individuals):
             new_individual = self.create_one_individual(individual_id=i)
-            graph = self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn")
-            # print(graph)
-            if graph is not None:
-            # if self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn") is not None:
+            if self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn") is not None:
                 new_individual = new_individual.todict()
                 individuals.append(new_individual)
-            else:
-                print("isolated bluu")
         return individuals
 
-    def _initialise_start_generator(self, start_generator : StartGenerators):
+    def _initialise_start_generator(self, start_generator: StartGenerators):
         if start_generator == StartGenerators.RANDOM:
             closest_distances = closest_distances_generator(atom_numbers=self.atom_numbers_to_optimise,
                                                             ratio_of_covalent_radii=self.ratio_of_covalent_radii)  # equivalent to blmin
@@ -125,7 +120,7 @@ class CrystalSystem:
         elif start_generator == StartGenerators.PYXTAL:
             return pyxtal()
         else:
-            raise NotImplemented("Pick a valid start generator (random or pyxtal)")
+            raise NotImplemented("Pick a valid start generator (random or pyxtal).")
 
     def _initialise_operators(self, operator_probabilities: List[float]):
         closest_distances = closest_distances_generator(atom_numbers=self.atomic_numbers, ratio_of_covalent_radii=self.ratio_of_covalent_radii)

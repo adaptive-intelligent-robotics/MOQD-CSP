@@ -9,7 +9,7 @@ import tensorflow as tf
 from mp_api.client import MPRester
 from pymatgen.core import Structure
 
-from csp_elites.crystal.bond_converter import BondConverterTorch
+from csp_elites.property_calculators.bond_converter import BondConverterTorch
 
 
 class ShearModulusCalculator:
