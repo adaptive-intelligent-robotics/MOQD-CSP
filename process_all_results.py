@@ -3,7 +3,8 @@ import traceback
 
 import numpy as np
 
-from retrieve_results.folder_name_processing import ExperimentProcessor, ExperimentOrganiser
+from retrieve_results.experiment_organiser import ExperimentOrganiser
+from retrieve_results.experiment_processing import ExperimentProcessor
 
 if __name__ == '__main__':
     date_list = ["0822"]

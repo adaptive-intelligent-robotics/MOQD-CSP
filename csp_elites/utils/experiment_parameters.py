@@ -62,30 +62,27 @@ class ExperimentParameters:
                 "random_init_batch": 2,
                 # when to write results (one generation = one batch)
                 "dump_period":  2,
-                # do we use several cores?
-                "parallel": True,
                 # do we cache the result of CVT and reuse?
                 "cvt_use_cache": True,
                 # min/max of parameters
                 "bd_minimum_values": (0, 0),
                 "bd_maximum_values": (100, 120),
-                "relaxation_probability": 0,
                 "behavioural_descriptors": [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS],
                 "number_of_relaxation_steps": 0,
-                "curiosity_weights": True,
                 "filter_starting_Structures": 24,
                 "seed": False,
-                "profiling": False,
                 "force_threshold": True,
                 "force_threshold_exp_fmax": 2.0,
                 "constrained_qd": False,
                 "relax_every_n_generations": 0,
                 "alternative_operators": [("dqd", 10)],
-                "relax_archive_every_n_generations": 2,
-                "relax_archive_every_n_generations_n_relaxation_steps": 100,
+                "relax_archive_every_n_generations": 0,
+                "relax_archive_every_n_generations_n_relaxation_steps": 0,
                 "fmax_threshold": 0.4,
                 "dqd": True,
                 "dqd_learning_rate": 0.0001,
+                "cma_learning_rate": 1,
+                "cma_sigma_0": 1
             }
 
     def save_as_json(self, experiment_directory_path):

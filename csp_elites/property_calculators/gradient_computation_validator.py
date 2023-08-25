@@ -14,11 +14,10 @@ from csp_elites.crystal.materials_data_model import MaterialProperties
 from csp_elites.property_calculators.band_gap_calculator import BandGapCalculator
 from csp_elites.property_calculators.shear_modulus_calculator import ShearModulusCalculator
 from csp_elites.property_calculators.structure_optimizer import MultiprocessOptimizer
+import scienceplots
+plt.style.use('science')
+plt.rcParams['savefig.dpi'] = 300
 
-
-# check forces
-# check shear
-# check band gap
 class PropertyToCalculatorMatcher:
     property_to_calculator_dictionary = {
         MaterialProperties.BAND_GAP: BandGapCalculator,

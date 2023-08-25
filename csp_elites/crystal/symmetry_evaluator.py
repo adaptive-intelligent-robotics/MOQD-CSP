@@ -24,7 +24,9 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.vis.structure_vtk import StructureVis
 import matplotlib.colors as mcolors
-
+import scienceplots
+plt.style.use('science')
+plt.rcParams['savefig.dpi'] = 300
 
 from csp_elites.map_elites.archive import Archive
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
@@ -566,17 +568,17 @@ class SymmetryEvaluation:
         my_cmap = cm.viridis
 
         # set the parameters
-        font_size = 12
-        params = {
-            "axes.labelsize": font_size,
-            "legend.fontsize": font_size,
-            "xtick.labelsize": font_size,
-            "ytick.labelsize": font_size,
-            "text.usetex": False,
-            "figure.figsize": [10, 10],
-        }
-
-        mpl.rcParams.update(params)
+        # font_size = 12
+        # params = {
+        #     "axes.labelsize": font_size,
+        #     "legend.fontsize": font_size,
+        #     "xtick.labelsize": font_size,
+        #     "ytick.labelsize": font_size,
+        #     "text.usetex": False,
+        #     "figure.figsize": [10, 10],
+        # }
+        #
+        # mpl.rcParams.update(params)
 
         # create the plot object
         fig, ax = plt.subplots(facecolor="white", edgecolor="white")
@@ -599,7 +601,7 @@ class SymmetryEvaluation:
             ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
             if target_centroids is not None:
                 if centroids[i] in np.array(target_centroids):
-                    ax.fill(*zip(*polygon), edgecolor="red", facecolor="white", lw=4)
+                    ax.fill(*zip(*polygon), edgecolor="red", facecolor="none", lw=4)
         # fill the plot with the colors
         for group_id, group in enumerate(list_of_centroid_groups):
             for idx in group:
@@ -643,17 +645,17 @@ class SymmetryEvaluation:
         my_cmap =cm.get_cmap('inferno', 5)
 
         # set the parameters
-        font_size = 12
-        params = {
-            "axes.labelsize": font_size,
-            "legend.fontsize": font_size,
-            "xtick.labelsize": font_size,
-            "ytick.labelsize": font_size,
-            "text.usetex": False,
-            "figure.figsize": [10, 10],
-        }
-
-        mpl.rcParams.update(params)
+        # font_size = 12
+        # params = {
+        #     "axes.labelsize": font_size,
+        #     "legend.fontsize": font_size,
+        #     "xtick.labelsize": font_size,
+        #     "ytick.labelsize": font_size,
+        #     "text.usetex": False,
+        #     "figure.figsize": [10, 10],
+        # }
+        #
+        # mpl.rcParams.update(params)
 
         # create the plot object
         fig, ax = plt.subplots(facecolor="white", edgecolor="white")

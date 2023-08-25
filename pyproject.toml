@@ -35,6 +35,8 @@ chemview = "^0.6"
 pillow = "^10.0.0"
 seaborn = "^0.12.2"
 ribs = "^0.5.2"
+black = "^23.7.0"
+scienceplots = "^2.1.0"
 
 
 [tool.poetry.group.dev.dependencies]

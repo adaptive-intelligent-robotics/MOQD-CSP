@@ -5,6 +5,7 @@ from collections import defaultdict
 from typing import Optional, Tuple, List
 
 import numpy as np
+import pandas as pd
 from ase import Atoms
 from ase.spacegroup import get_spacegroup
 from matplotlib import pyplot as plt
@@ -174,6 +175,16 @@ class ReferenceAnalyser:
 
             with open(self.save_path / f"{self.formula}_band_gap_shear_modulus.pkl", "wb") as file:
                 pickle.dump(all_data, file)
+
+            centroid_tag = str(self.centroid_folder_path.name).rstrip(".dat")
+            filename = f"{self.formula}_target_data_{centroid_tag}"
+            df = pd.DataFrame(
+                [self.reference_ids, self.energies, self.band_gaps, self.shear_moduli, self.fmax_list, target_archive.centroid_ids])
+            df.columns = df.iloc[0]
+            df = df[1:]
+            df = df.reset_index(drop=True)
+            df.index = ["energy", "band_gap", "shear_modulus", "fmax", "centroid_id"]
+            df.to_csv(self.save_path / filename)
 
         return target_archive
 

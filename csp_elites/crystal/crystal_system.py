@@ -22,8 +22,8 @@ from csp_elites.map_elites.elites_utils import Species
 class CrystalSystem:
     def __init__(self,
                  atom_numbers_to_optimise: List[float],
-                 volume: int = 240,
-                 ratio_of_covalent_radii: float = 0.5,
+                 volume: int = 450,
+                 ratio_of_covalent_radii: float = 0.4,
                  splits: Dict[Tuple[int], int] = None,
                  cellbounds: CellBounds = None,
                  operator_probabilities: List[float] = (4., 2., 2., 2.),

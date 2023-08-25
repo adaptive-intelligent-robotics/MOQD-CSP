@@ -21,7 +21,9 @@ from csp_elites.utils.asign_target_values_to_centroids import \
 if TYPE_CHECKING:
     from csp_elites.utils.experiment_parameters import ExperimentParameters
 
-
+import scienceplots
+plt.style.use('science')
+plt.rcParams['savefig.dpi'] = 300
 def get_voronoi_finite_polygons_2d(
     centroids: np.ndarray, radius: Optional[float] = None
 ) -> Tuple[List, np.ndarray]:
@@ -90,8 +92,6 @@ def get_voronoi_finite_polygons_2d(
 
     return new_regions, np.asarray(new_vertices)
 
-
-
 def plot_2d_map_elites_repertoire_marta(
     centroids: np.ndarray,
     repertoire_fitnesses: np.ndarray,
@@ -105,7 +105,8 @@ def plot_2d_map_elites_repertoire_marta(
     directory_string: Optional[str]= None,
     filename: Optional[str] = "cvt_plot",
     axis_labels: List[str] = ["band_gap", "shear_modulus"],
-    annotations: Optional[Union[List[str], np.ndarray]] = None
+    annotations: Optional[Union[List[str], np.ndarray]] = None,
+    annotate: bool = True
 
 ) -> Tuple[Optional[Figure], Axes]:
     """Plot a visual representation of a 2d map elites repertoire.
@@ -147,17 +148,7 @@ def plot_2d_map_elites_repertoire_marta(
     if vmax is None:
         vmax = float(np.max(fitnesses[~grid_empty]))
 
-    # set the parameters
-    font_size = 12
-    params = {
-        "axes.labelsize": font_size,
-        "legend.fontsize": font_size,
-        "xtick.labelsize": font_size,
-        "ytick.labelsize": font_size,
-        "text.usetex": False,
-        "figure.figsize": [10, 10],
-    }
-
+    params = {"figure.figsize": [3.5, 3.5]}
     mpl.rcParams.update(params)
 
     # create the plot object
@@ -192,7 +183,7 @@ def plot_2d_map_elites_repertoire_marta(
         ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
         if target_centroids is not None:
             if centroids[i] in np.array(target_centroids):
-                ax.fill(*zip(*polygon), edgecolor="red", facecolor="none", lw=4)
+                ax.fill(*zip(*polygon), edgecolor="red", facecolor="none", lw=2)
     # fill the plot with the colors
     for idx, fitness in enumerate(fitnesses):
         if fitness > -np.inf:
@@ -207,25 +198,27 @@ def plot_2d_map_elites_repertoire_marta(
         ax.scatter(
             descriptors[:, 0],
             descriptors[:, 1],
-            c=fitnesses[~grid_empty],
-            cmap=my_cmap,
-            s=10,
+            c="black",
+            # c=fitnesses[~grid_empty],
+            # cmap=my_cmap,
+            s=1,
             zorder=0,
         )
         for i in range(len(fitnesses)):
-            if annotations is None:
-                annotations = np.around(fitnesses, decimals=3)
-            if isinstance(annotations[i], str) and annotations[i] != "-inf":
-                ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]))
-            elif isinstance(annotations[i], float) and annotations[i] != -np.inf:
-                ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]))
+            if annotate:
+                if annotations is None:
+                    annotations = np.around(fitnesses, decimals=3)
+                if isinstance(annotations[i], str) and annotations[i] != "-inf":
+                    ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]))
+                elif isinstance(annotations[i], float) and annotations[i] != -np.inf:
+                    ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]), fontsize=4)
     # aesthetic
     ax.set_xlabel(f"BD1 - {axis_labels[0]}")
     ax.set_ylabel(f"BD2 - {axis_labels[1]}")
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=my_cmap), cax=cax)
-    cbar.ax.tick_params(labelsize=font_size)
+    cbar.ax.tick_params(labelsize=mpl.rcParams["font.size"])
 
     ax.set_title("MAP-Elites Grid")
     ax.set_aspect("equal")
@@ -241,20 +234,9 @@ def plot_numbered_centroids(
     minval: np.ndarray,
     maxval: np.ndarray,
 ):
-
-    # set the parameters
-    font_size = 12
-    params = {
-        "axes.labelsize": font_size,
-        "legend.fontsize": font_size,
-        "xtick.labelsize": font_size,
-        "ytick.labelsize": font_size,
-        "text.usetex": False,
-        "figure.figsize": [10, 10],
-    }
-
+    params = {"figure.figsize": [3.5, 3.5]}
     mpl.rcParams.update(params)
-
+    # set the parameters
     # create the plot object
 
     fig, ax = plt.subplots(facecolor="white", edgecolor="white")
@@ -295,6 +277,8 @@ def plot_numbered_centroids(
 
 
 def plot_all_statistics_from_file(filename: str, save_location: Optional[str]):
+    params = {"figure.figsize": [3.5, 2.625]}
+    mpl.rcParams.update(params)
     with open(filename, "r") as file:
         generation_data = np.loadtxt(file)
 
@@ -408,6 +392,7 @@ def plot_all_maps_in_archive(
     experiment_parameters: "ExperimentParameters",
     all_centroids,
     target_centroids,
+        annotate: bool = True
 ):
     list_of_files = [name for name in os.listdir(f"{experiment_directory_path}") if
                      not os.path.isdir(name)]
@@ -444,7 +429,8 @@ def plot_all_maps_in_archive(
                 directory_string=experiment_directory_path,
                 filename=f"cvt_plot_{archive_id}",
                 axis_labels=[bd.value for bd in
-                             experiment_parameters.cvt_run_parameters["behavioural_descriptors"]]
+                             experiment_parameters.cvt_run_parameters["behavioural_descriptors"]],
+                annotate=annotate
             )
 
 if __name__ == '__main__':
