@@ -35,7 +35,7 @@ class BandGapCalculator:
                 structure=structure, band_gap_type=band_gap_type,
             )
             gradients_wrt_positions = None
-        model_output = model_output.detach().numpy()[0]
+        model_output = model_output.detach().numpy()
         if self.normalisation_values is not None:
             model_output = normalise_between_0_and_1(model_output, self.normalisation_values)
         return model_output, gradients_wrt_positions
