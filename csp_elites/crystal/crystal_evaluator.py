@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple, Union
 
 import numpy as np
 import torch
@@ -25,14 +25,15 @@ class CrystalEvaluator:
                  fmax_relaxation_convergence: float = 0.2,
                  force_threshold_fmax: float = 1.0,
                  compute_gradients: bool = True,
-                 cellbounds: Optional[CellBounds] = None
+                 cellbounds: Optional[CellBounds] = None,
+                 bd_normalisation: Union[List[Optional[Tuple[float, float]]]] = (None, None),
                  ):
 
         self.relaxer = MultiprocessOptimizer(
             fmax_threshold=fmax_relaxation_convergence
         )
-        self.band_gap_calculator = BandGapCalculator()
-        self.shear_modulus_calculator = ShearModulusCalculator()
+        self.band_gap_calculator = BandGapCalculator((bd_normalisation[0][0], bd_normalisation[1][0]))
+        self.shear_modulus_calculator = ShearModulusCalculator((bd_normalisation[0][1], bd_normalisation[1][1]))
         self.fmax_relaxation_convergence = fmax_relaxation_convergence
         self.with_force_threshold = with_force_threshold
         self.force_threshold_fmax = force_threshold_fmax
@@ -154,7 +155,7 @@ class CrystalEvaluator:
                 compute_gradients=self.compute_gradients
             )
 
-        return float(bandgap) * 25, gradients # TODO CHANGE THIS
+        return float(bandgap), gradients
 
     def _batch_shear_modulus_compute(self, list_of_structures: List[Structure]):
         shear_moduli = []

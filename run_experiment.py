@@ -14,8 +14,8 @@ if __name__ == '__main__':
     os.environ['CUDA_VISIBLE_DEVICES'] = "0"
     # tracemalloc.start()
     experiment_parameters = ExperimentParameters(
-        number_of_niches=20,
-        maximum_evaluations=10,
+        number_of_niches=200,
+        maximum_evaluations=4,
         experiment_tag="test_n_generations",
         fitler_comparison_data_for_n_atoms=24,
         start_generator=StartGenerators.PYXTAL,
@@ -37,7 +37,7 @@ if __name__ == '__main__':
                 "cvt_use_cache": True,
                 # min/max of parameters
                 "bd_minimum_values": (0, 0),
-                "bd_maximum_values": (100, 120),
+                "bd_maximum_values": (4, 120),
                 "relaxation_probability": 0,
                 "behavioural_descriptors": [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS],
                 "number_of_relaxation_steps": 0,
@@ -49,14 +49,15 @@ if __name__ == '__main__':
                 "force_threshold_exp_fmax": 2.0,
                 "constrained_qd": False,
                 "relax_every_n_generations": 0,
-                "alternative_operators": [("dqd", 10)],
+                "alternative_operators": [("rattle", 10)],
                 "relax_archive_every_n_generations": 2,
                 "relax_archive_every_n_generations_n_relaxation_steps": 100,
                 "fmax_threshold": 0.4,
-                "dqd": True,
+                "dqd": False,
                 "dqd_learning_rate": 0.0001,
+                "normalise_bd": True
             },
-        system_name="SiO2",
+        system_name="TiO2",
         blocks = [22] * 8 + [8] * 16,
         volume=450,
         ratio_of_covalent_radii = 0.4,

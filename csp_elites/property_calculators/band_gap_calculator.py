@@ -1,3 +1,5 @@
+from typing import Optional, Tuple
+
 import dgl
 import matgl
 import torch
@@ -6,15 +8,18 @@ from mp_api.client import MPRester
 from pymatgen.core import Structure
 from matgl.graph.compute import compute_pair_vector_and_distance
 
+from csp_elites.utils.utils import normalise_between_0_and_1
+
 
 class BandGapCalculator:
-    def __init__(self):
+    def __init__(self, normalisation_values: Optional[Tuple[float, float]] = None):
         self.model_wrapper = matgl.load_model("MEGNet-MP-2019.4.1-BandGap-mfi")
 
         self.graph_converter = Structure2Graph(
             element_types=self.model_wrapper.model.element_types,
             cutoff=self.model_wrapper.model.cutoff,
         )
+        self.normalisation_values = normalisation_values
 
     def compute(self,
                 structure: Structure,
@@ -30,7 +35,10 @@ class BandGapCalculator:
                 structure=structure, band_gap_type=band_gap_type,
             )
             gradients_wrt_positions = None
-        return model_output.detach().numpy()[0], gradients_wrt_positions
+        model_output = model_output.detach().numpy()[0]
+        if self.normalisation_values is not None:
+            model_output = normalise_between_0_and_1(model_output, self.normalisation_values)
+        return model_output, gradients_wrt_positions
 
     def _compute_band_gap_no_gradients(self, structure: Structure, band_gap_type: torch.Tensor):
         return self.model_wrapper.predict_structure(
@@ -63,6 +71,7 @@ class BandGapCalculator:
         model_output = model_output.detach()
         # model_output_converted = self.model_wrapper.transformer.inverse_transform(model_output)
         return model_output, gradient_wrt_positions
+
 
 if __name__ == '__main__':
     shear_calculator = BandGapCalculator()

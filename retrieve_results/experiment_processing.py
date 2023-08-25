@@ -84,10 +84,15 @@ class ExperimentProcessor:
     def compute_target_centroids(self):
         comparison_data_location = self.experiment_location / "experiments" / "target_data/ti02_band_gap_shear_modulus.pkl" # todo: m,ake this dynamic for other materials
         comparison_data_packed = load_archive_from_pickle(str(comparison_data_location))
+
+        normalise_bd_values = (self.experiment_parameters.cvt_run_parameters["bd_minimum_values"], \
+                                                   self.experiment_parameters.cvt_run_parameters["bd_maximum_values"]) if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else None
+
         target_centroids = reassign_data_from_pkl_to_new_centroids(
             centroids_file=str(self.centroid_directory_path),
             target_data=comparison_data_packed,
-            filter_for_number_of_atoms=self.experiment_parameters.fitler_comparison_data_for_n_atoms
+            filter_for_number_of_atoms=self.experiment_parameters.fitler_comparison_data_for_n_atoms,
+            normalise_bd_values=normalise_bd_values
         )
         return target_centroids
 

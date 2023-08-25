@@ -141,6 +141,7 @@ class CVT:
                     list_of_atoms=population,
                     n_relaxation_steps=n_relaxation_steps
                 )
+            print(descriptors)
 
             if population is not None:
                 self.crystal_system.update_operator_scaling_volumes(population=population_as_atoms)
@@ -215,10 +216,15 @@ class CVT:
 
     def _initialise_kdt_and_centroids(self, experiment_directory_path, number_of_niches, run_parameters):
         # create the CVT
+        if run_parameters["normalise_bd"]:
+            bd_minimum_values, bd_maximum_values = [0, 0], [1, 1]
+        else:
+            bd_minimum_values, bd_maximum_values = run_parameters["bd_minimum_values"], run_parameters["bd_maximum_values"]
+
         c = cvt(number_of_niches, self.number_of_bd_dimensions,
                 run_parameters['cvt_samples'],
-                run_parameters["bd_minimum_values"],
-                run_parameters["bd_maximum_values"],
+                bd_minimum_values,
+                bd_maximum_values,
                 experiment_directory_path,
                 run_parameters["behavioural_descriptors"],
                 run_parameters['cvt_use_cache'],

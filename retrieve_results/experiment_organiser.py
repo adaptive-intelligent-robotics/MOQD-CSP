@@ -37,12 +37,17 @@ class ExperimentOrganiser:
         with open(self.experiment_directory_path / folder_name / "experiment_parameters.pkl", "rb") as file:
             experiment_parameters = pickle.load(file)
 
+        if experiment_parameters["normalise_bd"]:
+            bd_minimum_values, bd_maximum_values = [0, 0], [1, 1]
+        else:
+            bd_minimum_values, bd_maximum_values = experiment_parameters["bd_minimum_values"], experiment_parameters["bd_maximum_values"]
+
         centroid_filename = make_centroid_filename(
-            k=200, # make number of niches dynamic
+            k=200, # todo: make number of niches dynamic
             dim=len(experiment_parameters["behavioural_descriptors"]),
             bd_names=experiment_parameters["behavioural_descriptors"],
-            bd_minimum_values=experiment_parameters["bd_minimum_values"],
-            bd_maximum_values=experiment_parameters["bd_maximum_values"],
+            bd_minimum_values=bd_minimum_values,
+            bd_maximum_values=bd_maximum_values,
             formula="TiO2" # todo: make this dynamic
         )
         return centroid_filename

@@ -94,3 +94,12 @@ class ExperimentParameters:
 
         with open(f"{experiment_directory_path}/config.json", "w") as file:
             json.dump(asdict(self), file)
+
+    def return_min_max_bd_values(self):
+        if self.cvt_run_parameters["normalise_bd"]:
+            bd_minimum_values, bd_maximum_values = [0, 0], [1, 1]
+        else:
+            bd_minimum_values, bd_maximum_values = self.cvt_run_parameters["bd_minimum_values"], \
+                                                   self.cvt_run_parameters["bd_maximum_values"]
+
+        return bd_minimum_values, bd_maximum_values

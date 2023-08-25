@@ -417,11 +417,14 @@ def plot_all_maps_in_archive(
 
             if "relaxed" in filename:
                 archive_id += "_relaxed"
+            bd_minimum_values, bd_maximum_values = experiment_parameters.return_min_max_bd_values()
             plot_2d_map_elites_repertoire_marta(
                 centroids=all_centroids,
                 repertoire_fitnesses=fitnesses_for_plotting,
-                minval=experiment_parameters.cvt_run_parameters["bd_minimum_values"],
-                maxval=experiment_parameters.cvt_run_parameters["bd_maximum_values"],
+                minval=bd_minimum_values,
+                maxval=bd_maximum_values,
+                # minval=[0, 0] if experiment_parameters.cvt_run_parameters["normalise_bd"] else experiment_parameters.cvt_run_parameters["bd_minimum_values"],
+                # maxval=[1, 1] if experiment_parameters.cvt_run_parameters["normalise_bd"] else experiment_parameters.cvt_run_parameters["bd_maximum_values"],
                 repertoire_descriptors=descriptors_for_plotting,
                 vmin=experiment_parameters.fitness_min_max_values[0],
                 vmax=experiment_parameters.fitness_min_max_values[1],

@@ -1,3 +1,5 @@
+from typing import Optional, Tuple
+
 import dgl
 import numpy as np
 import torch
@@ -10,13 +12,15 @@ from mp_api.client import MPRester
 from pymatgen.core import Structure
 
 from csp_elites.property_calculators.bond_converter import BondConverterTorch
+from csp_elites.utils.utils import normalise_between_0_and_1
 
 
 class ShearModulusCalculator:
-    def __init__(self):
+    def __init__(self, normalisation_values: Optional[Tuple[float, float]] = None):
         self.model_wrapper = megnet_load_model("logG_MP_2018")
         self.graph_converter_torch = Structure2Graph(element_types=DEFAULT_ELEMENT_TYPES, cutoff=4.0) # todo: find where default cutoff loaded from
         self.bond_converter = BondConverterTorch()
+        self.normalisation_values = normalisation_values
 
     def compute(self, structure: Structure, compute_gradients: bool = False):
         if compute_gradients:
@@ -24,7 +28,10 @@ class ShearModulusCalculator:
         else:
             log_shear_modulus = self._compute_log_shear_modulus_no_gradients(structure)
             gradients = None
-        return 10 ** log_shear_modulus, gradients
+        shear_modulus = 10 ** log_shear_modulus
+        if self.normalisation_values is not None:
+            shear_modulus = normalise_between_0_and_1(shear_modulus, self.normalisation_values)
+        return shear_modulus, gradients
 
     def _compute_log_shear_modulus_no_gradients(self, structure: Structure):
         shear_modulus_log = self.model_wrapper.predict_structure(structure).ravel()[0]

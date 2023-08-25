@@ -106,7 +106,7 @@ class GradientComputationValidator:
             ax.set_ylabel(ylabel)
             ax.set_xlabel("Number of Steps Taken")
             if len(values) > 100:
-                ax.set_xticks(np.linspace(0, len(values)), 100)
+                ax.set_xticks(np.linspace(0, len(values), 100))
 
         ax.plot(np.arange(len(values)), values, label=label)
 

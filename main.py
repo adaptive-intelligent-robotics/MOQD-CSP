@@ -82,6 +82,8 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
         fmax_threshold = experiment_parameters.cvt_run_parameters[
             "fmax_threshold"] if "fmax_threshold" in experiment_parameters.cvt_run_parameters.keys() else 0.2
 
+        normalise_bd = experiment_parameters.cvt_run_parameters["normalise_bd"] if experiment_parameters.cvt_run_parameters["normalise_bd"] in experiment_parameters.cvt_run_parameters.keys() else False
+
 
         compute_gradients = experiment_parameters.cvt_run_parameters["dqd"] if "dqd" in experiment_parameters.cvt_run_parameters.keys() else False
         crystal_evaluator = CrystalEvaluator(
@@ -90,6 +92,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
             fmax_relaxation_convergence=fmax_threshold,
             force_threshold_fmax=force_threshold_exp_fmax,
             compute_gradients=compute_gradients,
+            bd_normalisation=(experiment_parameters.cvt_run_parameters["bd_minimum_values"], experiment_parameters.cvt_run_parameters["bd_maximum_values"]) if normalise_bd else (None, None)
         )
 
         cvt = CVT(
@@ -97,9 +100,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
             crystal_system=crystal_system,
             crystal_evaluator=crystal_evaluator,
         )
-        # snapshot = tracemalloc.take_snapshot()
 
-        print(f"Memory after all object created, before compute loop {psutil.virtual_memory()[3]/1000000000}")
         tic = time.time()
         experiment_directory_path, archive = cvt.batch_compute_with_list_of_atoms(
             number_of_niches=experiment_parameters.number_of_niches,
@@ -135,5 +136,6 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
             filter_for_experimental_structures=False,
             experiment_location=pathlib.Path(__file__).parent
         )
+
         experiment_processor.plot()
         experiment_processor.process_symmetry()
