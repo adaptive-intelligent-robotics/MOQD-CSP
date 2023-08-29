@@ -77,8 +77,11 @@ class ExperimentOrganiser:
         config_for_csv = {}
         for id, configs_for_day in enumerate(config_files):
             for config in configs_for_day:
-                with open(config_folders[id] / config, "r") as file:
-                    config_data = json.load(file)
+                try:
+                    with open(config_folders[id] / config, "r") as file:
+                        config_data = json.load(file)
+                except UnicodeDecodeError:
+                    continue
                 config_tag = config_data["experiment_tag"]
                 config_mapping_dict[f"{days[id]}/{config}"] = config_tag
                 config_data["config_filename"] = f"{days[id]}/{config}"

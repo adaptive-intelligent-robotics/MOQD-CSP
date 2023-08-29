@@ -1,13 +1,19 @@
 import pathlib
 import pickle
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
+import pandas as pd
 from ase import Atoms
 from chgnet.model import CHGNet
+from mp_api.client import MPRester
 from pymatgen.io.ase import AseAtomsAdaptor
 
+from csp_elites.utils.asign_target_values_to_centroids import \
+    reassign_data_from_pkl_to_new_centroids
 from csp_elites.utils.plot import load_archive_from_pickle, load_centroids
+from csp_elites.utils.utils import normalise_between_0_and_1
+
 
 class Archive:
     def __init__(
@@ -92,3 +98,89 @@ class Archive:
 
     def get_individuals_as_structures(self):
         return [AseAtomsAdaptor.get_structure(atoms) for atoms in self.individuals]
+
+    @classmethod
+    def create_reference_archive(cls,
+        target_data_path: pathlib.Path,
+        normalise_bd_values: List[Tuple[float, float]],
+        centroids_to_assign_file: pathlib.Path,
+        labels: Optional[List[str]],
+    ):
+        fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(target_data_path)
+
+        if normalise_bd_values is not None:
+            descriptors[:, 0] = normalise_between_0_and_1(descriptors[:, 0], (
+            normalise_bd_values[0][0], normalise_bd_values[1][0]))
+            descriptors[:, 1] = normalise_between_0_and_1(descriptors[:, 1],
+                                                          (normalise_bd_values[0][1],
+                                                           normalise_bd_values[1][1]))
+
+        centroids = reassign_data_from_pkl_to_new_centroids(
+            centroids_to_assign_file=centroids_to_assign_file,
+            target_data=(fitnesses, centroids, descriptors, individuals),
+            filter_for_number_of_atoms=None,
+            normalise_bd_values=normalise_bd_values
+        )
+
+        centroid_ids = cls.assign_centroid_ids(
+            centroids,
+            centroids_to_assign_file
+        )
+        return cls(
+            fitnesses=np.array(fitnesses),
+            centroids=np.array(centroids),
+            descriptors=np.array(descriptors),
+            individuals=[Atoms.fromdict(individual) for individual in individuals],
+            centroid_ids=centroid_ids,
+            labels=labels
+        )
+
+    @classmethod
+    def from_reference_csv_path(cls,
+        target_data_path: pathlib.Path,
+        normalise_bd_values: List[Tuple[float, float]],
+        centroids_path: pathlib.Path,
+    ):
+        reference_data = pd.read_csv(target_data_path)
+        reference_data.index = reference_data["Unnamed: 0"].to_list()
+        reference_data.drop(columns="Unnamed: 0", inplace=True)
+        energy, band_gap, shear_modulus, fmax, _ = reference_data.to_numpy()
+        labels = list(reference_data.columns)
+        if normalise_bd_values is not None:
+            band_gap = normalise_between_0_and_1(
+                band_gap, (normalise_bd_values[0][0], normalise_bd_values[1][0]))
+            shear_modulus = normalise_between_0_and_1(
+                shear_modulus, (normalise_bd_values[0][1], normalise_bd_values[1][1]))
+
+        descriptors = np.vstack([band_gap, shear_modulus]).T
+        centroids = reassign_data_from_pkl_to_new_centroids(
+            centroids_file=centroids_path,
+            target_data=(energy, None, descriptors, None),
+            filter_for_number_of_atoms=None,
+            normalise_bd_values=None
+        )
+
+        with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
+            data_mp_api_data = mpr.materials.search(material_ids=labels, fields=["structure"])
+        individuals = [AseAtomsAdaptor.get_atoms(el.structure) for el in data_mp_api_data]
+
+        return cls(
+            fitnesses=energy,
+            centroids=centroids,
+            descriptors=descriptors,
+            labels=labels,
+            individuals=individuals,
+            centroid_ids=cls.assign_centroid_ids(
+                centroids_in_archive=centroids,
+                centroid_filepath=centroids_path
+            ),
+        )
+
+    def to_dataframe(self):
+        df = pd.DataFrame(
+            [self.labels, self.fitnesses, self.descriptors[:, 0], self.descriptors[:, 1], [None] * len(self.fitnesses), self.centroid_ids])
+        df.columns = df.iloc[0]
+        df = df[1:]
+        df = df.reset_index(drop=True)
+        df.index = ["energy", "band_gap", "shear_modulus", "fmax", "centroid_id"]
+        return df

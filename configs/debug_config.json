@@ -31,7 +31,7 @@
   "splits": "DUMMY",
   "cellbounds": "DUMMY",
   "operator_probabilities": [
-    5.0,
+    0,
     0,
     3.0,
     2.0
@@ -50,12 +50,10 @@
     "bd_minimum_values": [
       0,
       0,
-      0
     ],
     "bd_maximum_values": [
-      100,
+      4,
       120,
-      100
     ],
     "relaxation_probability": 0,
     "behavioural_descriptors": [
@@ -69,7 +67,7 @@
     "seed": false,
     "profiling": false,
     "force_threshold": false,
-    "constrained_qd": true
+    "constrained_qd": false
 
   },
   "experiment_tag": "debug_config",

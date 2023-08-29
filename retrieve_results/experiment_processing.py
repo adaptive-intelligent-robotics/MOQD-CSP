@@ -83,8 +83,6 @@ class ExperimentProcessor:
         return max([int(name.lstrip("archive_").rstrip(".pkl")) for name in os.listdir(self.experiment_directory_path) if ((not os.path.isdir(name)) and ("archive_" in name) and (".pkl" in name))])
 
     def compute_target_centroids(self):
-        # comparison_data_location = self.experiment_location / "experiments" / "target_data/ti02_band_gap_shear_modulus.pkl" # todo: make this dynamic for other materials
-
         number_of_atoms = len(self.experiment_parameters.blocks)
         bd_tag = [bd.value for bd in self.experiment_parameters.cvt_run_parameters ["behavioural_descriptors"]]
         tag = ""
@@ -118,26 +116,31 @@ class ExperimentProcessor:
         number_of_atoms = self.experiment_parameters.cvt_run_parameters["filter_starting_Structures"]
         target_data_path = self.experiment_location / "mp_reference_analysis" / f"{self.formula}_{number_of_atoms}" / f"{self.formula}_target_data_{centroid_tag}.csv"
 
-
         # todo: change to include formula
         if not os.path.isfile(target_data_path):
             target_data_path = None
 
         archive = Archive.from_archive(unrelaxed_archive_location, centroid_filepath=self.centroid_directory_path)
+
+
+        normalise_bd_values = (self.experiment_parameters.cvt_run_parameters["bd_minimum_values"], \
+                                                   self.experiment_parameters.cvt_run_parameters["bd_maximum_values"]) if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else None
+
+
+
+        tareget_archive = Archive.from_reference_csv_path(
+            target_data_path,
+            normalise_bd_values=normalise_bd_values,
+            centroids_path=self.centroid_directory_path,
+        )
         symmetry_evaluation = SymmetryEvaluation(
             formula=self.formula,
             filter_for_experimental_structures=self.filter_for_experimental_structures,
-            reference_data_path=target_data_path,
+            reference_data_archive=tareget_archive
         )
 
         matched_space_group_dict, spacegroup_dictionary = symmetry_evaluation.find_individuals_with_reference_symmetries(
             individuals=archive.individuals, indices_to_check=None)
-
-        # symmetry_evaluation.plot_histogram(
-        #     spacegroup_dictionary=spacegroup_dictionary,
-        #     against_reference=False,
-        #     save_directory=self.experiment_directory_path,
-        # )
 
         energy_indices = symmetry_evaluation.save_best_structures_by_energy(
             archive=archive,
@@ -162,7 +165,6 @@ class ExperimentProcessor:
             archive=archive,
             indices_to_compare=list(all_individual_indices_to_check),
             directory_to_save=self.experiment_directory_path,
-            reference_data_path=target_data_path,
         )
 
         symmetry_evaluation.group_structures_by_symmetry(
