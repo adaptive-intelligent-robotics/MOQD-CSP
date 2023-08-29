@@ -65,7 +65,9 @@ def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
 
     if filter_for_number_of_atoms is not None:
         for i, atoms in enumerate(individuals):
-            if len(atoms.get_positions()) <= filter_for_number_of_atoms:
+
+            atom_positions = atoms["positions"] if isinstance(atoms, dict) else atoms.get_positions()
+            if len(atom_positions) <= filter_for_number_of_atoms:
                 fitnesses_to_enumerate.append(fitnesses[i])
                 band_gaps.append(descriptors[i][0])
                 shear_moduli.append(descriptors[i][1])

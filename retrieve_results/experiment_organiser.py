@@ -48,9 +48,13 @@ class ExperimentOrganiser:
             bd_names=experiment_parameters["behavioural_descriptors"],
             bd_minimum_values=bd_minimum_values,
             bd_maximum_values=bd_maximum_values,
-            formula="TiO2" # todo: make this dynamic
+            formula=self.get_formula_from_folder_name(folder_name=folder_name)
         )
         return centroid_filename
+
+    @staticmethod
+    def get_formula_from_folder_name(folder_name: str):
+        return folder_name[15:].split("_")[0]
 
     def get_config_data(self, date: str):
         # date = self.get_date_from_folder_name(folder_name)
@@ -85,7 +89,9 @@ class ExperimentOrganiser:
     def map_config_data_to_experiment(self, experiments: List[str], config_for_csv: Dict[str, Any], tag):
         mapped_configs = {}
         for experiment_folder in experiments:
-            experiment_tag = experiment_folder.split("TiO2_")[1]
+            formula = self.get_formula_from_folder_name(experiment_folder)
+            # experiment_tag = experiment_folder.split(f"{formula}_")[1]
+            experiment_tag = experiment_folder[15 +len(formula) + 1:]
             config_information = config_for_csv[experiment_tag]
             mapped_configs[experiment_folder] = config_information
 

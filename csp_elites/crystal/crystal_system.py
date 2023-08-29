@@ -103,9 +103,12 @@ class CrystalSystem:
         print("generating individuals")
         for i in range(number_of_individuals):
             new_individual = self.create_one_individual(individual_id=i)
-            if self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn") is not None:
-                new_individual = new_individual.todict()
-                individuals.append(new_individual)
+            try:
+                if self.graph_converter(AseAtomsAdaptor.get_structure(atoms=new_individual), on_isolated_atoms="warn") is not None:
+                    new_individual = new_individual.todict()
+                    individuals.append(new_individual)
+            except SystemExit:
+                continue
         return individuals
 
     def _initialise_start_generator(self, start_generator: StartGenerators):
@@ -163,20 +166,38 @@ class CrystalSystem:
                     learning_rate=learning_rate
                 )
                 operator_list.append(self._gradient_mutation)
-            elif operator == "dqd":
-                print(f"I'm doing DQD with {learning_rate} lr")
+            elif operator == "dqd" or operator == "dqd_all_materials":
+                print("all & materials")
                 self._dqd_mutation = DQDMutationOMGMEGA(
                     blmin=closest_distances, n_top=len(self.atomic_numbers),
-                    learning_rate=learning_rate
+                    learning_rate=learning_rate, force_only=False, simple=False,
                 )
                 operator_list.append(self._dqd_mutation)
-            elif operator == "dqd_cma":
-                print(f"I'm doing DQD CMA with {learning_rate} lr")
-                self._dqd_cma_mutation = DQDMutationCMAMEGA(
+
+            elif operator == "dqd_force_materials":
+                print("force & materials")
+                self._dqd_mutation = DQDMutationOMGMEGA(
                     blmin=closest_distances, n_top=len(self.atomic_numbers),
-                    learning_rate=learning_rate
+                    learning_rate=learning_rate, force_only=True, simple=False
                 )
-                operator_list.append(self._dqd_cma_mutation)
+                operator_list.append(self._dqd_mutation)
+
+            elif operator == "dqd_force_simple":
+                print("force & simple")
+                self._dqd_mutation = DQDMutationOMGMEGA(
+                    blmin=closest_distances, n_top=len(self.atomic_numbers),
+                    learning_rate=learning_rate, force_only=True, simple=False
+                )
+                operator_list.append(self._dqd_mutation)
+
+            elif operator == "dqd_all_simple":
+                print("all & simple")
+                self._dqd_mutation = DQDMutationOMGMEGA(
+                    blmin=closest_distances, n_top=len(self.atomic_numbers),
+                    learning_rate=learning_rate, force_only=False, simple=True
+                )
+                operator_list.append(self._dqd_mutation)
+
             else:
                 raise NotImplementedError
 

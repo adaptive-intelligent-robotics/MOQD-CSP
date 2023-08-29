@@ -518,7 +518,7 @@ class SymmetryEvaluation:
             image_path.unlink()
         temp_dir.rmdir()
 
-    def group_structures_by_symmetry(self, archive: Archive, experiment_directory_path: pathlib.Path, centroid_full_path):
+    def group_structures_by_symmetry(self, archive: Archive, experiment_directory_path: pathlib.Path, centroid_full_path, ):
         structures = archive.get_individuals_as_structures()
         groups = self.structure_matcher.group_structures(structures)
         ids_by_group = []
@@ -532,6 +532,7 @@ class SymmetryEvaluation:
 
         all_centroids = load_centroids(centroid_full_path)
 
+        bd_min_values, bd_max_values = self.get_limits_from_centroid_path(centroid_full_path)
         color_indices = np.linspace(0, 1, len(ids_by_group))
         cmap = cm.get_cmap('rainbow')
         list_of_colors = []
@@ -544,9 +545,15 @@ class SymmetryEvaluation:
             list_of_colors=list_of_colors,
             directory_string=experiment_directory_path,
             filename="cvt_by_structure_similarity",
-            minval=[0, 0],
-            maxval=[100, 120],
+            minval=bd_min_values,
+            maxval=bd_max_values,
         )
+
+    def get_limits_from_centroid_path(self, centroid_path: pathlib.Path):
+        filename = centroid_path.name.rstrip(".dat")
+        limits_as_string = filename.split("band_gap")[1].split("shear_modulus")
+        limits = [limit.split("_") for limit in limits_as_string]
+        return (int(limits[0][1]), int(limits[1][1])), (int(limits[0][2]), int(limits[1][2]))
 
     def plot_2d_groups_of_structures(self,
             centroids: np.ndarray,
@@ -564,21 +571,6 @@ class SymmetryEvaluation:
         num_descriptors = centroids.shape[1]
         if num_descriptors != 2:
             raise NotImplementedError("Grid plot supports 2 descriptors only for now.")
-
-        my_cmap = cm.viridis
-
-        # set the parameters
-        # font_size = 12
-        # params = {
-        #     "axes.labelsize": font_size,
-        #     "legend.fontsize": font_size,
-        #     "xtick.labelsize": font_size,
-        #     "ytick.labelsize": font_size,
-        #     "text.usetex": False,
-        #     "figure.figsize": [10, 10],
-        # }
-        #
-        # mpl.rcParams.update(params)
 
         # create the plot object
         fig, ax = plt.subplots(facecolor="white", edgecolor="white")
@@ -601,14 +593,14 @@ class SymmetryEvaluation:
             ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
             if target_centroids is not None:
                 if centroids[i] in np.array(target_centroids):
-                    ax.fill(*zip(*polygon), edgecolor="red", facecolor="none", lw=4)
+                    ax.fill(*zip(*polygon), edgecolor="black", facecolor="none", lw=4)
         # fill the plot with the colors
         for group_id, group in enumerate(list_of_centroid_groups):
             for idx in group:
                 region = regions[idx]
                 polygon = vertices[region]
                 ax.fill(*zip(*polygon), alpha=0.8, color=list_of_colors[group_id])
-                ax.annotate(group_id, (centroids[idx, 0], centroids[idx, 1]))
+                ax.annotate(group_id, (centroids[idx, 0], centroids[idx, 1]), fontsize=4)
         np.set_printoptions(2)
         # aesthetic
         ax.set_xlabel(f"BD1 - {axis_labels[0]}")
@@ -644,18 +636,6 @@ class SymmetryEvaluation:
         # my_cmap = cm.viridis
         my_cmap =cm.get_cmap('inferno', 5)
 
-        # set the parameters
-        # font_size = 12
-        # params = {
-        #     "axes.labelsize": font_size,
-        #     "legend.fontsize": font_size,
-        #     "xtick.labelsize": font_size,
-        #     "ytick.labelsize": font_size,
-        #     "text.usetex": False,
-        #     "figure.figsize": [10, 10],
-        # }
-        #
-        # mpl.rcParams.update(params)
 
         # create the plot object
         fig, ax = plt.subplots(facecolor="white", edgecolor="white")
@@ -686,7 +666,7 @@ class SymmetryEvaluation:
             polygon = vertices[region]
             ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
             if i in target_centroid_ids:
-                ax.fill(*zip(*polygon), edgecolor="gray", facecolor="none", lw=4)
+                ax.fill(*zip(*polygon), edgecolor="gray", facecolor="none", lw=2)
 
             if (i in centroids_from_archive) and (i not in plotting_matches.centroid_index) and plotting_matches.plotting_mode == PlottingMode.ARCHIVE_MATCHES_VIEW:
                 ax.fill(*zip(*polygon), facecolor=colour_dict[ConfidenceLevels.NO_MATCH], alpha=0.3,
@@ -702,16 +682,24 @@ class SymmetryEvaluation:
                     alpha=0.8,
                     color=colour_dict[plotting_matches.confidence_level[list_index]],
                     label=ConfidenceLevels.get_string(plotting_matches.confidence_level[list_index]))
-            ax.annotate(plotting_matches.mp_reference[list_index], (centroids[centroid_index, 0], centroids[centroid_index, 1]))
+            ax.annotate(plotting_matches.mp_reference[list_index], (centroids[centroid_index, 0], centroids[centroid_index, 1]), fontsize=4)
 
+        plt.rcParams['savefig.dpi'] = 300
+        plt.rcParams['legend.fontsize'] = 10
+        ax.legend(bbox_to_anchor=(1, 0), loc="lower right",
+                        bbox_transform=fig.transFigure, ncol=4)
+        # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+        #           fancybox=True, shadow=True, ncol=3)
         self.legend_without_duplicate_labels(fig, ax)
-
+        # ax.legend(bbox_to_anchor=(1.04, 1), mode="expand")
+        # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+        #           fancybox=True, shadow=True, ncol=3)
         if plotting_matches.plotting_mode == PlottingMode.MP_REFERENCE_VIEW:
             descriptor_matches = np.array(plotting_matches.descriptors)
             ref_band_gaps = [self.reference_data.loc["band_gap"][ref] for ref in plotting_matches.mp_reference]
             ref_shear_moduli = [self.reference_data.loc["shear_modulus"][ref] for ref in plotting_matches.mp_reference]
-            ax.scatter(descriptor_matches[:, 0], descriptor_matches[:, 1], color="gray")
-            ax.scatter(ref_band_gaps, ref_shear_moduli, color="gray")
+            ax.scatter(descriptor_matches[:, 0], descriptor_matches[:, 1], color="gray", s=1)
+            ax.scatter(ref_band_gaps, ref_shear_moduli, color="gray", s=1)
             for match_id in range(len(descriptor_matches)):
                 ax.plot([descriptor_matches[match_id][0], ref_band_gaps[match_id]],
                          [descriptor_matches[match_id][1], ref_shear_moduli[match_id]],
@@ -721,6 +709,8 @@ class SymmetryEvaluation:
         ax.set_ylabel(f"BD2 - {axis_labels[1]}")
 
         ax.set_title(f"MAP-Elites Grid {plotting_matches.plotting_mode.value}")
+        plt.tight_layout()
+        fig.show()
         ax.set_aspect("equal")
 
         if directory_string is None:
@@ -736,8 +726,8 @@ class SymmetryEvaluation:
         unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
         sorting_match = np.array(["gold", "high", "medium", "low", "no match"]) # todo: get this from ConfidenceLevels Enum
         unique = sorted(unique, key=lambda x: np.argwhere(sorting_match == x[1]).reshape(-1)[0])
-        # ax.legend(*zip(*unique))
-        fig.legend(*zip(*unique))
+        ax.legend(*zip(*unique))
+        # fig.legend(*zip(*unique))
 
 if __name__ == '__main__':
 

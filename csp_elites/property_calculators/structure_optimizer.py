@@ -172,15 +172,24 @@ class MultiprocessOptimizer:
         self.timings["list_comprehension"]["convert_atoms_to_structures"] = time.time() - tic
 
         hotfix_graphs = False
+        indices_to_update = []
         tic = time.time()
-        graphs = [self.model.graph_converter(struct, on_isolated_atoms="warn") for struct in list_of_structures]
+        try:
+            graphs = [self.model.graph_converter(struct, on_isolated_atoms="warn") for struct in list_of_structures]
+        except SystemExit:
+            graphs = []
+            for i, struct in list_of_structures:
+                try:
+                    graphs.append(self.model.graph_converter(struct, on_isolated_atoms="warn"))
+                except SystemExit:
+                    hotfix_graphs = True
+                    indices_to_update.append(i)
         self.timings["list_comprehension"]["convert_structures_to_graphs"] = time.time() - tic
 
         tic = time.time()
         if None in graphs:
             print("isolated atomssss")
             hotfix_graphs = True
-            indices_to_update = []
             new_graphs = []
             for i in range(len(graphs)):
                 if graphs[i] is None:

@@ -7,7 +7,7 @@ from retrieve_results.experiment_organiser import ExperimentOrganiser
 from retrieve_results.experiment_processing import ExperimentProcessor
 
 if __name__ == '__main__':
-    date_list = ["0822"]
+    date_list = ["0826"]
 
     for date in date_list:
         save_structure_images = False

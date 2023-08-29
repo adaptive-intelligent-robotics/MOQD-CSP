@@ -61,12 +61,14 @@ class GradientComputationValidator:
         self.property = material_property
         self.omg_mega_mutation = DQDMutation
         self.save_directory = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync/validation"
+        self.starting_value= None
 
     def _get_test_structure(self, test_structure_index: int = 0):
         with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
             structure = mpr.get_structure_by_material_id(
                 self._test_structure_mp_references[test_structure_index], final=True
             )
+        self.starting_value, _ = self.calculator.compute(structure)
         atoms = AseAtomsAdaptor.get_atoms(structure)
         atoms.rattle(0.3)
         return AseAtomsAdaptor.get_structure(atoms)
@@ -105,8 +107,6 @@ class GradientComputationValidator:
             ax.set_title(f"Change in {title}")
             ax.set_ylabel(ylabel)
             ax.set_xlabel("Number of Steps Taken")
-            if len(values) > 100:
-                ax.set_xticks(np.linspace(0, len(values), 100))
 
         ax.plot(np.arange(len(values)), values, label=label)
 
@@ -121,16 +121,16 @@ class GradientComputationValidator:
             values = self.step_for_n_steps(structure, n_steps=n_steps)
             values_by_structure.append(values)
 
-            fig, ax = self.plot_values_over_steps(values, label=self._test_structure_mp_references[structure_id], fig=fig, ax=ax)
+            fig, ax = self.plot_values_over_steps(self.starting_value - np.array(values), label=self._test_structure_mp_references[structure_id], fig=fig, ax=ax)
 
         plt.legend()
         plt.savefig(self.save_directory / f"gradient_stepping_{self.property.value}_lr_{self.learning_rate}.png", format="png")
 
 
-
 if __name__ == '__main__':
     n_steps = 1000
-    for learning_rate in [1e-2, 1e-3, 1e-4, 1e-5, 1e-6]:
-        for property in [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS, MaterialProperties.ENERGY]:
+    for learning_rate in [1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]:
+        # for property in [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS, MaterialProperties.ENERGY]:
+        for property in [MaterialProperties.SHEAR_MODULUS]:
             gradient_validator = GradientComputationValidator(material_property=property, learning_rate=learning_rate)
             gradient_validator.loop_for_all_test_structures(n_steps=n_steps)

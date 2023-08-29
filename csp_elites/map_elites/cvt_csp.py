@@ -141,7 +141,6 @@ class CVT:
                     list_of_atoms=population,
                     n_relaxation_steps=n_relaxation_steps
                 )
-            print(descriptors)
 
             if population is not None:
                 self.crystal_system.update_operator_scaling_volumes(population=population_as_atoms)

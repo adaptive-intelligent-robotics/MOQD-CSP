@@ -48,12 +48,12 @@
     "parallel": true,
     "cvt_use_cache": true,
     "bd_minimum_values": [
-      0,
+      0.2,
       170
     ],
     "bd_maximum_values": [
-      20,
-      190
+      0.9,
+      185
     ],
     "relaxation_probability": 0,
     "behavioural_descriptors": [

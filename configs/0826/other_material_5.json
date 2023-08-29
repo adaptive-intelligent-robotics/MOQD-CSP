@@ -49,11 +49,11 @@
     "cvt_use_cache": true,
     "bd_minimum_values": [
       0,
-      0
+      10
     ],
     "bd_maximum_values": [
-      4,
-      120
+      3,
+      115
     ],
     "relaxation_probability": 0,
     "behavioural_descriptors": [
@@ -65,11 +65,9 @@
     "filter_starting_Structures": 24,
     "seed": false,
     "profiling": true,
-    "normalise_bd": true,
-    "force_threshold": true,
-    "force_threshold_exp_fmax": 1.0
+    "normalise_bd": true
   },
-  "experiment_tag": "200_niches_for_benchmark_100_relax_with_threshold_5",
+  "experiment_tag": "TiO2_different_bd_lims",
   "fitness_min_max_values": [
     8.5,
     10

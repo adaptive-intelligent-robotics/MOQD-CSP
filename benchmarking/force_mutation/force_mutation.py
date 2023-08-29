@@ -145,7 +145,7 @@ def benchmark_force_mutation():
             stresses = np.array([pred["s"] for pred in predictions])
 
             if hotfix_graphs:
-                # todo: make this dynamic
+                # todo (marta): make this dynamic
                 for i in indices_to_update:
                     forces = np.insert(forces, i, np.full((24, 3), 100), axis=0)
                     energies = np.insert(energies, i, 10000)

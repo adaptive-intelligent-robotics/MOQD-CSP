@@ -4,7 +4,6 @@ import sys
 from ase.ga.utilities import CellBounds
 
 from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
-# from csp_elites.plot import load_centroids, load_archive_from_pickle
 from csp_elites.utils.experiment_parameters import ExperimentParameters
 from main import main
 

@@ -16,7 +16,11 @@ def plot_metrics_for_one_folder(folder_name: str, annotate: bool = True,
     experiment_tags_list = list(config_mapping.values())
 
     centroid_name = experiment_organiser.get_centroid_name(folder_name)
-    experiment_tag = folder_name.split("TiO2_")[1]
+
+    formula = experiment_organiser.get_formula_from_folder_name(folder_name)
+    # experiment_tag = experiment_folder.split(f"{formula}_")[1]
+    experiment_tag = folder_name[15 + len(formula) + 1:]
+
     config_match_index = np.argwhere(np.array(experiment_tags_list) == experiment_tag).reshape(-1)
     config_filepath = experiment_organiser.repo_location / "configs" / config_names[config_match_index[0]]
     experiment_processor = ExperimentProcessor(
@@ -30,3 +34,4 @@ def plot_metrics_for_one_folder(folder_name: str, annotate: bool = True,
     if override_fitness_values is not None:
         experiment_processor.experiment_parameters.fitness_min_max_values = override_fitness_values
     experiment_processor.plot(annotate=annotate)
+    experiment_processor.process_symmetry()

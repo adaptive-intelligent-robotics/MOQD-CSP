@@ -1,7 +1,9 @@
 import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
-
+import scienceplots
+plt.style.use('science')
+plt.rcParams['savefig.dpi'] = 300
 
 class ReferencePlotter:
     def __init__(self, save_plots: bool = False):

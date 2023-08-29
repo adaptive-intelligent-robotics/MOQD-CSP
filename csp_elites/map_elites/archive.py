@@ -24,7 +24,7 @@ class Archive:
         self.descriptors = descriptors
         self.individuals = individuals
         self.centroid_ids = centroid_ids
-        self.lavels = labels
+        self.labels = labels
 
     @classmethod
     def from_archive(cls, archive_path: pathlib.Path, centroid_filepath: Optional[pathlib.Path] = None):

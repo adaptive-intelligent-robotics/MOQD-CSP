@@ -40,6 +40,7 @@ class ExperimentProcessor:
         self.fitness_limits = fitness_limits
         self.save_structure_images = save_structure_images
         self.filter_for_experimental_structures = filter_for_experimental_structures
+        self.formula = experiment_label[15:].split("_")[0]
 
 
     @staticmethod
@@ -79,10 +80,18 @@ class ExperimentProcessor:
         )
 
     def _get_last_archive_number(self):
-        return max([int(name.lstrip("archive_").rstrip(".pkl")) for name in os.listdir(self.experiment_directory_path) if ((not os.path.isdir(name)) and ("archive_" in name))])
+        return max([int(name.lstrip("archive_").rstrip(".pkl")) for name in os.listdir(self.experiment_directory_path) if ((not os.path.isdir(name)) and ("archive_" in name) and (".pkl" in name))])
 
     def compute_target_centroids(self):
-        comparison_data_location = self.experiment_location / "experiments" / "target_data/ti02_band_gap_shear_modulus.pkl" # todo: m,ake this dynamic for other materials
+        # comparison_data_location = self.experiment_location / "experiments" / "target_data/ti02_band_gap_shear_modulus.pkl" # todo: make this dynamic for other materials
+
+        number_of_atoms = len(self.experiment_parameters.blocks)
+        bd_tag = [bd.value for bd in self.experiment_parameters.cvt_run_parameters ["behavioural_descriptors"]]
+        tag = ""
+        for el in bd_tag:
+            tag += f"{el}_"
+        comparison_data_location = self.experiment_location / "mp_reference_analysis" / f"{self.formula}_{number_of_atoms}" / f"{self.formula}_{tag[:-1]}.pkl"
+
         comparison_data_packed = load_archive_from_pickle(str(comparison_data_location))
 
         normalise_bd_values = (self.experiment_parameters.cvt_run_parameters["bd_minimum_values"], \
@@ -105,12 +114,18 @@ class ExperimentProcessor:
         unrelaxed_archive_location = self.experiment_directory_path / f"archive_{archive_number}.pkl"
 
         centroid_tag = str(self.centroid_directory_path.name).rstrip(".dat")
-        target_data_path = self.experiment_location / "experiments" / "target_data" / f"target_data_{centroid_tag}.csv" # todo: change to include formula
+        # target_data_path = self.experiment_location / "experiments" / "target_data" / f"target_data_{centroid_tag}.csv"
+        number_of_atoms = self.experiment_parameters.cvt_run_parameters["filter_starting_Structures"]
+        target_data_path = self.experiment_location / "mp_reference_analysis" / f"{self.formula}_{number_of_atoms}" / f"{self.formula}_target_data_{centroid_tag}.csv"
+
+
+        # todo: change to include formula
         if not os.path.isfile(target_data_path):
             target_data_path = None
 
         archive = Archive.from_archive(unrelaxed_archive_location, centroid_filepath=self.centroid_directory_path)
         symmetry_evaluation = SymmetryEvaluation(
+            formula=self.formula,
             filter_for_experimental_structures=self.filter_for_experimental_structures,
             reference_data_path=target_data_path,
         )
@@ -118,11 +133,11 @@ class ExperimentProcessor:
         matched_space_group_dict, spacegroup_dictionary = symmetry_evaluation.find_individuals_with_reference_symmetries(
             individuals=archive.individuals, indices_to_check=None)
 
-        symmetry_evaluation.plot_histogram(
-            spacegroup_dictionary=spacegroup_dictionary,
-            against_reference=False,
-            save_directory=self.experiment_directory_path,
-        )
+        # symmetry_evaluation.plot_histogram(
+        #     spacegroup_dictionary=spacegroup_dictionary,
+        #     against_reference=False,
+        #     save_directory=self.experiment_directory_path,
+        # )
 
         energy_indices = symmetry_evaluation.save_best_structures_by_energy(
             archive=archive,
@@ -163,16 +178,16 @@ class ExperimentProcessor:
                 plotting_matches=plotting_from_archive,
                 centroids=self.all_centroids,
                 centroids_from_archive=archive.centroid_ids,
-                minval=self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
-                maxval=self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
+                minval=[0, 0] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
+                maxval=[1, 1] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
                 directory_string=str(self.experiment_directory_path),
             )
             symmetry_evaluation.plot_matches_mapped_to_references(
                 plotting_matches=plotting_from_mp,
                 centroids=self.all_centroids,
                 centroids_from_archive=archive.centroid_ids,
-                minval=self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
-                maxval=self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
+                minval=[0, 0] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
+                maxval=[1, 1] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
                 directory_string=str(self.experiment_directory_path),
             )
             print("I was here")

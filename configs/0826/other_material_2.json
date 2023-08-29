@@ -49,11 +49,11 @@
     "cvt_use_cache": true,
     "bd_minimum_values": [
       0,
-      25
+      27
     ],
     "bd_maximum_values": [
-      45,
-      75
+      0.2,
+      68
     ],
     "relaxation_probability": 0,
     "behavioural_descriptors": [

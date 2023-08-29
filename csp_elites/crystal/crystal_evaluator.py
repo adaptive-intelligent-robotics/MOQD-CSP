@@ -29,9 +29,12 @@ class CrystalEvaluator:
                  bd_normalisation: Union[List[Optional[Tuple[float, float]]]] = None,
                  ):
 
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
         self.relaxer = MultiprocessOptimizer(
             fmax_threshold=fmax_relaxation_convergence
         )
+        # self.relaxer.model.to(device)
         if bd_normalisation is not None:
             band_gap_normalisation = (bd_normalisation[0][0], bd_normalisation[1][0])
             shear_modulus_normalisation = (bd_normalisation[0][1], bd_normalisation[1][1])
@@ -39,6 +42,10 @@ class CrystalEvaluator:
             band_gap_normalisation, shear_modulus_normalisation = None, None
 
         self.band_gap_calculator = BandGapCalculator(band_gap_normalisation)
+        # try:
+        #     self.band_gap_calculator.model_wrapper.to(device)
+        # except RuntimeError:
+        #     print("Band gap model not on gpu")
         self.shear_modulus_calculator = ShearModulusCalculator(shear_modulus_normalisation)
         self.fmax_relaxation_convergence = fmax_relaxation_convergence
         self.with_force_threshold = with_force_threshold
