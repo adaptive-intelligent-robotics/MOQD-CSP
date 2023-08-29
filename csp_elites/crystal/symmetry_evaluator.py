@@ -408,16 +408,22 @@ class SymmetryEvaluation:
         ref_confidence_levels = []
         ref_euclidian_distance_to_matches = []
         ref_all_descriptors = []
-        for match_mp_ref in unique_matches:
-            match_indices = np.argwhere(np.array(mp_reference_of_matches) == match_mp_ref).reshape(-1)
-            confidence_levels_for_ref = [confidence_levels[i].value for i in match_indices]
-            if len(np.argwhere(np.array(confidence_levels_for_ref) == max(confidence_levels_for_ref))) == 0:
-                best_match_index = np.argwhere(confidence_levels_for_ref == max(confidence_levels_for_ref))[0]
-            else:
-                euclidian_distances = [euclidian_distance_to_matches[i] for i in match_indices]
-                best_match_index = np.argwhere(euclidian_distances == min(euclidian_distances)).reshape(-1)[0]
 
-            index_in_archive_list = match_indices[best_match_index]
+        for match_mp_ref in unique_matches:
+            match_indices = np.argwhere(np.array(mp_reference_of_matches) == match_mp_ref).reshape(
+                -1)
+            confidence_levels_for_ref = [confidence_levels[i].value for i in match_indices]
+            best_confidence_indices = np.argwhere(
+                confidence_levels_for_ref == np.max(confidence_levels_for_ref)).reshape(-1)
+            match_indices = np.take(match_indices, best_confidence_indices)
+            euclidian_distances = [euclidian_distance_to_matches[i] for i in match_indices]
+            euclidian_distances = np.array(euclidian_distances)
+
+            closest_euclidian_distance_index = np.argwhere(euclidian_distances == np.min(euclidian_distances)).reshape(-1)
+            best_match_index = match_indices[closest_euclidian_distance_index]
+            print(f"{match_mp_ref} {best_match_index}")
+
+            index_in_archive_list = best_match_index[0]
             ref_centroids_with_matches.append(int(true_centroid_indices[index_in_archive_list]))
             ref_mp_reference_of_matches.append(match_mp_ref)
             ref_confidence_levels.append(confidence_levels[index_in_archive_list])
@@ -447,6 +453,8 @@ class SymmetryEvaluation:
                 return ConfidenceLevels.HIGH
         else:
             if ff_distance_match and symmetry_match:
+                return ConfidenceLevels.MEDIUM
+            elif centroid_match and (ff_distance_match or symmetry_match):
                 return ConfidenceLevels.MEDIUM
             else:
                 return ConfidenceLevels.LOW
@@ -706,7 +714,6 @@ class SymmetryEvaluation:
         ax.set_title(f"MAP-Elites Grid {plotting_matches.plotting_mode.value}")
         self.legend_without_duplicate_labels(fig, ax)
         fig.tight_layout()
-        fig.show()
         ax.set_aspect("equal")
 
         if directory_string is None:
@@ -755,7 +762,7 @@ if __name__ == '__main__':
     symmetry_evaluation = SymmetryEvaluation(reference_data_archive=target_archive)
     df, individuals_with_matches = symmetry_evaluation.executive_summary_csv(
         archive,
-        list(range(len(archive.individuals))),
+        list(range(len(20))),
         experiment_directory_path,
     )
 
