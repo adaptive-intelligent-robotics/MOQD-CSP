@@ -53,7 +53,7 @@ def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
         c = np.loadtxt(f)
     kdt = KDTree(c, leaf_size=30, metric='euclidean')
 
-    fitnesses, _, descriptors, individuals = target_data
+    fitnesses, _, descriptors, _ = target_data
     if normalise_bd_values is not None:
         descriptors[:, 0] = normalise_between_0_and_1(descriptors[:, 0], (normalise_bd_values[0][0], normalise_bd_values[1][0]))
         descriptors[:, 1]  = normalise_between_0_and_1(descriptors[:, 1], (normalise_bd_values[0][1],
@@ -64,7 +64,7 @@ def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
     shear_moduli = []
 
     if filter_for_number_of_atoms is not None:
-        for i, atoms in enumerate(individuals):
+        for i, atoms in enumerate(fitnesses):
 
             atom_positions = atoms["positions"] if isinstance(atoms, dict) else atoms.get_positions()
             if len(atom_positions) <= filter_for_number_of_atoms:
@@ -72,7 +72,7 @@ def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
                 band_gaps.append(descriptors[i][0])
                 shear_moduli.append(descriptors[i][1])
     else:
-        for i, atoms in enumerate(individuals):
+        for i, atoms in enumerate(fitnesses):
             fitnesses_to_enumerate.append(fitnesses[i])
             band_gaps.append(descriptors[i][0])
             shear_moduli.append(descriptors[i][1])
@@ -84,6 +84,8 @@ def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
         new_centroids.append(n)
 
     return new_centroids
+
+
 if __name__ == '__main__':
     compute_centroids_for_target_solutions(
         "../experiments/20230706_09_55_TiO2/centroids_2000_2.dat",

@@ -68,7 +68,7 @@ class ReferencePlotter:
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
         ax.set_title(title)
-        ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
+        ax.grid(which="minor", color="w", linestyle='-', linewidth=0.5)
         ax.tick_params(which="minor", bottom=False, left=False)
 
         return im, cbar

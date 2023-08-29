@@ -178,7 +178,7 @@ class MultiprocessOptimizer:
             graphs = [self.model.graph_converter(struct, on_isolated_atoms="warn") for struct in list_of_structures]
         except SystemExit:
             graphs = []
-            for i, struct in list_of_structures:
+            for i, struct in enumerate(list_of_structures):
                 try:
                     graphs.append(self.model.graph_converter(struct, on_isolated_atoms="warn"))
                 except SystemExit:

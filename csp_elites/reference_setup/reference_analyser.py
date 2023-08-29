@@ -36,7 +36,7 @@ class ReferenceAnalyser:
     def __init__(self,
         formula: str, max_n_atoms_in_cell: int, experimental_references_only: bool,
         save_plots: bool = True,
-     normalise: bool = True,
+        normalise: bool = True,
     ):
         self.formula = formula
         self.max_n_atoms_in_cell = max_n_atoms_in_cell
@@ -81,18 +81,27 @@ class ReferenceAnalyser:
         list_of_atoms_as_dict = [AseAtomsAdaptor.get_atoms(el.structure).todict() for el in self.structures_to_consider]
         atom_counts_per_structure = np.array([len(el.structure.atomic_numbers) for el in self.structures_to_consider])
         unique_lengths = np.unique(atom_counts_per_structure)
-        energies, band_gaps, shear_moduli, forces = [], [], [], []
+        energies, band_gaps, shear_moduli, forces, reference_ids_tracking = [], [], [], [], []
         for el in unique_lengths:
             indices_to_check = np.argwhere(atom_counts_per_structure == el).reshape(-1)
+            reference_ids_tracking += list(indices_to_check)
             structures_to_check = [list_of_atoms_as_dict[el] for el in indices_to_check]
             _, _, fitness_scores, descriptors, _, gradients = self.crystal_evaluator.batch_compute_fitness_and_bd(structures_to_check, n_relaxation_steps=0)
             energies += fitness_scores.tolist()
             band_gaps += descriptors[0]
             shear_moduli += descriptors[1]
             forces += (el[0] for el in gradients)
+
+        indices_to_sort = np.argsort(reference_ids_tracking)
+
         fmax_list = []
         for force in forces:
             fmax_list.append(np.max((force ** 2).sum(axis=1)) ** 0.5)
+
+        fmax_list = np.take(fmax_list, indices_to_sort, axis=0)
+        energies = np.take(energies, indices_to_sort, axis=0)
+        shear_moduli = np.take(shear_moduli, indices_to_sort, axis=0)
+        band_gaps = np.take(band_gaps, indices_to_sort, axis=0)
 
         return np.array(energies), fmax_list, np.array(band_gaps), np.array(shear_moduli)
 
@@ -227,8 +236,23 @@ class ReferenceAnalyser:
             vmax=fitness_limits[1],
             annotations=labels_for_plotting,
             directory_string=directory_string,
-            filename=f"{self.formula}_cvt_plot_{self.experimental_string}"
+            filename=f"{self.formula}_cvt_plot_{self.experimental_string}_no_annotate",
+            annotate=False
         )
+        plot_2d_map_elites_repertoire_marta(
+            centroids=plotting_centroids,
+            repertoire_fitnesses=fitness_for_plotting,
+            minval=bd_minimum_values,
+            maxval=bd_maximum_values,
+            repertoire_descriptors=descriptors_for_plotting,
+            vmin=fitness_limits[0],
+            vmax=fitness_limits[1],
+            annotations=labels_for_plotting,
+            directory_string=directory_string,
+            filename=f"{self.formula}_cvt_plot_{self.experimental_string}_annotate",
+            annotate=True,
+        )
+
         plt.clf()
 
     def plot_fmax(self, histogram_range: Optional[Tuple[int, int]]=None):
@@ -300,7 +324,10 @@ class ReferenceAnalyser:
         plt.clf()
 
     def heatmap_structure_matcher_distances(self, annotate: bool = True):
-        params = {"figure.figsize": [3.5, 3.5], "font.size": 8}
+        if len(self.structures_to_consider) >= 15:
+            params = {"figure.figsize": [5, 5], "font.size": 4}
+        else:
+            params = {"figure.figsize": [3.5, 3.5], "font.size": 8}
         mpl.rcParams.update(params)
         all_structure_matcher_matches = []
         distances = []
@@ -413,12 +440,14 @@ if __name__ == '__main__':
     formulas = ["C", "SiO2", "Si", "SiC", "TiO2"]
 
     # elements_list = [["Ti", "O"]]
-    # atoms_counts_list = [[2, 4]]
+    # atoms_counts_list = [[8, 16]]
     # formulas = ["TiO2"]
 
+    reference_data_dump = []
     dict_summary = {}
 
     for filter_experiment in [False, True]:
+        filter_experiment_dump = []
         for i, formula in enumerate(formulas):
             reference_analyser = ReferenceAnalyser(
                 formula=formula,
@@ -462,5 +491,7 @@ if __name__ == '__main__':
             reference_analyser.plot_fmax()
             dict_summary[f"{formula}_{filter_experiment}"] = len(reference_analyser.structures_to_consider)
             print(dict_summary)
+
+            # filter_experiment_dump.append()
     # with open("../../.experiment.nosync/mp_reference_analysis/dict_summary.json", "w") as file:
     #     json.dump(dict_summary, file)
