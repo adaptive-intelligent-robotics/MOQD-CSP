@@ -44,10 +44,11 @@ def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_jo
     for i, el in enumerate(list_of_experiment_params_as_dict):
         if isinstance(el["blocks"], str):
             el["blocks"] = eval(el["blocks"])
-        else:
-            print()
         if isinstance(el["operator_probabilities"], str):
             el["operator_probabilities"] = eval(el["operator_probabilities"])
+        elif isinstance(el["operator_probabilities"], float):
+            if isnan(el["operator_probabilities"]):
+                el["operator_probabilities"] = "none"
 
         el["fitness_min_max_values"] = eval(el["fitness_min_max_values"])
 
@@ -83,6 +84,6 @@ if __name__ == '__main__':
 
     write_configs_from_csv(
         path_to_cofnig_csv=pathlib.Path(__file__).parent.parent.parent / "experiments/experiment_list.csv",
-        number_for_array_job=20,
+        number_for_array_job=3,
         path_to_save=pathlib.Path(__file__).parent.parent.parent / "configs/0828"
     )
