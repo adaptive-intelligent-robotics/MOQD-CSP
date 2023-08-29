@@ -5,6 +5,7 @@ import pathlib
 import sys
 import time
 from dataclasses import asdict
+from typing import Optional
 
 import psutil
 import torch
@@ -40,7 +41,7 @@ class HiddenPrints:
             sys.stdout = sys.__stdout__
 
 
-def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
+def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False, from_archive_path: Optional[pathlib.Path]= None):
     # print(experiment_parameters)
     ### CODE TO RUN
     print(torch.cuda.is_available())
@@ -67,11 +68,6 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
             alternative_operators=alternative_operators,
             learning_rate=learning_rate,
         )
-
-        comparator = OFPComparator(n_top=len(experiment_parameters.blocks), dE=1.0,
-                                   cos_dist_max=1e-3, rcut=10., binwidth=0.05,
-                                   pbc=[True, True, True], sigma=0.05, nsigma=4,
-                                   recalculate=False)
 
         force_threshold = experiment_parameters.cvt_run_parameters["force_threshold"] if "force_threshold" in experiment_parameters.cvt_run_parameters.keys() else False
         constrained_qd = experiment_parameters.cvt_run_parameters["constrained_qd"] if "constrained_qd" in experiment_parameters.cvt_run_parameters.keys() else False
@@ -102,12 +98,23 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False):
         )
 
         tic = time.time()
-        experiment_directory_path, archive = cvt.batch_compute_with_list_of_atoms(
-            number_of_niches=experiment_parameters.number_of_niches,
-            maximum_evaluations=experiment_parameters.maximum_evaluations,
-            run_parameters=experiment_parameters.cvt_run_parameters,
-            experiment_label=experiment_label,
-        )
+
+        if from_archive_path is not None:
+            print("Running from archive")
+            experiment_directory_path, archive = cvt.start_experiment_from_archive(
+                experiment_to_load_directory_path=from_archive_path,
+                number_of_niches=experiment_parameters.number_of_niches,
+                maximum_evaluations=experiment_parameters.maximum_evaluations,
+                run_parameters=experiment_parameters.cvt_run_parameters,
+                experiment_label=experiment_label,
+            )
+        else:
+            experiment_directory_path, archive = cvt.batch_compute_with_list_of_atoms(
+                number_of_niches=experiment_parameters.number_of_niches,
+                maximum_evaluations=experiment_parameters.maximum_evaluations,
+                run_parameters=experiment_parameters.cvt_run_parameters,
+                experiment_label=experiment_label,
+            )
         print(f"time taken {time.time() - tic}")
 
         experiment_parameters.splits = "DUMMY"

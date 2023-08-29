@@ -37,6 +37,7 @@
 #| had knowledge of the CeCILL license and that you accept its terms.
 # import multiprocessing
 import gc
+import os
 import pickle
 from typing import List, Dict, Union
 
@@ -273,115 +274,77 @@ class CVT:
             n_relaxation_steps = self.run_parameters["number_of_relaxation_steps"]
 
         return n_relaxation_steps
-    def start_experiment_from_archive(self, experiment_directory_path: str,
-                                      experiment_label: str, archive_number:int,
+
+    def start_experiment_from_archive(self, experiment_to_load_directory_path: str,
+                                      experiment_label: str,
                                       run_parameters,
                                       number_of_niches, maximum_evaluations):
 
 
         # experiment_directory_path = make_experiment_folder(experiment_label)
-        log_file = open(f'{experiment_directory_path}/{experiment_label}_continued.dat', 'w')
-
-        kdt, c = self._initialise_kdt_and_centroids(
-            experiment_directory_path=experiment_directory_path,
-            number_of_niches=number_of_niches,
-            run_parameters=run_parameters
-        )
-
-        archive = {}  # init archive (empty)
-        archive = self._convert_saved_archive_to_experiment_archive(
-            experiment_directory_path=experiment_directory_path,
-            archive_number=archive_number,
+        self.initialise_run_parameters(number_of_niches, maximum_evaluations, run_parameters, experiment_label)
+        self.log_file = open(f'{experiment_to_load_directory_path}/{experiment_label}_continued.dat', 'w')
+        # with open(f'{experiment_to_load_directory_path}/{experiment_label}.dat', 'r') as file:
+        #     all_lines = file.readlines()
+        #     self.n_evals = int(all_lines[-1][0])
+        last_archive = max([int(name.lstrip("archive_").rstrip(".pkl")) for name in os.listdir(experiment_to_load_directory_path) if ((not os.path.isdir(name)) and ("archive_" in name) and (".pkl" in name))])
+        self.archive = self._convert_saved_archive_to_experiment_archive(
+            experiment_directory_path=experiment_to_load_directory_path,
+            archive_number=last_archive,
             experiment_label=experiment_label,
-            kdt=kdt,
-            archive=archive
+            kdt=self.kdt,
+            archive=self.archive
         )
-
-        n_evals = archive_number  # number of evaluations since the beginning
-        b_evals = 0  # number evaluation since the last dump
-
-        # main loop
-        configuration_counter = 0 # todo: change configuration number to be alrger than the last one in the archive
-        n_evals_to_do = maximum_evaluations - archive_number
-        pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations)
-        random_initialisation = False
-        snapshots = []
-        # snapshots.append(tracemalloc.sna)
-        while (n_evals < maximum_evaluations):  ### NUMBER OF GENERATIONS
-            to_evaluate = []
+        self.experiment_directory_path = experiment_to_load_directory_path
+        self.n_evals = 6
+        ram_logging = []
+        pbar = tqdm(desc="Number of evaluations", total=self.maximum_evaluations, position=2)
+        while (self.n_evals < self.maximum_evaluations):  ### NUMBER OF GENERATIONS
+            ram_logging.append(psutil.virtual_memory()[3]/1000000000)
+            self.generation_counter += 1
             # random initialization
             population = []
+            if len(self.archive) <= run_parameters['random_init'] * number_of_niches:
+                individuals = self.crystal_system.create_n_individuals(
+                    run_parameters['random_init_batch'])
+                if run_parameters["seed"]:
+                    individuals = self.initialise_known_atoms()
+                population += individuals
 
-            if random_initialisation:
-                random_initialisation = False
+                with open(f'{self.experiment_directory_path}/starting_population.pkl', 'wb') as file:
+                    pickle.dump(population, file)
+
+            elif (self.relax_archive_every_n_generations != 0) and \
+                    (self.generation_counter % self.relax_archive_every_n_generations == 0) and \
+                    (self.generation_counter != 0):
+                population = [species.x for species in list(self.archive.values())]
 
             else:  # variation/selection loop
-                keys = list(archive.keys())
-                rand1 = np.random.randint(len(keys), size=run_parameters['batch_size'])
-                rand2 = np.random.randint(len(keys), size=run_parameters['batch_size'])
+                mutated_individuals = self.mutate_individuals(run_parameters["batch_size"])
+                population += mutated_individuals
 
-                for n in range(0, run_parameters['batch_size']):
-                    # parent selection
-                    x = archive[keys[rand1[n]]]
-                    y = archive[keys[rand2[n]]]
-                    # copy & add variation
-                    z, _ = self.crystal_system.operators.get_new_individual([Atoms.fromdict(x.x), Atoms.fromdict(y.x)])
-                    z = z.todict()
-                    population += [z]
+            n_relaxation_steps = self.set_number_of_relaxation_steps()
 
-            for i in range(len(population)):
-                x = population[i]
-                really_relax = True
+            population_as_atoms, population, fitness_scores, descriptors, kill_list, gradients = \
+                self.crystal_evaluator.batch_compute_fitness_and_bd(
+                    list_of_atoms=population,
+                    n_relaxation_steps=n_relaxation_steps
+                )
 
-                to_evaluate += [(x, self.crystal_system.cellbounds,
-                                 run_parameters["behavioural_descriptors"],
-                                 run_parameters["number_of_relaxation_steps"],
-                                 self.crystal_evaluator.compute_fitness_and_bd)]
+            if population is not None:
+                self.crystal_system.update_operator_scaling_volumes(population=population_as_atoms)
+                del population_as_atoms
 
-            s_list = evaluate_parallel(to_evaluate)
+            self.update_archive(population, fitness_scores, descriptors, kill_list, gradients)
+            pbar.update(len(population))
+            del population
+            del fitness_scores
+            del descriptors
+            del kill_list
 
-            # natural selection
-
-            for s in s_list:
-                if s is None:
-                    continue
-                else:
-                    s.x["info"]["confid"] = configuration_counter
-                    configuration_counter += 1
-                    # s.calc = None
-                    add_to_archive(s, s.desc, archive, kdt)
-
-
-            # count evals
-            n_evals += len(to_evaluate)
-            b_evals += len(to_evaluate)
-
-            # write archive
-            if b_evals >= run_parameters['dump_period'] and run_parameters['dump_period'] != -1:
-                print("[{}/{}]".format(n_evals, int(maximum_evaluations)), end=" ", flush=True)
-                if n_evals == archive_number:
-                    continue
-                else:
-                    save_archive(archive, n_evals, experiment_directory_path)
-                b_evals = 0
-            # write log
-            if log_file != None:
-                fit_list = np.array([x.fitness for x in archive.values()])
-                qd_score = np.sum(fit_list)
-                coverage = 100 * len(fit_list) / len(c)
-
-                log_file.write("{} {} {} {} {} {} {} {} {}\n".format(n_evals, len(archive.keys()),
-                                                                     fit_list.max(),
-                                                                     np.mean(fit_list),
-                                                                     np.median(fit_list),
-                                                                     np.percentile(fit_list, 5),
-                                                                     np.percentile(fit_list, 95),
-                                                                     coverage, qd_score))
-                log_file.flush()
-            pbar.update(len(to_evaluate))
-
-        save_archive(archive, n_evals, experiment_directory_path)
-        return experiment_directory_path, archive
+        save_archive(self.archive, self.n_evals, self.experiment_directory_path)
+        self.plot_memory(ram_logging)
+        return self.experiment_directory_path, self.archive
 
     def _convert_saved_archive_to_experiment_archive(self, experiment_directory_path,
                                                      experiment_label, archive_number, kdt, archive,

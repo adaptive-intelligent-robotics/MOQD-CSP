@@ -104,7 +104,7 @@ def plot_2d_map_elites_repertoire_marta(
     target_centroids: Optional[np.ndarray] = None,
     directory_string: Optional[str]= None,
     filename: Optional[str] = "cvt_plot",
-    axis_labels: List[str] = ["band_gap", "shear_modulus"],
+    axis_labels: List[str] = ["Band Gap, eV", "Shear Modulus, GPa"],
     annotations: Optional[Union[List[str], np.ndarray]] = None,
     annotate: bool = True
 
@@ -213,8 +213,8 @@ def plot_2d_map_elites_repertoire_marta(
                 elif isinstance(annotations[i], float) and annotations[i] != -np.inf:
                     ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]), fontsize=4)
     # aesthetic
-    ax.set_xlabel(f"BD1 - {axis_labels[0]}")
-    ax.set_ylabel(f"BD2 - {axis_labels[1]}")
+    ax.set_xlabel(f"{axis_labels[0]}")
+    ax.set_ylabel(f"{axis_labels[1]}")
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=my_cmap), cax=cax)
