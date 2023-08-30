@@ -17,4 +17,4 @@ if __name__ == '__main__':
             plot_labels=None,
             title_tag=None,
         )
-        report_generator.plot_cvt_and_symmetry(override_fitness_values=[8.7, 9.5], force_replot=True)
+        report_generator.plot_cvt_and_symmetry(override_fitness_values=[8.7, 9.5], force_replot=False)

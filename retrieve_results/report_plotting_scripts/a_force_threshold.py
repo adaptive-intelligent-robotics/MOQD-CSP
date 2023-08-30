@@ -9,7 +9,7 @@ def force_threshold_exp(plot_individually=True,
     ### 1a - Force Threshold 0.2, 0.4, 1
     report_generator = ReportPlotGenerator(
         path_to_experiments=pathlib.Path(
-            __file__).parent.parent / ".experiment.nosync/report_data/1_force_threshold",
+            __file__).parent.parent.parent / ".experiment.nosync/report_data/1_force_threshold",
         plot_labels=None,
         title_tag=None
     )

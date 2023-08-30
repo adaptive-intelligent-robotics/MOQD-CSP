@@ -455,7 +455,7 @@ class SymmetryEvaluation:
             confidence_scores = np.take(plotting_matches_from_archive.confidence_level, indices_to_check).reshape(-1)
             fooled_ground_state_match = max(confidence_scores)
         else:
-            fooled_ground_state_match = ConfidenceLevels.get_string(ConfidenceLevels.NO_MATCH)
+            fooled_ground_state_match = ConfidenceLevels.NO_MATCH
 
         summary_dict = {
             "ground_state_match": ConfidenceLevels.get_string(ConfidenceLevels(ground_state_match)),
@@ -751,7 +751,7 @@ class SymmetryEvaluation:
                 confidence_scores = [plotting_matches.confidence_level[int(id)].value for id in confidence_levels_ids]
                 max_confidence_id = np.argwhere(np.array(confidence_scores) == max(confidence_scores)).reshape(-1)
 
-                colour = colour_dict[plotting_matches.confidence_level[confidence_levels_ids[int(max_confidence_id)]]]
+                colour = colour_dict[plotting_matches.confidence_level[confidence_levels_ids[int(max_confidence_id[0])]]]
             else:
                 colour = colour_dict[plotting_matches.confidence_level[list_index]]
 

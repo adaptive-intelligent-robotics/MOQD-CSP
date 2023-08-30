@@ -21,7 +21,7 @@ class ReportPlotGenerator:
         self.experiment_organiser = ExperimentOrganiser()
         self.experiment_organiser.experiment_directory_path = path_to_experiments
         self._path_to_all_experiments = path_to_experiments
-        self.experiment_list = [name for name in os.listdir(f"{self._path_to_all_experiments }")
+        self.experiment_list = [name for name in os.listdir(f"{self._path_to_all_experiments}")
                          if os.path.isdir(self._path_to_all_experiments / name) and (name != "all_plots")]
         self.sub_experiment_list, self.centroids_list, self.configs_list = self._list_all_individual_experiments()
         self.plot_labels = plot_labels
@@ -69,7 +69,7 @@ class ReportPlotGenerator:
     def plot_mean_statistics(
         self, folder_names: Optional[List[str]] = None, labels: Optional[List[str]]=None,
         title_tag: Optional[str] = None, filename_tag: str = "", plot_individually: bool = True,
-        reference_path: Optional[pathlib.Path] = None
+        reference_path: Optional[pathlib.Path] = None, reference_label: str = ""
     ):
         folders_to_plot = folder_names if folder_names is not None else self.experiment_list
         plot_labels = labels if labels is not None else self.plot_labels
@@ -102,6 +102,12 @@ class ReportPlotGenerator:
                         ]
 
         all_processed_data = []
+
+        if reference_path is not None:
+            ref_means, ref_quartile_25, ref_quartile_75 = self.load_reference_data(reference_path)
+            ref_color = "#BA0079"
+        reference_added = False
+
         for metric_id in tqdm(range(1, len(metric_names))):
             fig, ax = plt.subplots()
             for i, experiment in enumerate(all_experiment_data):
@@ -121,24 +127,38 @@ class ReportPlotGenerator:
                 ax.set_xlabel("Evaluation Count")
                 ax.set_ylabel(metric_names[metric_id])
                 ax.set_title(f"{title_tag} - {metric_names[metric_id]}")
+                if reference_path is not None and not reference_added:
+                    ax.plot(ref_means[0], ref_means[metric_id], label=reference_label, color=ref_color)
+                    ax.fill_between(ref_means[0], (ref_quartile_25[metric_id]),
+                                    (ref_quartile_75[metric_id]), alpha=.1, color=ref_color)
+                    reference_added = True
+
                 if plot_individually:
                     fig_ind, ax_ind = plt.subplots()
                     ax_ind.plot(processed_data[0, 0], means[metric_id], label=plot_labels[i])
                     ax_ind.fill_between(processed_data[0, 0], (quartile_25[metric_id]),(quartile_75[metric_id]), alpha=.1)
+
+                    if reference_path is not None:
+                        ax_ind.plot(ref_means[0], ref_means[metric_id], label=reference_label,
+                                color=ref_color)
+                        ax_ind.fill_between(ref_means[0], (ref_quartile_25[metric_id]),
+                                        (ref_quartile_75[metric_id]), alpha=.1, color=ref_color)
+
                     ax_ind.set_xlabel("Evaluation Count")
                     ax_ind.set_ylabel(metric_names[metric_id])
                     ax_ind.set_title(f"{plot_labels[i]} {metric_names[metric_id]}")
                     ax_ind.legend()
                     ax_ind.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2),
-                              fontsize="x-small", ncols=1)
+                              fontsize="x-small", ncols=1 + int(reference_path is not None))
                     fig_ind.tight_layout()
                     save_name = f"{plot_labels[i]}_{metric_names[metric_id]}".replace(" ", "_").lower().replace(".", "").replace("/", "")
                     fig_ind.savefig(
                         self.summary_plot_folder / f"{save_name}.png")
                     plt.close(fig_ind)
 
+            plot_labels
             ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2),
-                          fontsize="x-small", ncols=min(3, len(plot_labels)))
+                          fontsize="x-small", ncols=min(3, len(plot_labels)+ int(reference_added)))
             fig.tight_layout()
             save_name = f"{filename_tag}_comparison_{metric_names[metric_id]}".replace(" ", "_").lower().replace(".", "").replace("/", "")
             fig.savefig(self.summary_plot_folder / f"{save_name}.png")
@@ -165,12 +185,24 @@ class ReportPlotGenerator:
 
 
     def load_reference_data(self, path_to_reference: pathlib.Path):
-        with open(path_to_reference, "r") as file:
-            reference_data = np.loadtxt(file)
 
-        quartile_25 = np.percentile(reference_data, 25, axis=0)
-        quartile_75 = np.percentile(reference_data, 75, axis=0)
-        means = np.mean(reference_data, axis=0)
+        sub_experiments_by_exp = [name for name in os.listdir(f"{path_to_reference}")
+                                  if os.path.isdir(path_to_reference / name)]
+        reference_data = []
+        for sub_experiment in sub_experiments_by_exp:
+            with open(path_to_reference / sub_experiment /f"{sub_experiment}.dat", "r") as file:
+                reference_data.append(np.loadtxt(file).T)
+
+        all_processed_data = []
+        minimum_number_of_datapoints = min([len(el[0]) for el in reference_data])
+        for experiment in reference_data:
+            processed_data = np.array(experiment[:, :minimum_number_of_datapoints])
+            all_processed_data.append(processed_data)
+
+        all_processed_data = np.array(all_processed_data)
+        quartile_25 = np.percentile(all_processed_data, 25, axis=0)
+        quartile_75 = np.percentile(all_processed_data, 75, axis=0)
+        means = np.mean(all_processed_data, axis=0)
 
         return means, quartile_25, quartile_75
 
