@@ -16,13 +16,13 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
             folder_names=[
                 "02_niches"
             ],
-            labels=["20% Niches Filled"],
+            labels=["0.2 Niches Filled"],
             title_tag="Niches Filled with Random Generation",
             filename_tag="niches_filled",
             plot_individually=plot_individually,
             reference_path=pathlib.Path(
-            __file__).parent.parent.parent / ".experiment.nosync/report_data/1_force_threshold/threshold_1",
-            reference_label="10% Niches Filled",
+            __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/no_threshold",
+            reference_label="0.1 Niches Filled",
         )
 
     if n_niches:
@@ -35,7 +35,7 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
             filename_tag="niches_available",
             plot_individually=plot_individually,
             reference_path=pathlib.Path(
-                __file__).parent.parent.parent / ".experiment.nosync/report_data/1_force_threshold/threshold_1",
+                __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/no_threshold",
             reference_label="200 Niches",
         )
 
@@ -49,22 +49,22 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
             filename_tag="init_individuals",
             plot_individually=plot_individually,
             reference_path=pathlib.Path(
-                __file__).parent.parent.parent / ".experiment.nosync/report_data/1_force_threshold/threshold_1",
+                __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/no_threshold",
             reference_label="20 Individuals",
         )
 
     if batch_size:
         report_generator.plot_mean_statistics(
             folder_names=[
-                "structure_initialise_40", "structure_initialise_80"
+                "batch_size_20", "batch_size_50"
             ],
-            labels=["40 Individuals", "80 Individuals"],
+            labels=["Batch Size 20", "Batch Size 50"],
             title_tag="Number of Individuals Initialised",
-            filename_tag="init_individuals",
+            filename_tag="batch_size",
             plot_individually=plot_individually,
             reference_path=pathlib.Path(
-                __file__).parent.parent.parent / ".experiment.nosync/report_data/1_force_threshold/threshold_1",
-            reference_label="20 Individuals",
+                __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/no_threshold",
+            reference_label="Batch Size 100",
         )
 
 

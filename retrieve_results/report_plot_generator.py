@@ -106,11 +106,18 @@ class ReportPlotGenerator:
         if reference_path is not None:
             ref_means, ref_quartile_25, ref_quartile_75 = self.load_reference_data(reference_path)
             ref_color = "#BA0079"
-        reference_added = False
+
 
         for metric_id in tqdm(range(1, len(metric_names))):
             fig, ax = plt.subplots()
+            reference_added = False
             for i, experiment in enumerate(all_experiment_data):
+                if reference_path is not None and not reference_added:
+                    ax.plot(ref_means[0], ref_means[metric_id], label=reference_label, color=ref_color)
+                    ax.fill_between(ref_means[0], (ref_quartile_25[metric_id]),
+                                    (ref_quartile_75[metric_id]), alpha=.1, color=ref_color)
+                    reference_added = True
+
                 processed_data = []
                 minimum_number_of_datapoints = min([len(el[0]) for el in experiment])
                 for el in experiment:
@@ -127,22 +134,17 @@ class ReportPlotGenerator:
                 ax.set_xlabel("Evaluation Count")
                 ax.set_ylabel(metric_names[metric_id])
                 ax.set_title(f"{title_tag} - {metric_names[metric_id]}")
-                if reference_path is not None and not reference_added:
-                    ax.plot(ref_means[0], ref_means[metric_id], label=reference_label, color=ref_color)
-                    ax.fill_between(ref_means[0], (ref_quartile_25[metric_id]),
-                                    (ref_quartile_75[metric_id]), alpha=.1, color=ref_color)
-                    reference_added = True
 
                 if plot_individually:
                     fig_ind, ax_ind = plt.subplots()
-                    ax_ind.plot(processed_data[0, 0], means[metric_id], label=plot_labels[i])
-                    ax_ind.fill_between(processed_data[0, 0], (quartile_25[metric_id]),(quartile_75[metric_id]), alpha=.1)
-
                     if reference_path is not None:
                         ax_ind.plot(ref_means[0], ref_means[metric_id], label=reference_label,
                                 color=ref_color)
                         ax_ind.fill_between(ref_means[0], (ref_quartile_25[metric_id]),
                                         (ref_quartile_75[metric_id]), alpha=.1, color=ref_color)
+
+                    ax_ind.plot(processed_data[0, 0], means[metric_id], label=plot_labels[i])
+                    ax_ind.fill_between(processed_data[0, 0], (quartile_25[metric_id]),(quartile_75[metric_id]), alpha=.1)
 
                     ax_ind.set_xlabel("Evaluation Count")
                     ax_ind.set_ylabel(metric_names[metric_id])
@@ -164,9 +166,10 @@ class ReportPlotGenerator:
             fig.savefig(self.summary_plot_folder / f"{save_name}.png")
         plt.close(fig)
 
-    def plot_cvt_and_symmetry(self, override_fitness_values: Optional[List[float]] = None, annotate=False, force_replot = True):
+    def plot_cvt_and_symmetry(self, override_fitness_values: Optional[List[float]] = None, annotate=False, force_replot=True, all_sub_experiments=True):
         for i, experiment in enumerate(self.experiment_list):
-            for j, sub_experiment in enumerate(self.sub_experiment_list[i]):
+            sub_experiments = self.sub_experiment_list[i] if all_sub_experiments else [self.sub_experiment_list[i][0]]
+            for j, sub_experiment in enumerate(sub_experiments):
 
                 experiment_processor = ExperimentProcessor(
                     experiment_label=sub_experiment,

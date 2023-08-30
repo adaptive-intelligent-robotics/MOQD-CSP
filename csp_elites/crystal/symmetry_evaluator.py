@@ -798,7 +798,7 @@ class SymmetryEvaluation:
             unique = sorted(unique, key=lambda x: np.argwhere(sorting_match == x[1]).reshape(-1)[0])
             ax.legend(*zip(*unique), loc="upper left", bbox_to_anchor=(1.04, 0.5), fontsize="x-small", ncols=1)
         except Exception as e:
-            print("legen error")
+            print("legend error")
             pass
 
 if __name__ == '__main__':
