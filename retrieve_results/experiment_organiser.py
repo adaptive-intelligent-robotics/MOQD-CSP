@@ -38,10 +38,14 @@ class ExperimentOrganiser:
         with open(self.experiment_directory_path / folder_name / "experiment_parameters.pkl", "rb") as file:
             experiment_parameters = pickle.load(file)
 
-        if experiment_parameters["normalise_bd"]:
-            bd_minimum_values, bd_maximum_values = [0, 0], [1, 1]
+        if folder_name == "20230813_23_55_TiO2_constrained_qd_bg_shear":
+            bd_minimum_values, bd_maximum_values = experiment_parameters["bd_minimum_values"], \
+                                                   experiment_parameters["bd_maximum_values"]
         else:
-            bd_minimum_values, bd_maximum_values = experiment_parameters["bd_minimum_values"], experiment_parameters["bd_maximum_values"]
+            if experiment_parameters["normalise_bd"]:
+                bd_minimum_values, bd_maximum_values = [0, 0], [1, 1]
+            else:
+                bd_minimum_values, bd_maximum_values = experiment_parameters["bd_minimum_values"], experiment_parameters["bd_maximum_values"]
 
         centroid_filename = make_centroid_filename(
             k=200, # todo: make number of niches dynamic
@@ -154,4 +158,4 @@ class ExperimentOrganiser:
 
 if __name__ == '__main__':
     experiment_organiser = ExperimentOrganiser()
-    experiment_organiser.csv_with_archive_count(["0828", "0829"])
+    # experiment_organiser.csv_with_archive_count(["0828", "0829", "0830"])

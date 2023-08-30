@@ -20,7 +20,7 @@ def force_threshold_exp(plot_individually=True,
             ],
             labels=["0.2 eV/A", "0.4 eV/A", "1 eV/A"],
             title_tag="Impact of Force Threshold",
-            filename_tag="value",
+            filename_tag="force_threshold_value",
             plot_individually=plot_individually,
         )
     if relax_steps:
@@ -29,7 +29,7 @@ def force_threshold_exp(plot_individually=True,
                 "threshold_1_10_relax", "threshold_1_50_relax", "threshold_1"
             ],
             labels=["10 steps", "50 steps", "100 steps"],
-            title_tag="Impact of Force Threshold on Relaxation",
+            title_tag="Number of Relaxation Steps with 1 eV Threshold",
             filename_tag="steps",
             plot_individually=plot_individually,
         )
@@ -46,4 +46,4 @@ def force_threshold_exp(plot_individually=True,
 
 
 if __name__ == '__main__':
-    force_threshold_exp(plot_individually=False, force_thesh=False, relax_steps=False, relax_steps_no_10=True)
+    force_threshold_exp(plot_individually=False, force_thesh=True, relax_steps=True, relax_steps_no_10=True)

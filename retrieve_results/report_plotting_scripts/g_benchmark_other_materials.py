@@ -8,11 +8,8 @@ from retrieve_results.report_plot_generator import ReportPlotGenerator
 if __name__ == '__main__':
     path_to_all_experiments = pathlib.Path(
                 __file__).parent.parent.parent / ".experiment.nosync/report_data"
-    # all_experiments = [name for name in os.listdir(f"{path_to_all_experiments }")
-    #                      if os.path.isdir(path_to_all_experiments / name) and (name != "all_plots")]
-
-    all_experiments = ["6_benchmark"]
-    fitness_values = [[8.7, 9.5]] # 6.5
+    all_experiments = ["7_benchmark_other_materials"]
+    fitness_values = [[6.5, 9.5]]
 
     for i, experiment in tqdm(enumerate(all_experiments)):
         report_generator = ReportPlotGenerator(
@@ -20,4 +17,4 @@ if __name__ == '__main__':
             plot_labels=None,
             title_tag=None,
         )
-        report_generator.plot_cvt_and_symmetry(override_fitness_values=fitness_values[i], force_replot=True, all_sub_experiments=False)
+        report_generator.plot_cvt_and_symmetry(override_fitness_values=fitness_values[i], force_replot=False, all_sub_experiments=True)

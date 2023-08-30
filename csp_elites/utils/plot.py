@@ -456,9 +456,9 @@ if __name__ == '__main__':
     #                         maxval=[100, 120],
     #                         )
 
-    archive_number = 5000
+    archive_number = 5011
     directory_string = pathlib.Path(
-        __file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "20230822_21_45_TiO2_cma_5_relaxation_lr1_sigma_1"
+        __file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "20230813_23_55_TiO2_constrained_qd_bg_shear"
 
     # a = [name for name in os.listdir(f"{directory_string}") if
     #  not os.path.isdir(name)]
@@ -467,16 +467,16 @@ if __name__ == '__main__':
     archive_filename = directory_string / f"archive_{archive_number}.pkl"
     # centroid_filename = pathlib.Path(__file__).parent.parent.parent / "experiments" / "centroids"/ "centroids_200_2_constraint_band_gap_-60_30_constraint_shear_-70_50.dat"
     centroid_filename = pathlib.Path(
-        __file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids"/ "centroids_200_2_band_gap_0_100_shear_modulus_0_120.dat"
+        __file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids"/ "centroids_200_2_constraint_band_gap_-60_30_constraint_shear_-70_50.dat"
     reassign_centroids = True
     comparison_data = pathlib.Path(
-        __file__).parent.parent.parent / ".experiment.nosync" "/experiments/target_data/ti02_band_gap_shear_modulus.pkl"
+        __file__).parent.parent.parent / ".experiment.nosync/mp_reference_analysis/TiO2_24/TiO2_band_gap_shear_modulus.pkl"
     # filename_for_save = f"cvt_plot_{archive_number}"
     filename_for_save = None
     # fitness_plotting_filename = "TiO2_dat.dat"  # TODO: get fitness from the right place - is this it
-    descriptor_minimum_values = np.array([0, 0])
-    descriptor_maximum_values = np.array([100, 120])
-    fitness_min_max_values = (6.5, 10)
+    descriptor_minimum_values = np.array([-60, -70])
+    descriptor_maximum_values = np.array([30, 50])
+    fitness_min_max_values = (8, 9.5)
     target_centroids = None
 
     # ToDo: Pass target centroids in better
@@ -491,6 +491,7 @@ if __name__ == '__main__':
         centroids_file=centroid_filename,
         target_data=comparison_data_packed,
         filter_for_number_of_atoms=24,
+        normalise_bd_values=None
     )
 
     # with open(archive_filename, "rb") as file:
@@ -525,8 +526,9 @@ if __name__ == '__main__':
         repertoire_descriptors=descriptors_for_plotting,
         vmin=fitness_min_max_values[0],
         vmax=fitness_min_max_values[1],
-        target_centroids=target_centroids,
-        directory_string=None,
+        target_centroids=None,
+        directory_string=pathlib.Path(
+        __file__).parent.parent.parent / ".experiment.nosync" / "report_results/2_constrained",
         filename=filename_for_save,
-
+        annotate=False
     )

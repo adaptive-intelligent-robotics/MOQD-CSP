@@ -21,7 +21,7 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
             filename_tag="niches_filled",
             plot_individually=plot_individually,
             reference_path=pathlib.Path(
-            __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/no_threshold",
+            __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/benchmark",
             reference_label="0.1 Niches Filled",
         )
 
@@ -35,7 +35,7 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
             filename_tag="niches_available",
             plot_individually=plot_individually,
             reference_path=pathlib.Path(
-                __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/no_threshold",
+                __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/benchmark",
             reference_label="200 Niches",
         )
 
@@ -49,7 +49,7 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
             filename_tag="init_individuals",
             plot_individually=plot_individually,
             reference_path=pathlib.Path(
-                __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/no_threshold",
+                __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/benchmark",
             reference_label="20 Individuals",
         )
 
@@ -63,7 +63,7 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
             filename_tag="batch_size",
             plot_individually=plot_individually,
             reference_path=pathlib.Path(
-                __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/no_threshold",
+                __file__).parent.parent.parent / ".experiment.nosync/report_data/6_benchmark/benchmark",
             reference_label="Batch Size 100",
         )
 

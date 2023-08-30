@@ -107,7 +107,6 @@ class ReportPlotGenerator:
             ref_means, ref_quartile_25, ref_quartile_75 = self.load_reference_data(reference_path)
             ref_color = "#BA0079"
 
-
         for metric_id in tqdm(range(1, len(metric_names))):
             fig, ax = plt.subplots()
             reference_added = False
@@ -187,6 +186,9 @@ class ReportPlotGenerator:
                 experiment_processor.process_symmetry(annotate=False)
 
 
+    # def _plot_cvt_and_symmetry_1_experiment(self, apth_to_experiment):
+    #     pass
+
     def load_reference_data(self, path_to_reference: pathlib.Path):
 
         sub_experiments_by_exp = [name for name in os.listdir(f"{path_to_reference}")
@@ -220,5 +222,5 @@ if __name__ == '__main__':
         plot_labels=["No Threshold", "With Threshold"],
         title_tag="Impact of Stability Threshold"
     )
-    report_generator.plot_cvt_and_symmetry(override_fitness_values=[8.7, 9.7])
-    # report_generator.plot_mean_statistics()
+    # report_generator.plot_cvt_and_symmetry(override_fitness_values=[8.7, 9.7])
+    report_generator.plot_mean_statistics()
