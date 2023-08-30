@@ -84,6 +84,6 @@ if __name__ == '__main__':
 
     write_configs_from_csv(
         path_to_cofnig_csv=pathlib.Path(__file__).parent.parent.parent / "experiments/experiment_list.csv",
-        number_for_array_job=3,
-        path_to_save=pathlib.Path(__file__).parent.parent.parent / "configs/0828"
+        number_for_array_job=10,
+        path_to_save=pathlib.Path(__file__).parent.parent.parent / "configs/0830"
     )

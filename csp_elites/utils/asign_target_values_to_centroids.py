@@ -53,7 +53,7 @@ def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
         c = np.loadtxt(f)
     kdt = KDTree(c, leaf_size=30, metric='euclidean')
 
-    fitnesses, _, descriptors, _ = target_data
+    fitnesses, _, descriptors, individuals = target_data
     if normalise_bd_values is not None:
         descriptors[:, 0] = normalise_between_0_and_1(descriptors[:, 0], (normalise_bd_values[0][0], normalise_bd_values[1][0]))
         descriptors[:, 1]  = normalise_between_0_and_1(descriptors[:, 1], (normalise_bd_values[0][1],
@@ -64,8 +64,7 @@ def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
     shear_moduli = []
 
     if filter_for_number_of_atoms is not None:
-        for i, atoms in enumerate(fitnesses):
-
+        for i, atoms in enumerate(individuals):
             atom_positions = atoms["positions"] if isinstance(atoms, dict) else atoms.get_positions()
             if len(atom_positions) <= filter_for_number_of_atoms:
                 fitnesses_to_enumerate.append(fitnesses[i])

@@ -1,7 +1,7 @@
 import json
 import os
 import pathlib
-from typing import Union
+from typing import Union, Optional
 
 import numpy as np
 from ase.ga.utilities import CellBounds
@@ -28,13 +28,16 @@ class ExperimentProcessor:
         fitness_limits=(6.5, 10),
         save_structure_images: bool = True,
         filter_for_experimental_structures: bool = False,
-        experiment_location: pathlib.Path = pathlib.Path(__file__).parent.parent / ".experiment.nosync"
+        experiment_location: pathlib.Path = pathlib.Path(__file__).parent.parent / ".experiment.nosync",
+        centroid_directory_path: Optional[pathlib.Path] = None,
+        experiment_directory_path: Optional[pathlib.Path] = None
+
     ):
         self.repo_location = pathlib.Path(__file__).parent.parent
         self.experiment_label = experiment_label
         self.experiment_location = experiment_location
-        self.experiment_directory_path = self.experiment_location / "experiments" / experiment_label
-        self.centroid_directory_path = self.experiment_location / "experiments" / centroid_filename[1:]
+        self.experiment_directory_path = self.experiment_location / "experiments" / experiment_label if experiment_directory_path is None else experiment_directory_path
+        self.centroid_directory_path = self.experiment_location / "experiments" / centroid_filename[1:] if centroid_directory_path is None else centroid_directory_path
         self.all_centroids = load_centroids(str(self.centroid_directory_path))
         self.experiment_parameters = self._load_experiment_parameters(config_filepath)
         self.fitness_limits = fitness_limits
@@ -65,13 +68,14 @@ class ExperimentProcessor:
 
         return experiment_parameters
 
-    def plot(self, annotate: bool = True):
+    def plot(self, annotate: bool = True, force_replot: bool = False):
         plot_all_maps_in_archive(
             experiment_directory_path=str(self.experiment_directory_path),
             experiment_parameters=self.experiment_parameters,
             all_centroids=self.all_centroids,
             target_centroids=self.compute_target_centroids(),
-            annotate=annotate
+            annotate=annotate,
+            force_replot=force_replot,
         )
         plot_gif(experiment_directory_path=str(self.experiment_directory_path))
         plot_all_statistics_from_file(
@@ -107,7 +111,7 @@ class ExperimentProcessor:
         structure_info, known_structures = get_all_materials_with_formula(experiment_parameters.system_name)
         return structure_info, known_structures
 
-    def process_symmetry(self):
+    def process_symmetry(self, annotate=True):
         archive_number = self._get_last_archive_number()
         unrelaxed_archive_location = self.experiment_directory_path / f"archive_{archive_number}.pkl"
 
@@ -176,14 +180,9 @@ class ExperimentProcessor:
             plotting_from_archive, plotting_from_mp = symmetry_evaluation.matches_for_plotting(
                 individuals_with_matches)
 
-            symmetry_evaluation.plot_matches_mapped_to_references(
-                plotting_matches=plotting_from_archive,
-                centroids=self.all_centroids,
-                centroids_from_archive=archive.centroid_ids,
-                minval=[0, 0] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
-                maxval=[1, 1] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
-                directory_string=str(self.experiment_directory_path),
-            )
+            report_statistic_summary_dict = symmetry_evaluation.write_report_summary_json(
+                plotting_from_archive, directory_string=str(self.experiment_directory_path))
+
             symmetry_evaluation.plot_matches_mapped_to_references(
                 plotting_matches=plotting_from_mp,
                 centroids=self.all_centroids,
@@ -191,7 +190,19 @@ class ExperimentProcessor:
                 minval=[0, 0] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
                 maxval=[1, 1] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
                 directory_string=str(self.experiment_directory_path),
+                annotate=annotate,
             )
+
+            symmetry_evaluation.plot_matches_mapped_to_references(
+                plotting_matches=plotting_from_archive,
+                centroids=self.all_centroids,
+                centroids_from_archive=archive.centroid_ids,
+                minval=[0, 0] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
+                maxval=[1, 1] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
+                directory_string=str(self.experiment_directory_path),
+                annotate=annotate
+            )
+
             print("I was here")
 
 

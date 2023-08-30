@@ -14,6 +14,7 @@ from scipy.spatial import Voronoi
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
 
+import matplotlib.colors as mcolors
 from csp_elites.map_elites.elites_utils import make_hashable
 from csp_elites.utils.asign_target_values_to_centroids import \
     reassign_data_from_pkl_to_new_centroids
@@ -183,14 +184,23 @@ def plot_2d_map_elites_repertoire_marta(
         ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
         if target_centroids is not None:
             if centroids[i] in np.array(target_centroids):
-                ax.fill(*zip(*polygon), edgecolor="red", facecolor="none", lw=2)
+                ax.fill(*zip(*polygon), edgecolor=mcolors.CSS4_COLORS["salmon"], facecolor="none", lw=1)
     # fill the plot with the colors
     for idx, fitness in enumerate(fitnesses):
         if fitness > -np.inf:
             region = regions[idx]
             polygon = vertices[region]
-
             ax.fill(*zip(*polygon), alpha=0.8, color=my_cmap(norm(fitness)))
+            # if target_centroids is not None:
+            #     if centroids[idx] in np.array(target_centroids):
+            #         ax.fill(*zip(*polygon), edgecolor="orange", facecolor="none", lw=2, alpha=0.8)
+
+    for i, region in enumerate(regions):
+        polygon = vertices[region]
+        if target_centroids is not None:
+            if centroids[i] in np.array(target_centroids):
+                ax.fill(*zip(*polygon), edgecolor=mcolors.CSS4_COLORS["salmon"], facecolor="none", lw=1, alpha=1)
+
     np.set_printoptions(2)
     # if descriptors are specified, add points location
     if repertoire_descriptors is not None:
@@ -392,7 +402,8 @@ def plot_all_maps_in_archive(
     experiment_parameters: "ExperimentParameters",
     all_centroids,
     target_centroids,
-        annotate: bool = True
+    annotate: bool = True,
+    force_replot: bool = False,
 ):
     list_of_files = [name for name in os.listdir(f"{experiment_directory_path}") if
                      not os.path.isdir(name)]
@@ -405,7 +416,7 @@ def plot_all_maps_in_archive(
         if "relaxed_archive" in filename:
             continue
         archive_id = filename.lstrip("relaxed_archive_").rstrip(".pkl")
-        if archive_id not in list_of_plot_ids:
+        if force_replot or (archive_id not in list_of_plot_ids):
             fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
                 f"{experiment_directory_path}/{filename}")
             fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_ddescriptors_to_plotting_format(
@@ -431,8 +442,7 @@ def plot_all_maps_in_archive(
                 target_centroids=target_centroids,
                 directory_string=experiment_directory_path,
                 filename=f"cvt_plot_{archive_id}",
-                axis_labels=[bd.value for bd in
-                             experiment_parameters.cvt_run_parameters["behavioural_descriptors"]],
+                axis_labels=["Band Gap, eV", "Shear Modulus, GPa"],
                 annotate=annotate
             )
 

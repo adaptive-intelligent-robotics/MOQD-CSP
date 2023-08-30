@@ -4,6 +4,7 @@ import pathlib
 import pickle
 from typing import List, Dict, Any
 
+import numpy as np
 import pandas as pd
 
 from csp_elites.map_elites.elites_utils import __centroids_filename as make_centroid_filename
@@ -54,6 +55,7 @@ class ExperimentOrganiser:
 
     @staticmethod
     def get_formula_from_folder_name(folder_name: str):
+        folder_name = folder_name.split("/")[-1]
         return folder_name[15:].split("_")[0]
 
     def get_config_data(self, date: str):
@@ -124,3 +126,32 @@ class ExperimentOrganiser:
         plot_done = "cvt_plot_gif.gif" in files
         symmetry_done = "ind_executive_summary.csv" in files
         return plot_done, symmetry_done
+
+
+    def csv_with_archive_count(self, dates: List[str]):
+        all_folders = []
+        for date in dates:
+            all_folders += self.get_all_folders_with_date(date)
+
+        experiment_tags = []
+        maximum_archives = []
+        for folder in all_folders:
+            exp_id = folder.split("_")[-1]
+
+            experiment_tags.append(folder[15:].rstrip(exp_id))
+            if self.is_experiment_valid(folder):
+                max_archive = max([int(name.lstrip("archive_").rstrip(".pkl")) for name in os.listdir(self.experiment_directory_path / folder) if ((not os.path.isdir(name)) and ("archive_" in name) and (".pkl" in name))])
+            else:
+                max_archive = 0
+            maximum_archives.append(max_archive)
+
+        all_data = np.vstack([all_folders, experiment_tags, maximum_archives]).T
+        df = pd.DataFrame(all_data)
+        df.columns = ["folder", "tag", "archives"]
+        df.to_csv(self.experiment_directory_path.parent / "evaluations_per_folder.csv")
+        pass
+
+
+if __name__ == '__main__':
+    experiment_organiser = ExperimentOrganiser()
+    experiment_organiser.csv_with_archive_count(["0828", "0829"])
