@@ -165,7 +165,7 @@ class CrystalSystem:
                 )
                 operator_list.append(self._gradient_mutation)
 
-            elif operator == "gradient_simple":
+            elif operator == "gradient_simple" or "rattle_simple":
                 self._gradient_mutation = GradientMutation(
                     blmin=closest_distances, n_top=len(self.atomic_numbers),
                     learning_rate=learning_rate, simple=True
