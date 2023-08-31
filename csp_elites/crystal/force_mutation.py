@@ -45,7 +45,8 @@ class GradientMutation(OffspringCreator):
     """
     # def __init__(self, test_dist_to_slab=True, use_tags=False,
     #              verbose=False, rng=np.random):
-    def __init__(self, blmin, n_top, learning_rate: float = 0.01, test_dist_to_slab=True, use_tags=False,
+    def __init__(self, blmin, n_top, simple: bool = False,
+                 learning_rate: float = 0.01, test_dist_to_slab=True, use_tags=False,
                  rattle_prop=0.4,
                  verbose=False, rng=np.random):
         OffspringCreator.__init__(self, verbose, rng=rng)
@@ -59,6 +60,8 @@ class GradientMutation(OffspringCreator):
         # self.model = CHGNet.load()
         self.learning_rate = learning_rate
         self.rattle_prop = rattle_prop
+        self.simple = simple
+        self.counter = 0
 
     def get_new_individual(self, parents: List[Species]):
         f = parents[0]
@@ -79,15 +82,8 @@ class GradientMutation(OffspringCreator):
     def mutate(self, species: Species):
         """Does the actual mutation."""
         atoms = Atoms.fromdict(species.x)
-        # forces = self.normalize_gradient(species.fitness_gradient)
-        # forces = forces[:len(species.x["positions"]), :]
-        # descriptor_gradients = np.array([self.normalize_gradient(grad) for grad in species.descriptor_gradients])
-
-        gradient_stack = np.vstack([[species.fitness_gradient[:len(species.x["positions"])], species.descriptor_gradients[0],
-                                     species.descriptor_gradients[1]]])
-        all_gradients_normalised = self.normalize_all_gradients_at_once(gradient_stack)
-        # all_gradients_normalised = self.normalize_all_gradients_at_once(np.concatenate([forces, descriptor_gradients[0]]))
-        # N = len(atoms) if self.n_top is None else self.n_top
+        gradient_stack = np.vstack([species.fitness_gradient[:len(species.x["positions"])]]).reshape((1, len(species.x["positions"]), 3))
+        all_gradients_normalised = self.normalize_all_gradients_at_once(gradient_stack).reshape((len(species.x["positions"]), 3))
         N = len(atoms)
         slab = atoms[:len(atoms) - N]
         atoms = atoms[-N:]
@@ -97,38 +93,49 @@ class GradientMutation(OffspringCreator):
         cell = atoms.get_cell()
         pbc = atoms.get_pbc()
         # st = 2. * self.rattle_strength
-
-        count = 0
-        maxcount = 1000
-        too_close = True
-        while too_close and count < maxcount:
-            count += 1
+        self.counter += 1
+        print(self.counter)
+        if self.simple:
+            print("simple")
             pos = pos_ref.copy()
-            coeficients = np.random.default_rng().normal(loc=0.0, scale=self.learning_rate, size=(3)).reshape((3, 1, 1))
-            gradient_mutation_amount = coeficients * all_gradients_normalised
-            gradient_mutation_amount = gradient_mutation_amount.sum(axis=0)
-
-            ok = False
-            for tag in np.unique(tags):
-                select = np.where(tags == tag)
-                if self.rng.rand() < self.rattle_prop:
-                    ok = True
-                    # r = self.rng.rand(3)
-                    pos[select] += gradient_mutation_amount[select]
-            if not ok:
-                # Nothing got rattled
-                continue
-
+            mutate_probability = self.rng.random(size=24)
+            gradient_mutation_amount = self.learning_rate * all_gradients_normalised
+            gradient_mutation_amount *= (mutate_probability > self.rattle_prop).reshape(-1, 1)
+            pos += gradient_mutation_amount
             top = Atoms(num, positions=pos, cell=cell, pbc=pbc, tags=tags)
-            too_close = atoms_too_close(
-                top, self.blmin, use_tags=self.use_tags)
-            if not too_close and self.test_dist_to_slab:
-                too_close = atoms_too_close_two_sets(top, slab, self.blmin)
+        else:
+            print("full on")
+            count = 0
+            maxcount = 1000
+            too_close = True
+            while too_close and count < maxcount:
+                count += 1
+                pos = pos_ref.copy()
+                gradient_mutation_amount = self.learning_rate * all_gradients_normalised
+                # gradient_mutation_amount = gradient_mutation_amount.sum(axis=0)
 
-        if count == maxcount:
-            return None
+                ok = False
+                for tag in np.unique(tags):
+                    select = np.where(tags == tag)
+                    if self.rng.rand() < self.rattle_prop:
+                        ok = True
+                        # r = self.rng.rand(3)
+                        pos[select] += gradient_mutation_amount[select]
+                if not ok:
+                    # Nothing got rattled
+                    continue
+
+                top = Atoms(num, positions=pos, cell=cell, pbc=pbc, tags=tags)
+                too_close = atoms_too_close(
+                    top, self.blmin, use_tags=self.use_tags)
+                if not too_close and self.test_dist_to_slab:
+                    too_close = atoms_too_close_two_sets(top, slab, self.blmin)
+
+            if count == maxcount:
+                return None
 
         mutant = slab + top
+
         return mutant
 
     def normalize_all_gradients_at_once(self, gradients: np.ndarray):

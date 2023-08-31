@@ -143,8 +143,6 @@ class CrystalSystem:
         )
 
         self._permutation_mutation = PermutationMutation(len(self.atom_numbers_to_optimise))
-
-
         return OperationSelector(
             operator_probabilities,
             [self._cut_and_splice, self._soft_mutation, self._strain_mutation, self._permutation_mutation],
@@ -163,7 +161,14 @@ class CrystalSystem:
             elif operator == "gradient":
                 self._gradient_mutation = GradientMutation(
                     blmin=closest_distances, n_top=len(self.atomic_numbers),
-                    learning_rate=learning_rate
+                    learning_rate=learning_rate, simple=False,
+                )
+                operator_list.append(self._gradient_mutation)
+
+            elif operator == "gradient_simple":
+                self._gradient_mutation = GradientMutation(
+                    blmin=closest_distances, n_top=len(self.atomic_numbers),
+                    learning_rate=learning_rate, simple=True
                 )
                 operator_list.append(self._gradient_mutation)
             elif operator == "dqd" or operator == "dqd_all_materials":
@@ -210,7 +215,7 @@ class CrystalSystem:
 
     def mutate(self, parents: List[Species]) -> Atoms:
         mutator = self.operators.get_operator()
-        if isinstance(mutator, DQDMutationOMGMEGA):
+        if isinstance(mutator, DQDMutationOMGMEGA) or isinstance(mutator, GradientMutation):
             new_individual, _ = mutator.get_new_individual(parents)
         else:
             new_individual, _ = mutator.get_new_individual(

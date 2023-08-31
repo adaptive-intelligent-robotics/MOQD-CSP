@@ -1,10 +1,16 @@
 import json
 import pathlib
+from enum import Enum
 from math import isnan
 
 import pandas as pd
 
 from csp_elites.utils.experiment_parameters import ExperimentParameters
+
+class JobsEnum(Enum, str):
+    MEDIUM = "hpc_template_medium.sh"
+    THROUGHPUT = "hpc_template.sh"
+    GPU = "hpc_template_gpu.sh"
 
 
 def write_bash_script(
@@ -72,7 +78,7 @@ def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_jo
             with open(path_to_save / f"{config_names[i]}_{j}.json", "w") as file:
                 json.dump(el, file)
 
-        scripts_directory = path_to_save.name + "_scripts"
+        scripts_directory = path_to_save.name + "_scripts_"
         write_bash_script(
             config_name=f"{path_to_save.name}/{config_names[i]}",
             job_name=config_names[i],
@@ -80,10 +86,10 @@ def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_jo
             n_jobs_in_array=number_for_array_job
         )
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     write_configs_from_csv(
         path_to_cofnig_csv=pathlib.Path(__file__).parent.parent.parent / "experiments/experiment_list.csv",
-        number_for_array_job=10,
-        path_to_save=pathlib.Path(__file__).parent.parent.parent / "configs/0830"
+        number_for_array_job=20,
+        path_to_save=pathlib.Path(__file__).parent.parent.parent / "configs/0831"
     )

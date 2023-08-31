@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import dgl
 import numpy as np
@@ -128,6 +128,8 @@ class ShearModulusCalculator:
         shear_modulus_log = self.model_wrapper.predict_structure(structure).ravel()[0]
         return shear_modulus_log
 
+    def compute_no_grad_batch(self, list_of_structures: List[Structure]):
+        return 10 ** self.model_wrapper.predict_structures(list_of_structures).ravel()
 
     def _compute_log_shear_modulus_with_gradients(self, structure: Structure):
         bond_distances, bond_distance_gradient_wrt_positions = \
