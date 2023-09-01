@@ -121,7 +121,7 @@ class GradientComputationValidator:
             values = self.step_for_n_steps(structure, n_steps=n_steps)
             values_by_structure.append(values)
 
-            fig, ax = self.plot_values_over_steps(self.starting_value - np.array(values), label=self._test_structure_mp_references[structure_id], fig=fig, ax=ax)
+            fig, ax = self.plot_values_over_steps(np.array(values), label=self._test_structure_mp_references[structure_id], fig=fig, ax=ax)
 
         plt.legend()
         plt.savefig(self.save_directory / f"gradient_stepping_{self.property.value}_lr_{self.learning_rate}.png", format="png")
@@ -129,8 +129,8 @@ class GradientComputationValidator:
 
 if __name__ == '__main__':
     n_steps = 1000
-    for learning_rate in [1, 1e-1, 1e-2, 1e-3, 1e-4, 1e-5, 1e-6]:
-        # for property in [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS, MaterialProperties.ENERGY]:
-        for property in [MaterialProperties.SHEAR_MODULUS]:
+    for learning_rate in [1e-3, 1e-4, 1e-5]:
+        for property in [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS, MaterialProperties.ENERGY]:
+        # for property in [MaterialProperties.SHEAR_MODULUS]:
             gradient_validator = GradientComputationValidator(material_property=property, learning_rate=learning_rate)
             gradient_validator.loop_for_all_test_structures(n_steps=n_steps)

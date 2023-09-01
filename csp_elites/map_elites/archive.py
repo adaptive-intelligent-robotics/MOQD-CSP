@@ -184,3 +184,29 @@ class Archive:
         df = df.reset_index(drop=True)
         df.index = ["energy", "band_gap", "shear_modulus", "fmax", "centroid_id"]
         return df
+
+    def compute_qd_score(self, top_value: Optional[int]=None):
+        valid_solutions_mask = self.get_valid_solutions_mask(top_value)
+        valid_fitnesses = self.fitnesses * valid_solutions_mask
+        return np.sum(valid_fitnesses)
+
+    def compute_fitness_metrics(self, top_value: Optional[int] = None):
+        valid_solutions_mask = self.get_valid_solutions_mask(top_value)
+        valid_fitnesses = self.fitnesses * valid_solutions_mask
+
+
+        return np.max(valid_fitnesses), np.mean(valid_fitnesses), np.median(valid_fitnesses), \
+               np.percentile(valid_fitnesses, 5), np.percentile(valid_fitnesses, 95),
+
+    def compute_coverage(self, number_of_niches: int = 200, top_value: Optional[int]= None, filter_valid_solutions: bool = False):
+        if filter_valid_solutions:
+            valid_solutions_mask = self.get_valid_solutions_mask(top_value)
+        else:
+            valid_solutions_mask = np.ones(len(self.fitnesses), dtype=bool)
+        return 100 * len(self.fitnesses[valid_solutions_mask]) / number_of_niches
+
+    def get_valid_solutions_mask(self, top_value: Optional[int] = None):
+        valid_solutions_mask = self.fitnesses >= 0
+        if top_value is not None:
+            valid_solutions_mask *= np.array(self.fitnesses < top_value, dtype=bool)
+        return valid_solutions_mask

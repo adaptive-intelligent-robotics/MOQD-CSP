@@ -7,19 +7,20 @@ import pandas as pd
 
 from csp_elites.utils.experiment_parameters import ExperimentParameters
 
-class JobsEnum(Enum, str):
-    MEDIUM = "hpc_template_medium.sh"
-    THROUGHPUT = "hpc_template.sh"
-    GPU = "hpc_template_gpu.sh"
-
+class JobsEnum(Enum):
+    MEDIUM = "hpc_template_medium.pbs"
+    THROUGHPUT_30_MEMORY = "hpc_template.pbs"
+    GPU = "hpc_template_gpu.pbs"
+    THROUGHPUT_20_MEMORY = "hpc_template.pbs"
 
 def write_bash_script(
         config_name,
         job_name,
         n_jobs_in_array: int,
         path_to_save: pathlib.Path,
+        template_name: JobsEnum
 ):
-    with open(pathlib.Path(__file__).parent.parent.parent / "experiments/hpc_template.pbs", "r") as file:
+    with open(pathlib.Path(__file__).parent.parent.parent / f"experiments/{template_name.value}", "r") as file:
         text = file.readlines()
 
     with open(path_to_save / f"{job_name}.pbs", "w") as file:
@@ -31,7 +32,8 @@ def write_bash_script(
             file.write(line)
 
 
-def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_job: int, path_to_save: pathlib.Path):
+def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_job: int, path_to_save: pathlib.Path,
+                           bash_template: JobsEnum):
     df = pd.read_csv(path_to_cofnig_csv)
     run_params_start_col = df.columns.get_loc("cvt_samples")
     number_of_columns = df.shape[1]
@@ -78,18 +80,20 @@ def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_jo
             with open(path_to_save / f"{config_names[i]}_{j}.json", "w") as file:
                 json.dump(el, file)
 
-        scripts_directory = path_to_save.name + "_scripts_"
+        scripts_directory = path_to_save.name + "_scripts_sup"
         write_bash_script(
             config_name=f"{path_to_save.name}/{config_names[i]}",
             job_name=config_names[i],
             path_to_save=path_to_save.parent / scripts_directory,
-            n_jobs_in_array=number_for_array_job
+            n_jobs_in_array=number_for_array_job,
+            template_name=bash_template
         )
 
 
 if __name__ == '__main__':
     write_configs_from_csv(
         path_to_cofnig_csv=pathlib.Path(__file__).parent.parent.parent / "experiments/experiment_list.csv",
-        number_for_array_job=20,
-        path_to_save=pathlib.Path(__file__).parent.parent.parent / "configs/0831"
+        number_for_array_job=10,
+        path_to_save=pathlib.Path(__file__).parent.parent.parent / "configs/0831",
+        bash_template=JobsEnum.THROUGHPUT_30_MEMORY
     )

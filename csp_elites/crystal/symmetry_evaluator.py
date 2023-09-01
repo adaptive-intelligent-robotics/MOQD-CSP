@@ -19,6 +19,7 @@ from ase.spacegroup import get_spacegroup
 from matplotlib import cm
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pymatgen.analysis.structure_matcher import StructureMatcher
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
@@ -67,11 +68,12 @@ class PlottingMode(str, Enum):
     ARCHIVE_MATCHES_VIEW = "archive_matches_view"
 @dataclass
 class PlottingMatches:
-    centroid_index: List[int]
-    mp_reference: List[str]
-    confidence_level: List[ConfidenceLevels]
-    euclidian_distance: List[float]
+    centroid_indices: List[int]
+    mp_references: List[str]
+    confidence_levels: List[ConfidenceLevels]
+    euclidian_distances: List[float]
     descriptors: List[np.ndarray]
+    energy_difference: List[float]
     plotting_mode: PlottingMode
 
 
@@ -381,6 +383,7 @@ class SymmetryEvaluation:
         euclidian_distance_to_matches = []
         all_descriptors = []
         true_centroid_indices = []
+        energy_difference = []
         for i, individual in enumerate(individuals_with_matches):
             sorted_matches = sorted(individual["matches"], key=lambda x: list(x.values())[0][
                 "euclidian_distance_in_bd_space"])
@@ -392,6 +395,7 @@ class SymmetryEvaluation:
             euclidian_distance_to_matches.append(match_dictionary["euclidian_distance_in_bd_space"])
             all_descriptors.append(individual["descriptors"])
             true_centroid_indices.append(match_dictionary["centroid"])
+            energy_difference.append(match_dictionary["reference_energy_perc_difference"])
 
         plotting_matches_from_archive = PlottingMatches(
             centroids_with_matches,
@@ -399,6 +403,7 @@ class SymmetryEvaluation:
             confidence_levels,
             euclidian_distance_to_matches,
             all_descriptors,
+            energy_difference,
             PlottingMode.ARCHIVE_MATCHES_VIEW,
         )
 
@@ -409,6 +414,7 @@ class SymmetryEvaluation:
         ref_confidence_levels = []
         ref_euclidian_distance_to_matches = []
         ref_all_descriptors = []
+        ref_energy_difference = []
 
         for match_mp_ref in unique_matches:
             match_indices = np.argwhere(np.array(mp_reference_of_matches) == match_mp_ref).reshape(
@@ -430,6 +436,7 @@ class SymmetryEvaluation:
             ref_confidence_levels.append(confidence_levels[index_in_archive_list])
             ref_euclidian_distance_to_matches.append(euclidian_distance_to_matches[index_in_archive_list])
             ref_all_descriptors.append(all_descriptors[index_in_archive_list])
+            ref_energy_difference.append(energy_difference[index_in_archive_list])
 
         plotting_matches_from_mp = PlottingMatches(
             ref_centroids_with_matches,
@@ -437,22 +444,23 @@ class SymmetryEvaluation:
             ref_confidence_levels,
             ref_euclidian_distance_to_matches,
             ref_all_descriptors,
+            ref_energy_difference,
             PlottingMode.MP_REFERENCE_VIEW)
 
         return plotting_matches_from_archive, plotting_matches_from_mp
 
     def write_report_summary_json(self, plotting_matches_from_archive: PlottingMatches, directory_string: Union[pathlib.Path, str]):
-        if bool("mp-390" in plotting_matches_from_archive.mp_reference):
+        if bool("mp-390" in plotting_matches_from_archive.mp_references):
             indices_to_check = np.argwhere(
-                np.array(plotting_matches_from_archive.mp_reference) == "mp-390").reshape(-1)
-            confidence_scores = np.take(plotting_matches_from_archive.confidence_level, indices_to_check).reshape(-1)
+                np.array(plotting_matches_from_archive.mp_references) == "mp-390").reshape(-1)
+            confidence_scores = np.take(plotting_matches_from_archive.confidence_levels, indices_to_check).reshape(-1)
             ground_state_match = max(confidence_scores)
         else:
             ground_state_match = ConfidenceLevels.NO_MATCH
-        if bool("mp-34688" in plotting_matches_from_archive.mp_reference):
+        if bool("mp-34688" in plotting_matches_from_archive.mp_references):
             indices_to_check = np.argwhere(
-                np.array(plotting_matches_from_archive.mp_reference) == "mp-34688").reshape(-1)
-            confidence_scores = np.take(plotting_matches_from_archive.confidence_level, indices_to_check).reshape(-1)
+                np.array(plotting_matches_from_archive.mp_references) == "mp-34688").reshape(-1)
+            confidence_scores = np.take(plotting_matches_from_archive.confidence_levels, indices_to_check).reshape(-1)
             fooled_ground_state_match = max(confidence_scores)
         else:
             fooled_ground_state_match = ConfidenceLevels.NO_MATCH
@@ -460,32 +468,31 @@ class SymmetryEvaluation:
         summary_dict = {
             "ground_state_match": ConfidenceLevels.get_string(ConfidenceLevels(ground_state_match)),
             "fooled_ground_state_match": ConfidenceLevels.get_string(ConfidenceLevels(fooled_ground_state_match)),
-            "unique_reference_matches": len(np.unique(plotting_matches_from_archive.mp_reference)),
-            "number_gold": len(np.argwhere(np.array(plotting_matches_from_archive.confidence_level) == ConfidenceLevels.GOLD.value)),
+            "unique_reference_matches": len(np.unique(plotting_matches_from_archive.mp_references)),
+            "number_gold": len(np.argwhere(np.array(plotting_matches_from_archive.confidence_levels) == ConfidenceLevels.GOLD.value)),
             "number_high": len(np.argwhere(np.array(
-                plotting_matches_from_archive.confidence_level) == ConfidenceLevels.HIGH.value)),
+                plotting_matches_from_archive.confidence_levels) == ConfidenceLevels.HIGH.value)),
             "number_medium": len(np.argwhere(np.array(
-                plotting_matches_from_archive.confidence_level) == ConfidenceLevels.MEDIUM.value)),
+                plotting_matches_from_archive.confidence_levels) == ConfidenceLevels.MEDIUM.value)),
             "number_low": len(np.argwhere(np.array(
-                plotting_matches_from_archive.confidence_level) == ConfidenceLevels.LOW.value)),
-            "total_matches": len(plotting_matches_from_archive.mp_reference)
+                plotting_matches_from_archive.confidence_levels) == ConfidenceLevels.LOW.value)),
+            "total_matches": len(plotting_matches_from_archive.mp_references)
         }
         with open(f"{directory_string}/ind_report_summary.json", "w") as file:
             json.dump(summary_dict, file)
         return summary_dict
 
     def _get_maximum_confidence_for_centroid_id(self, centroid_indices_to_check: np.ndarray, plotting_matches: PlottingMatches):
-        unique, counts = np.unique(plotting_matches.centroid_index, return_counts=True)
-        duplicate_centroid_indices = np.take(unique, np.argwhere(counts != 1)).reshape(-1)
+        unique, counts = np.unique(plotting_matches.centroid_indices, return_counts=True)
 
         for centroid_id in centroid_indices_to_check:
             confidence_levels_ids = np.argwhere(
-                np.array(plotting_matches.centroid_index) == centroid_id).reshape(-1)
-            confidence_scores = [plotting_matches.confidence_level[int(id)].value for id in
+                np.array(plotting_matches.centroid_indices) == centroid_id).reshape(-1)
+            confidence_scores = [plotting_matches.confidence_levels[int(id)].value for id in
                                  confidence_levels_ids]
             max_confidence_id = np.argwhere(
                 np.array(confidence_scores) == max(confidence_scores)).reshape(-1)
-        return plotting_matches.confidence_level[confidence_levels_ids[int(max_confidence_id)]]
+        return plotting_matches.confidence_levels[confidence_levels_ids[int(max_confidence_id)]]
     def _assign_confidence_level_in_match(self, match_dictionary, centroid_id: int):
         structure_matcher_match = match_dictionary["structure_matcher"]
         ff_distance_match = match_dictionary["structure_matcher"] <= self.fingerprint_distance_threshold
@@ -726,9 +733,9 @@ class SymmetryEvaluation:
         # fill the plot with contours
         target_centroid_ids = np.array(self.reference_data.loc["centroid_id"].array)
         duplicate_centroid_indices = []
-        if len(np.unique(np.array(plotting_matches.centroid_index))) != len(
-                plotting_matches.centroid_index):
-            unique, counts = np.unique(plotting_matches.centroid_index, return_counts=True)
+        if len(np.unique(np.array(plotting_matches.centroid_indices))) != len(
+                plotting_matches.centroid_indices):
+            unique, counts = np.unique(plotting_matches.centroid_indices, return_counts=True)
             duplicate_centroid_indices = np.take(unique, np.argwhere(counts != 1)).reshape(-1)
 
         for i, region in enumerate(regions):
@@ -737,35 +744,38 @@ class SymmetryEvaluation:
             if i in target_centroid_ids:
                 ax.fill(*zip(*polygon), edgecolor="gray", facecolor="none", lw=2)
 
-            if (i in centroids_from_archive) and (i not in plotting_matches.centroid_index) and plotting_matches.plotting_mode == PlottingMode.ARCHIVE_MATCHES_VIEW:
+            if (i in centroids_from_archive) and (i not in plotting_matches.centroid_indices) and plotting_matches.plotting_mode == PlottingMode.ARCHIVE_MATCHES_VIEW:
                 ax.fill(*zip(*polygon), facecolor=colour_dict[ConfidenceLevels.NO_MATCH], alpha=0.3,
                         label= ConfidenceLevels.get_string(ConfidenceLevels.NO_MATCH)
                         )
 
-        for list_index, centroid_index in enumerate(plotting_matches.centroid_index):
+        for list_index, centroid_index in enumerate(plotting_matches.centroid_indices):
             region = regions[centroid_index]
             polygon = vertices[region]
 
             if centroid_index in duplicate_centroid_indices:
-                confidence_levels_ids = np.argwhere(np.array(plotting_matches.centroid_index) == centroid_index).reshape(-1)
-                confidence_scores = [plotting_matches.confidence_level[int(id)].value for id in confidence_levels_ids]
+                confidence_levels_ids = np.argwhere(np.array(plotting_matches.centroid_indices) == centroid_index).reshape(-1)
+                confidence_scores = [plotting_matches.confidence_levels[int(id)].value for id in confidence_levels_ids]
                 max_confidence_id = np.argwhere(np.array(confidence_scores) == max(confidence_scores)).reshape(-1)
 
-                colour = colour_dict[plotting_matches.confidence_level[confidence_levels_ids[int(max_confidence_id[0])]]]
+                colour = colour_dict[plotting_matches.confidence_levels[confidence_levels_ids[int(max_confidence_id[0])]]]
+                confidence_level = plotting_matches.confidence_levels[confidence_levels_ids[int(max_confidence_id[0])]]
             else:
-                colour = colour_dict[plotting_matches.confidence_level[list_index]]
+                colour = colour_dict[plotting_matches.confidence_levels[list_index]]
+                confidence_level = plotting_matches.confidence_levels[list_index]
 
             ax.fill(*zip(*polygon),
                     alpha=0.8,
                     color=colour,
-                    label=ConfidenceLevels.get_string(plotting_matches.confidence_level[list_index]))
+                    label=ConfidenceLevels.get_string(confidence_level)
+                    )
             if annotate:
-                ax.annotate(plotting_matches.mp_reference[list_index], (centroids[centroid_index, 0], centroids[centroid_index, 1]), fontsize=4)
+                ax.annotate(plotting_matches.mp_references[list_index], (centroids[centroid_index, 0], centroids[centroid_index, 1]), fontsize=4)
 
         if plotting_matches.plotting_mode == PlottingMode.MP_REFERENCE_VIEW:
             descriptor_matches = np.array(plotting_matches.descriptors)
-            ref_band_gaps = [self.reference_data.loc["band_gap"][ref] for ref in plotting_matches.mp_reference]
-            ref_shear_moduli = [self.reference_data.loc["shear_modulus"][ref] for ref in plotting_matches.mp_reference]
+            ref_band_gaps = [self.reference_data.loc["band_gap"][ref] for ref in plotting_matches.mp_references]
+            ref_shear_moduli = [self.reference_data.loc["shear_modulus"][ref] for ref in plotting_matches.mp_references]
             ax.scatter(descriptor_matches[:, 0], descriptor_matches[:, 1], color="b", s=5)
             ax.scatter(ref_band_gaps, ref_shear_moduli, color="b", s=5)
             for match_id in range(len(descriptor_matches)):
@@ -787,15 +797,123 @@ class SymmetryEvaluation:
         plt.clf()
         return fig, ax
 
-    def legend_without_duplicate_labels(self, fig, ax):
+    def plot_matches_energy_difference(self,
+        archive: Archive,
+        plotting_matches: PlottingMatches,
+        centroids: np.ndarray,
+        minval: np.ndarray,
+        maxval: np.ndarray,
+        centroids_from_archive: Optional[np.ndarray]= None,
+        directory_string: Optional[str] = None,
+        filename: Optional[str] = "cvt_energy_diff_matches_from_archive",
+        axis_labels: List[str] = ["Band Gap, eV", "Shear Modulus, GPa"],
+        annotate: bool = True,
+        fitness_limits: Optional[Tuple[float, float]] = None
+        ):
+        """Adapted from wdac plot 2d cvt centroids function"""
+        # create the plot object
+        fig, ax = plt.subplots(facecolor="white", edgecolor="white")
+
+        if len(np.array(minval).shape) == 0 and len(np.array(maxval).shape) == 0:
+            ax.set_xlim(minval, maxval)
+            ax.set_ylim(minval, maxval)
+        else:
+            ax.set_xlim(minval[0], maxval[0])
+            ax.set_ylim(minval[1], maxval[1])
+
+        ax.set(adjustable="box", aspect="equal")
+
+        # create the regions and vertices from centroids
+        regions, vertices = get_voronoi_finite_polygons_2d(centroids)
+        # fill the plot with contours
+        target_centroid_ids = np.array(self.reference_data.loc["centroid_id"].array)
+        target_centroid_energies = np.array(self.reference_data.loc["energy"].array)
+        duplicate_centroid_indices = []
+        if len(np.unique(np.array(plotting_matches.centroid_indices))) != len(
+                plotting_matches.centroid_indices):
+            unique, counts = np.unique(plotting_matches.centroid_indices, return_counts=True)
+            duplicate_centroid_indices = np.take(unique, np.argwhere(counts != 1)).reshape(-1)
+
+        colour_dict = {
+            "no_match": mcolors.CSS4_COLORS["silver"],
+            "energy_above_reference": mcolors.CSS4_COLORS["rosybrown"],
+            "energy_below_reference": mcolors.CSS4_COLORS["mediumaquamarine"],
+            ConfidenceLevels.GOLD.value: mcolors.CSS4_COLORS["mediumpurple"]
+            # ConfidenceLevels.GOLD.value: mcolors.TABLEAU_COLORS["tab:purple"]
+        }
+
+        label_dict = {
+            ConfidenceLevels.GOLD.value: "Gold Standard",
+            "energy_below_reference": "Energy Below Reference",
+            "energy_above_reference": "Energy Above Reference",
+            "no_match": "Not Accessed",
+
+            # ConfidenceLevels.GOLD.value: mcolors.TABLEAU_COLORS["tab:purple"]
+        }
+
+        for i, region in enumerate(regions):
+            polygon = vertices[region]
+            ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
+            if i in target_centroid_ids:
+                ax.fill(*zip(*polygon), edgecolor="gray", facecolor="none", lw=2)
+                target_centroid_energy = target_centroid_energies[np.argwhere(target_centroid_ids == i)].reshape(-1)[0]
+                if i in archive.centroid_ids:
+                    centroid_energy = \
+                    archive.fitnesses[np.argwhere(np.array(archive.centroid_ids) == i)].reshape(-1)[0]
+                    if centroid_energy < target_centroid_energy:
+                        ax.fill(*zip(*polygon), facecolor=colour_dict["energy_below_reference"], label=label_dict["energy_below_reference"])
+                    elif i in archive.centroid_ids and centroid_energy >= target_centroid_energy:
+                        ax.fill(*zip(*polygon), facecolor=colour_dict["energy_above_reference"], label=label_dict["energy_above_reference"])
+                else:
+                    # continue
+                    ax.fill(*zip(*polygon), facecolor=colour_dict["no_match"], label=label_dict["no_match"])
+
+        for list_index, centroid_index in enumerate(plotting_matches.centroid_indices):
+            region = regions[centroid_index]
+            polygon = vertices[region]
+
+            if centroid_index in duplicate_centroid_indices:
+                confidence_levels_ids = np.argwhere(np.array(plotting_matches.centroid_indices) == centroid_index).reshape(-1)
+                confidence_scores = [plotting_matches.confidence_levels[int(id)].value for id in confidence_levels_ids]
+                max_confidence_id = np.argwhere(np.array(confidence_scores) == max(confidence_scores)).reshape(-1)
+                confidence_level = plotting_matches.confidence_levels[int(max_confidence_id[0])]
+            else:
+                confidence_level = plotting_matches.confidence_levels[list_index]
+
+            if confidence_level == ConfidenceLevels.GOLD:
+                ax.fill(*zip(*polygon),
+                        alpha=0.8,
+                        color=colour_dict[ConfidenceLevels.GOLD.value],
+                        label=label_dict[ConfidenceLevels.GOLD.value])
+            if annotate:
+                ax.annotate(plotting_matches.mp_references[list_index], (centroids[centroid_index, 0], centroids[centroid_index, 1]), fontsize=4)
+
+        self.legend_without_duplicate_labels(fig, ax, list(label_dict.values()))
+        ax.set_xlabel(f"{axis_labels[0]}")
+        ax.set_ylabel(f"{axis_labels[1]}")
+
+        divider = make_axes_locatable(ax)
+
+        ax.set_title(f"MAP-Elites Grid {plotting_matches.plotting_mode.value}")
+        fig.tight_layout()
+        ax.set_aspect("equal")
+
+        if directory_string is None:
+            fig.show()
+        else:
+            fig.savefig(f"{directory_string}/{filename}_{plotting_matches.plotting_mode.value}.png", format="png")
+        plt.clf()
+        return fig, ax
+
+    def legend_without_duplicate_labels(self, fig, ax, sorting_match_list: Optional[List[str]]= None):
         """https://stackoverflow.com/questions/19385639/duplicate-items-in-legend-in-matplotlib"""
 
         try:
             handles, labels = ax.get_legend_handles_labels()
             unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
-
-            sorting_match = np.array([ConfidenceLevels.get_string(el) for el in list(ConfidenceLevels)]) # todo: get this from ConfidenceLevels Enum
-            unique = sorted(unique, key=lambda x: np.argwhere(sorting_match == x[1]).reshape(-1)[0])
+            if sorting_match_list is None:
+                sorting_match_list = np.array([ConfidenceLevels.get_string(el) for el in list(ConfidenceLevels)]) # todo: get this from ConfidenceLevels Enum
+            unique = sorted(unique, key=lambda x: np.argwhere(np.array(sorting_match_list) == x[1]).reshape(-1)[0])
             ax.legend(*zip(*unique), loc="upper left", bbox_to_anchor=(1.04, 0.5), fontsize="x-small", ncols=1)
         except Exception as e:
             print("legend error")
@@ -829,22 +947,34 @@ if __name__ == '__main__':
     symmetry_evaluation = SymmetryEvaluation(reference_data_archive=target_archive)
     df, individuals_with_matches = symmetry_evaluation.executive_summary_csv(
         archive,
-        list(range(len(20))),
+        list(range(len(archive.individuals))),
         experiment_directory_path,
     )
 
     plotting_from_archive, plotting_from_mp = symmetry_evaluation.matches_for_plotting(individuals_with_matches)
 
-    symmetry_evaluation.plot_matches_mapped_to_references(
-        plotting_matches=plotting_from_mp,
+    symmetry_evaluation.plot_matches_energy_difference(
+        archive=archive,
+        plotting_matches=plotting_from_archive,
         centroids=load_centroids(centroid_full_path),
         centroids_from_archive=archive.centroid_ids,
         minval=[0, 0],
         maxval=[1, 1],
         directory_string=None,
+        annotate=False
     )
 
 
+    # symmetry_evaluation.plot_matches_mapped_to_references(
+    #     plotting_matches=plotting_from_mp,
+    #     centroids=load_centroids(centroid_full_path),
+    #     centroids_from_archive=archive.centroid_ids,
+    #     minval=[0, 0],
+    #     maxval=[1, 1],
+    #     directory_string=None,
+    # )
+    #
+    #
     symmetry_evaluation.plot_matches_mapped_to_references(
         plotting_matches=plotting_from_archive,
         centroids=load_centroids(centroid_full_path),
