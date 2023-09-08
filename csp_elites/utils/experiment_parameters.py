@@ -85,14 +85,16 @@ class ExperimentParameters:
                 "cma_sigma_0": 1
             }
 
-    def save_as_json(self, experiment_directory_path):
+    def save_as_json(self, experiment_directory_path, filename: Optional[str]):
         self.splits = "DUMMY"
         self.cellbounds = "DUMMY"
         self.cvt_run_parameters["behavioural_descriptors"] = [descriptor.value for descriptor in self.cvt_run_parameters["behavioural_descriptors"]]
         self.start_generator = self.start_generator.value
         self.blocks = list(self.blocks)
 
-        with open(f"{experiment_directory_path}/config.json", "w") as file:
+        filename = filename if filename is not None else "config"
+
+        with open(f"{experiment_directory_path}/{filename}.json", "w") as file:
             json.dump(asdict(self), file)
 
     def return_min_max_bd_values(self):

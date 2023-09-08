@@ -2,7 +2,6 @@ import pickle
 from typing import Optional, List, Tuple
 
 import numpy as np
-# from scipy.spatial import cKDTree : TODO -- faster?
 from sklearn.neighbors import KDTree
 
 from csp_elites.map_elites.elites_utils import make_hashable
@@ -83,11 +82,3 @@ def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
         new_centroids.append(n)
 
     return new_centroids
-
-
-if __name__ == '__main__':
-    compute_centroids_for_target_solutions(
-        "../experiments/20230706_09_55_TiO2/centroids_2000_2.dat",
-        "../../experiments/target_data/tio2_target_data.pkl",
-        filter_for_number_of_atoms=24,
-    )

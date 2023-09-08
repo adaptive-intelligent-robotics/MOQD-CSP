@@ -3,6 +3,7 @@ import pathlib
 import pickle
 from typing import Optional, Tuple, List, Dict, TYPE_CHECKING, Union
 
+import imageio
 import matplotlib as mpl
 import numpy as np
 from matplotlib import pyplot as plt, cm
@@ -136,8 +137,6 @@ def plot_2d_map_elites_repertoire_marta(
         A figure and axes object, corresponding to the visualisation of the
         repertoire.
     """
-
-    # TODO: check it and fix it if needed
     grid_empty = repertoire_fitnesses == -np.inf
     num_descriptors = centroids.shape[1]
     if num_descriptors != 2:
@@ -254,8 +253,6 @@ def plot_numbered_centroids(
 ):
     params = {"figure.figsize": [3.5, 3.5]}
     mpl.rcParams.update(params)
-    # set the parameters
-    # create the plot object
 
     fig, ax = plt.subplots(facecolor="white", edgecolor="white")
 
@@ -342,35 +339,6 @@ def load_centroids(filename: str) -> np.ndarray:
         centroids = np.loadtxt(file)
     return centroids
 
-def load_archive(filename: str):
-    with open(filename, 'r') as file:
-        archive = file.readlines()
-        for i in range(len(archive)):
-            archive[i] = archive[i].strip()
-            archive[i] = archive[i].split(" ")
-            # archive[i] = [float(el) for el in archive[i][:5]]
-            part_1 = [float(el) for el in archive[i][:3]]
-            part_2 = float(archive[i][3].lstrip("tensor(").rstrip(")"))
-            part_3 = float(archive[i][4].lstrip("tensor([").rstrip("])"))
-            # part_4 = float(archive[i][5].lstrip("tensor(").rstrip(")"))
-            # part_5 = float(archive[i][6].lstrip("tensor([").rstrip("])"))
-            archive[i] = part_1 + [part_2, part_3]
-        # archive = np.loadtxt(filename)
-
-    # data = np.loadtxt(filename)
-    # fit = data[:, 0:1]
-    # desc = data[:,1: dim+1]
-    # x = data[:,dim+1:dim+1+dim_x]
-
-    archive = np.array(archive)
-    fitnesses = archive[:, 0]
-
-    # centroids = archive[:, 1:5]
-    centroids = archive[:, 1:3]
-    descriptors = archive[:, 3:5]
-    # element = archive[:, 5:]
-    return fitnesses, centroids, descriptors
-
 def load_archive_from_pickle(filename: str):
     with open(filename, "rb") as file:
         archive = pickle.load(file)
@@ -392,7 +360,7 @@ def load_archive_from_pickle(filename: str):
 
     return fitnesses, centroids, descriptors, individuals
 
-def convert_fitness_and_ddescriptors_to_plotting_format(
+def convert_fitness_and_descriptors_to_plotting_format(
         all_centroids:np.ndarray, centroids_from_archive: np.ndarray, fitnesses_from_archive: np.ndarray, descriptors_from_archive: np.ndarray,
 ):
     fitness_for_plotting = np.full((len(all_centroids)), -np.inf)
@@ -417,7 +385,6 @@ def plot_all_maps_in_archive(
                      not os.path.isdir(name)]
     list_of_archives = [filename for filename in list_of_files if ("archive_" in filename) and (".pkl" in filename)]
     list_of_plots = [filename for filename in list_of_files if ("cvt_plot" in filename) and (".png" in filename)]
-    list_of_archive_ids = [filename.lstrip("archive_").rstrip(".pkl") for filename in list_of_archives]
     list_of_plot_ids = [filename.lstrip("cvt_plot_").rstrip(".png") for filename in list_of_plots]
 
     for filename in tqdm(list_of_archives):
@@ -427,7 +394,7 @@ def plot_all_maps_in_archive(
         if force_replot or (archive_id not in list_of_plot_ids):
             fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
                 f"{experiment_directory_path}/{filename}")
-            fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_ddescriptors_to_plotting_format(
+            fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_descriptors_to_plotting_format(
                 all_centroids=all_centroids,
                 centroids_from_archive=centroids,
                 fitnesses_from_archive=fitnesses,
@@ -521,7 +488,7 @@ if __name__ == '__main__':
 
     # plot_fitness_from_file(fitness_plotting_filename)
 
-    fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_ddescriptors_to_plotting_format(
+    fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_descriptors_to_plotting_format(
         all_centroids=all_centroids,
         centroids_from_archive=centroids,
         fitnesses_from_archive=fitnesses,
@@ -541,3 +508,19 @@ if __name__ == '__main__':
         filename=filename_for_save,
         annotate=False
     )
+
+
+def plot_gif(experiment_directory_path: str):
+
+    plot_list = [name for name in os.listdir(f"{experiment_directory_path}") if
+                     not os.path.isdir(name) and "cvt_plot_" in name and ".png" in name]
+    sorted_plot_list = sorted(plot_list, key=lambda x:int(x.lstrip("cvt_plot_").rstrip(".png")))
+
+    print()
+    frames = []
+    for plot_name in sorted_plot_list:
+        image = imageio.v2.imread(f"{experiment_directory_path}/{plot_name}")
+        frames.append(image)
+
+    imageio.mimsave(f"{experiment_directory_path}/cvt_plot_gif.gif",  # output gif
+                    frames,)  # array of input frames)

@@ -2,11 +2,9 @@
 __pycache__
 .pytest_cache
 
-csp_experiments
 
 .DS_Store
 
-experiments/
 experiment/
 csp_investigations/
 
@@ -14,10 +12,8 @@ csp_investigations/
 used_modes.json
 .experiment.nosync
 
-csp_scripts
 
-
-list_of_configs.csv
+bin/list_of_configs.csv
 
 report_figures/
 /configs/0808/
@@ -30,3 +26,4 @@ configs/0828_scripts
 configs/0828
 configs/0827
 /configs
+/bin

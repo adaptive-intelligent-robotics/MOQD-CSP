@@ -20,7 +20,7 @@ def write_bash_script(
         path_to_save: pathlib.Path,
         template_name: JobsEnum
 ):
-    with open(pathlib.Path(__file__).parent.parent.parent / f"experiments/{template_name.value}", "r") as file:
+    with open(pathlib.Path(__file__).parent.parent.parent / f"automation_scripts/hpc/job_templates/{template_name.value}", "r") as file:
         text = file.readlines()
 
     with open(path_to_save / f"{job_name}.pbs", "w") as file:
@@ -48,7 +48,7 @@ def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_jo
     df.drop(df.iloc[:, 0:2], inplace=True, axis=1)
 
     list_of_experiment_params_as_dict = df.to_dict(orient="records")
-
+    path_to_save.mkdir(exist_ok=True)
     for i, el in enumerate(list_of_experiment_params_as_dict):
         if isinstance(el["blocks"], str):
             el["blocks"] = eval(el["blocks"])
@@ -81,6 +81,7 @@ def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_jo
                 json.dump(el, file)
 
         scripts_directory = path_to_save.name + "_scripts"
+        (path_to_save.parent / scripts_directory).mkdir(exist_ok=True)
         write_bash_script(
             config_name=f"{path_to_save.name}/{config_names[i]}",
             job_name=config_names[i],

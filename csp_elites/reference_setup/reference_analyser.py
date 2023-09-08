@@ -5,6 +5,7 @@ import pickle
 from collections import defaultdict
 from typing import Optional, Tuple, List
 
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
 from ase import Atoms
@@ -17,17 +18,16 @@ from sklearn.neighbors import KDTree
 
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.materials_data_model import MaterialProperties
-from csp_elites.crystal.symmetry_evaluator import SymmetryEvaluation
+from csp_elites.evaluation.symmetry_evaluator import SymmetryEvaluation
 from csp_elites.map_elites.archive import Archive
-from csp_elites.map_elites.elites_utils import cvt, write_centroids, __centroids_filename
 from csp_elites.map_elites.elites_utils import __centroids_filename as get_centroids_filename
+from csp_elites.map_elites.elites_utils import cvt, write_centroids
 from csp_elites.reference_setup.reference_plotter import ReferencePlotter
 from csp_elites.utils.asign_target_values_to_centroids import \
     reassign_data_from_pkl_to_new_centroids
 from csp_elites.utils.experiment_parameters import ExperimentParameters
 from csp_elites.utils.plot import load_centroids, plot_2d_map_elites_repertoire_marta
 
-import matplotlib as mpl
 import scienceplots
 plt.style.use('science')
 plt.rcParams['savefig.dpi'] = 300

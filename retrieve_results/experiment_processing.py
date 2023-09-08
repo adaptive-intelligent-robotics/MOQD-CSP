@@ -7,16 +7,16 @@ import numpy as np
 from ase.ga.utilities import CellBounds
 
 from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
-from csp_elites.crystal.symmetry_evaluator import SymmetryEvaluation
+from csp_elites.evaluation.symmetry_evaluator import SymmetryEvaluation
+
 from csp_elites.map_elites.archive import Archive
 from csp_elites.utils import experiment_parameters
-from csp_elites.utils.archive_evolution_gif import plot_gif
 from csp_elites.utils.asign_target_values_to_centroids import \
     reassign_data_from_pkl_to_new_centroids
 from csp_elites.utils.experiment_parameters import ExperimentParameters
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 from csp_elites.utils.plot import load_centroids, load_archive_from_pickle, \
-    plot_all_maps_in_archive, plot_all_statistics_from_file
+    plot_all_maps_in_archive, plot_all_statistics_from_file, plot_gif
 from retrieve_results.experiment_organiser import ExperimentOrganiser
 
 
@@ -119,7 +119,7 @@ class ExperimentProcessor:
         # target_data_path = self.experiment_location / "experiments" / "target_data" / f"target_data_{centroid_tag}.csv"
         number_of_atoms = self.experiment_parameters.cvt_run_parameters["filter_starting_Structures"]
         target_data_path = self.experiment_location / "mp_reference_analysis" / f"{self.formula}_{number_of_atoms}" / f"{self.formula}_target_data_{centroid_tag}.csv"
-
+        print(target_data_path)
         # todo: change to include formula
         if not os.path.isfile(target_data_path):
             target_data_path = None

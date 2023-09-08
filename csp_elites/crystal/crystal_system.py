@@ -14,9 +14,10 @@ from chgnet.graph import CrystalGraphConverter
 from pymatgen.io.ase import AseAtomsAdaptor
 from pyxtal import pyxtal
 
-from csp_elites.crystal.force_mutation import GradientMutation, DQDMutationOMGMEGA
 from csp_elites.crystal.materials_data_model import StartGenerators
 from csp_elites.map_elites.elites_utils import Species
+from csp_elites.mutations.force_mutation import ForceMutation
+from csp_elites.mutations.omg_mega_gradient_mutation import DQDMutationOMGMEGA
 
 
 class CrystalSystem:
@@ -100,7 +101,6 @@ class CrystalSystem:
 
     def create_n_individuals(self, number_of_individuals: int) -> List[Dict[str, np.ndarray]]:
         individuals = []
-        print("generating individuals")
         for i in range(number_of_individuals):
             new_individual = self.create_one_individual(individual_id=i)
             try:
@@ -159,14 +159,14 @@ class CrystalSystem:
                 )
                 operator_list.append(self._rattle_mutation)
             elif operator == "gradient":
-                self._gradient_mutation = GradientMutation(
+                self._gradient_mutation = ForceMutation(
                     blmin=closest_distances, n_top=len(self.atomic_numbers),
                     learning_rate=learning_rate, simple=False,
                 )
                 operator_list.append(self._gradient_mutation)
 
             elif operator == "gradient_simple" or "rattle_simple":
-                self._gradient_mutation = GradientMutation(
+                self._gradient_mutation = ForceMutation(
                     blmin=closest_distances, n_top=len(self.atomic_numbers),
                     learning_rate=learning_rate, simple=True
                 )
@@ -215,7 +215,7 @@ class CrystalSystem:
 
     def mutate(self, parents: List[Species]) -> Atoms:
         mutator = self.operators.get_operator()
-        if isinstance(mutator, DQDMutationOMGMEGA) or isinstance(mutator, GradientMutation):
+        if isinstance(mutator, DQDMutationOMGMEGA) or isinstance(mutator, ForceMutation):
             new_individual, _ = mutator.get_new_individual(parents)
         else:
             new_individual, _ = mutator.get_new_individual(
