@@ -20,4 +20,6 @@ if __name__ == '__main__':
             plot_labels=None,
             title_tag=None,
         )
-        report_generator.plot_cvt_and_symmetry(override_fitness_values=fitness_values[i], force_replot=False, all_sub_experiments=True)
+        report_generator.plot_cvt_and_symmetry(
+            override_fitness_values=fitness_values[i], force_replot=False, all_sub_experiments=True, plot_cvt=False,
+                                               experiment_list=["benchmark"])

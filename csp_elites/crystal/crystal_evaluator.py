@@ -173,16 +173,16 @@ class CrystalEvaluator:
     def _batch_shear_modulus_compute(self, list_of_structures: List[Structure]):
         shear_moduli = []
         all_gradients = []
-        if not self.compute_gradients:
-            shear_moduli = self.shear_modulus_calculator.compute_no_grad_batch(list_of_structures)
-            gradients = None
-        else:
-            for structure in list_of_structures:
-                shear_modulus, gradients = self.shear_modulus_calculator.compute(
-                    structure, compute_gradients=self.compute_gradients,
-                )
-                shear_moduli.append(shear_modulus)
-                all_gradients.append(gradients)
+        # if not self.compute_gradients:
+        #     shear_moduli = self.shear_modulus_calculator.compute_no_grad_batch(list_of_structures)
+        #     gradients = None
+        # else:
+        for structure in list_of_structures:
+            shear_modulus, gradients = self.shear_modulus_calculator.compute(
+                structure, compute_gradients=self.compute_gradients,
+            )
+            shear_moduli.append(shear_modulus)
+            all_gradients.append(gradients)
         return shear_moduli, all_gradients
 
     def _check_atoms_in_cellbounds(self, list_of_atoms: List[Atoms],

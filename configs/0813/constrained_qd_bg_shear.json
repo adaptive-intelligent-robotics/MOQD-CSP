@@ -67,7 +67,8 @@
     "profiling": true,
     "constrained_qd": true,
     "force_threshold": true,
-    "fmax_threshold": 0.2
+    "fmax_threshold": 0.2,
+    "normalise_bd": false
   },
   "experiment_tag": "constrained_qd_bg_shear",
   "fitness_min_max_values": [

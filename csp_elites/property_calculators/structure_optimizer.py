@@ -60,7 +60,6 @@ class MultiprocessOptimizer:
         while not all_relaxed:
             forces, energies, stresses = self._evaluate_list_of_atoms(list_of_atoms)
 
-            tic = time.time()
 
             forces, _ = self.atoms_filter.get_forces_exp_cell_filter(
                 forces_from_chgnet=forces,
@@ -70,8 +69,6 @@ class MultiprocessOptimizer:
                 current_atom_cells=[atoms.cell.array for atoms in list_of_atoms],
                 cell_factors=np.array([1] * len(list_of_atoms)),
             )
-            self.timings["vectorised"][
-                "expcell_filter_processing_some_for_loops"] = time.time() - tic
             if n_relaxation_steps == 0:
                 all_relaxed = True
             else:
@@ -80,26 +77,20 @@ class MultiprocessOptimizer:
                 if verbose:
                     print(Nsteps, energies * 24, fmax)
 
-                tic = time.time()
                 v, dt, n_relax_steps, a, dr = \
                     self.overriden_optimizer.step_override(forces, v, dt, n_relax_steps, a)
-                self.timings["vectorised"]["relax1_get_position_change"] = time.time() - tic
 
-                tic = time.time()
                 positions = self.atoms_filter.get_positions(
                     original_cells,
                     [atoms.cell for atoms in list_of_atoms],
                     list_of_atoms,
                     np.array([1] * len(list_of_atoms)),
                 )
-                self.timings["vectorised"]["relax2_get_positions_to_update"] = time.time() - tic
 
-                tic = time.time()
                 list_of_atoms = self.atoms_filter.set_positions(original_cells,
                                                                 list_of_atoms, np.array(positions + dr),
                                                                 np.array([1] * len(list_of_atoms)))
-                self.timings["vectorised"]["relax3_update_positions"] = time.time() - tic
-                tic = time.time()
+
                 converged_mask = self.overriden_optimizer.converged(forces, self.fmax_threshold)
                 converged_atoms_indices = np.argwhere(converged_mask).reshape(-1)
 
@@ -137,13 +128,11 @@ class MultiprocessOptimizer:
                             converged_atoms[atom_index] = atom_object
                     list_of_atoms = converged_atoms
 
-                self.timings["vectorised"]["check_convergence"] = time.time() - tic
 
             # trajectories["forces"].append(forces)
             # trajectories["energies"].append(energies)
             # trajectories["stresses"].append(stresses)
 
-        tic = time.time()
         final_structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
         if n_relaxation_steps != 0:
             forces, energies, stresses = self._evaluate_list_of_atoms(list_of_atoms)
@@ -158,22 +147,17 @@ class MultiprocessOptimizer:
                  }
                 }
             )
-        self.timings["for_loop"]["reformating_output"] = time.time() - tic
-        # pprint(self.timings)
-        self.timings_list.append(copy.deepcopy(self.timings))
+
         return reformated_output, list_of_atoms
 
     def _evaluate_list_of_atoms(self, list_of_atoms: List[Atoms]):
-        tic = time.time()
         if isinstance(list_of_atoms[0], Atoms):
             list_of_structures = [AseAtomsAdaptor.get_structure(list_of_atoms[i]) for i in range(len(list_of_atoms))]
         elif isinstance(list_of_atoms[0], Structure):
             list_of_structures = list_of_atoms
-        self.timings["list_comprehension"]["convert_atoms_to_structures"] = time.time() - tic
 
         hotfix_graphs = False
         indices_to_update = []
-        tic = time.time()
         try:
             graphs = [self.model.graph_converter(struct, on_isolated_atoms="warn") for struct in list_of_structures]
         except SystemExit:
@@ -184,9 +168,7 @@ class MultiprocessOptimizer:
                 except SystemExit:
                     hotfix_graphs = True
                     indices_to_update.append(i)
-        self.timings["list_comprehension"]["convert_structures_to_graphs"] = time.time() - tic
 
-        tic = time.time()
         if None in graphs:
             print("isolated atomssss")
             hotfix_graphs = True
@@ -200,9 +182,6 @@ class MultiprocessOptimizer:
 
             print(f"graphs end length {len(graphs)}")
 
-        self.timings["for_loop"]["check_graph_for_isolated"] = time.time() - tic
-
-        tic = time.time()
         predictions = self.model.predict_graph(
             graphs,
             task="efs",
@@ -210,19 +189,14 @@ class MultiprocessOptimizer:
             return_crystal_feas=False,
             batch_size=self.batch_size,
         )
-        self.timings["chgnet"] = (time.time() - tic) + self.timings["list_comprehension"]["convert_atoms_to_structures"]
-
         # predictions = self.model.predict_structure(list_of_structures, batch_size=10)
         if isinstance(predictions, dict):
             predictions = [predictions]
 
-        tic = time.time()
         forces = np.array([pred["f"] for pred in predictions])
         energies = np.array([pred["e"] for pred in predictions])
         stresses = np.array([pred["s"] for pred in predictions])
-        self.timings["list_comprehension"]["get_results_from_chgnet_predictions"] = time.time() - tic
 
-        tic = time.time()
         if hotfix_graphs:
             print("hotfix graph")
             # todo: make this dynamic
@@ -230,7 +204,6 @@ class MultiprocessOptimizer:
                 forces = np.insert(forces, i, np.full((24,3), 100), axis=0)
                 energies = np.insert(energies, i, 10000)
                 stresses = np.insert(stresses, i, np.full((3,3), 100), axis=0)
-        self.timings["for_loop"]["update_predictions_if_graph_hotfix"] = time.time() - tic
 
         return forces, energies, stresses
 

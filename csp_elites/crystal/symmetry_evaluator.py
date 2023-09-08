@@ -585,7 +585,11 @@ class SymmetryEvaluation:
             image_path.unlink()
         temp_dir.rmdir()
 
-    def group_structures_by_symmetry(self, archive: Archive, experiment_directory_path: pathlib.Path, centroid_full_path, ):
+    def group_structures_by_symmetry(self, archive: Archive, experiment_directory_path: pathlib.Path, centroid_full_path,
+                                    filename_tag: Optional[str] = None,
+                                     x_axis_limits=None,
+                                     y_axis_limits=None,
+        ):
         structures = archive.get_individuals_as_structures()
         groups = self.structure_matcher.group_structures(structures)
         ids_by_group = []
@@ -596,6 +600,9 @@ class SymmetryEvaluation:
                 match_id = np.argwhere(np.array(match)).reshape(-1)
                 id_in_group.append(archive.centroid_ids[match_id[0]])
             ids_by_group.append(id_in_group)
+
+        with open(experiment_directory_path / "number_of_groups.json", "w") as file:
+            json.dump({"n_groups": len(groups)}, file)
 
         all_centroids = load_centroids(centroid_full_path)
 
@@ -611,9 +618,11 @@ class SymmetryEvaluation:
             list_of_centroid_groups=ids_by_group,
             list_of_colors=list_of_colors,
             directory_string=experiment_directory_path,
-            filename="cvt_by_structure_similarity",
+            filename=f"cvt_by_structure_similarity_{filename_tag}",
             minval=bd_min_values,
             maxval=bd_max_values,
+            x_axis_limits=x_axis_limits,
+            y_axis_limits=y_axis_limits
         )
 
     def get_limits_from_centroid_path(self, centroid_path: pathlib.Path):
@@ -633,14 +642,19 @@ class SymmetryEvaluation:
             filename: Optional[str] = "cvt_plot",
             axis_labels: List[str] = ["Band Gap, eV", "Shear Modulus, GPa"],
          annotate: bool = True,
+    x_axis_limits: Optional[Tuple[float, float]] = None,
+    y_axis_limits: Optional[Tuple[float, float]] = None,
 
     ) -> Tuple[Optional[Figure], Axes]:
         """Adapted from wdac plot 2d cvt centroids function"""
         num_descriptors = centroids.shape[1]
         if num_descriptors != 2:
             raise NotImplementedError("Grid plot supports 2 descriptors only for now.")
+        # my_cmap = cm.rainbow(len(list_of_centroid_groups))
+        my_cmap = plt.get_cmap('rainbow', len(list_of_centroid_groups))
 
         # create the plot object
+        mpl.rcParams["figure.figsize"] = [3, 3]
         fig, ax = plt.subplots(facecolor="white", edgecolor="white")
 
         if len(np.array(minval).shape) == 0 and len(np.array(maxval).shape) == 0:
@@ -675,6 +689,19 @@ class SymmetryEvaluation:
         ax.set_xlabel(f"{axis_labels[0]}")
         ax.set_ylabel(f"{axis_labels[1]}")
 
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+
+        cbar = plt.colorbar(mpl.cm.ScalarMappable(cmap=my_cmap), cax=cax)
+        cbar.ax.tick_params(labelsize=mpl.rcParams["font.size"])
+
+        if x_axis_limits is not None and y_axis_limits is not None:
+            x_tick_labels = np.linspace(x_axis_limits[0], x_axis_limits[1], 6)
+            y_tick_labels = np.linspace(y_axis_limits[0], y_axis_limits[1], 6)
+            ax.set_xticklabels([np.around(el, 1) for el in x_tick_labels])
+            ax.set_yticklabels([np.around(el, 1) for el in y_tick_labels])
+
+
         ax.set_title("Individuals Grouped by Similarity")
         ax.set_aspect("equal")
 
@@ -694,6 +721,8 @@ class SymmetryEvaluation:
         filename: Optional[str] = "cvt_matches_from_archive",
         axis_labels: List[str] = ["Band Gap, eV", "Shear Modulus, GPa"],
         annotate: bool = True,
+    x_axis_limits: Optional[Tuple[float, float]] = None,
+    y_axis_limits: Optional[Tuple[float, float]] = None,
         ):
         """Adapted from wdac plot 2d cvt centroids function"""
         if centroids_from_archive is None:
@@ -782,6 +811,12 @@ class SymmetryEvaluation:
                 ax.plot([descriptor_matches[match_id][0], ref_band_gaps[match_id]],
                          [descriptor_matches[match_id][1], ref_shear_moduli[match_id]], linestyle="--", color="b")
 
+        if x_axis_limits is not None and y_axis_limits is not None:
+            x_tick_labels = np.linspace(x_axis_limits[0], x_axis_limits[1], 6)
+            y_tick_labels = np.linspace(y_axis_limits[0], y_axis_limits[1], 6)
+            ax.set_xticklabels([np.around(el, 1) for el in x_tick_labels])
+            ax.set_yticklabels([np.around(el, 1) for el in y_tick_labels])
+
         ax.set_xlabel(f"{axis_labels[0]}")
         ax.set_ylabel(f"{axis_labels[1]}")
 
@@ -808,7 +843,9 @@ class SymmetryEvaluation:
         filename: Optional[str] = "cvt_energy_diff_matches_from_archive",
         axis_labels: List[str] = ["Band Gap, eV", "Shear Modulus, GPa"],
         annotate: bool = True,
-        fitness_limits: Optional[Tuple[float, float]] = None
+        fitness_limits: Optional[Tuple[float, float]] = None,
+    x_axis_limits: Optional[Tuple[float, float]] = None,
+    y_axis_limits: Optional[Tuple[float, float]] = None,
         ):
         """Adapted from wdac plot 2d cvt centroids function"""
         # create the plot object
@@ -888,6 +925,12 @@ class SymmetryEvaluation:
             if annotate:
                 ax.annotate(plotting_matches.mp_references[list_index], (centroids[centroid_index, 0], centroids[centroid_index, 1]), fontsize=4)
 
+        if x_axis_limits is not None and y_axis_limits is not None:
+            x_tick_labels = np.linspace(x_axis_limits[0], x_axis_limits[1], 6)
+            y_tick_labels = np.linspace(y_axis_limits[0], y_axis_limits[1], 6)
+            ax.set_xticklabels([np.around(el, 1) for el in x_tick_labels])
+            ax.set_yticklabels([np.around(el, 1) for el in y_tick_labels])
+
         self.legend_without_duplicate_labels(fig, ax, list(label_dict.values()))
         ax.set_xlabel(f"{axis_labels[0]}")
         ax.set_ylabel(f"{axis_labels[1]}")
@@ -914,7 +957,7 @@ class SymmetryEvaluation:
             if sorting_match_list is None:
                 sorting_match_list = np.array([ConfidenceLevels.get_string(el) for el in list(ConfidenceLevels)]) # todo: get this from ConfidenceLevels Enum
             unique = sorted(unique, key=lambda x: np.argwhere(np.array(sorting_match_list) == x[1]).reshape(-1)[0])
-            ax.legend(*zip(*unique), loc="upper left", bbox_to_anchor=(1.04, 0.5), fontsize="x-small", ncols=1)
+            ax.legend(*zip(*unique), loc="upper center", bbox_to_anchor=(0.5, -0.2), fontsize="x-small", ncols=2)
         except Exception as e:
             print("legend error")
             pass

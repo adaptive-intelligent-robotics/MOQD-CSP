@@ -107,7 +107,9 @@ def plot_2d_map_elites_repertoire_marta(
     filename: Optional[str] = "cvt_plot",
     axis_labels: List[str] = ["Band Gap, eV", "Shear Modulus, GPa"],
     annotations: Optional[Union[List[str], np.ndarray]] = None,
-    annotate: bool = True
+    annotate: bool = True,
+    x_axis_limits: Optional[Tuple[float, float]] = None,
+    y_axis_limits: Optional[Tuple[float, float]] = None,
 
 ) -> Tuple[Optional[Figure], Axes]:
     """Plot a visual representation of a 2d map elites repertoire.
@@ -223,6 +225,12 @@ def plot_2d_map_elites_repertoire_marta(
                 elif isinstance(annotations[i], float) and annotations[i] != -np.inf:
                     ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]), fontsize=4)
     # aesthetic
+    if x_axis_limits is not None and y_axis_limits is not None:
+        x_tick_labels = np.linspace(x_axis_limits[0], x_axis_limits[1], 6)
+        y_tick_labels = np.linspace(y_axis_limits[0], y_axis_limits[1], 6)
+        ax.set_xticklabels([np.around(el, 1) for el in x_tick_labels])
+        ax.set_yticklabels([np.around(el, 1) for el in y_tick_labels])
+
     ax.set_xlabel(f"{axis_labels[0]}")
     ax.set_ylabel(f"{axis_labels[1]}")
     divider = make_axes_locatable(ax)
@@ -425,7 +433,6 @@ def plot_all_maps_in_archive(
                 fitnesses_from_archive=fitnesses,
                 descriptors_from_archive=descriptors,
             )
-
             if "relaxed" in filename:
                 archive_id += "_relaxed"
             bd_minimum_values, bd_maximum_values = experiment_parameters.return_min_max_bd_values()
@@ -443,7 +450,9 @@ def plot_all_maps_in_archive(
                 directory_string=experiment_directory_path,
                 filename=f"cvt_plot_{archive_id}",
                 axis_labels=["Band Gap, eV", "Shear Modulus, GPa"],
-                annotate=annotate
+                annotate=annotate,
+                x_axis_limits=(experiment_parameters.cvt_run_parameters["bd_minimum_values"][0], experiment_parameters.cvt_run_parameters["bd_maximum_values"][0]),
+                y_axis_limits=(experiment_parameters.cvt_run_parameters["bd_minimum_values"][1], experiment_parameters.cvt_run_parameters["bd_maximum_values"][1])
             )
 
 if __name__ == '__main__':

@@ -96,7 +96,7 @@ class ReferenceAnalyser:
 
         fmax_list = []
         for force in forces:
-            fmax_list.append(np.max((force ** 2).sum(axis=1) ** 0.5))
+            fmax_list.append(np.max((force[:-3] ** 2).sum(axis=1) ** 0.5))
 
         fmax_list = np.take(fmax_list, indices_to_sort, axis=0)
         energies = np.take(energies, indices_to_sort, axis=0)
@@ -215,7 +215,7 @@ class ReferenceAnalyser:
 
     def plot_cvt_plot(self,
         target_archive: Archive, bd_minimum_values: np.ndarray, bd_maximum_values: np.ndarray,
-        fitness_limits: np.ndarray,
+        fitness_limits: np.ndarray, x_axis_limits= None,y_axis_limits=None,
     ):
         plotting_centroids = load_centroids(self.centroid_folder_path.parent / self.centroid_filename[1:])
         fitness_for_plotting, descriptors_for_plotting, labels_for_plotting = target_archive.convert_fitness_and_descriptors_to_plotting_format(
@@ -237,7 +237,9 @@ class ReferenceAnalyser:
             annotations=labels_for_plotting,
             directory_string=directory_string,
             filename=f"{self.formula}_cvt_plot_{self.experimental_string}_no_annotate",
-            annotate=False
+            annotate=False,
+            x_axis_limits=x_axis_limits,
+            y_axis_limits=y_axis_limits,
         )
         plot_2d_map_elites_repertoire_marta(
             centroids=plotting_centroids,
@@ -251,6 +253,8 @@ class ReferenceAnalyser:
             directory_string=directory_string,
             filename=f"{self.formula}_cvt_plot_{self.experimental_string}_annotate",
             annotate=True,
+            x_axis_limits=x_axis_limits,
+            y_axis_limits=y_axis_limits,
         )
 
         plt.clf()
@@ -265,7 +269,7 @@ class ReferenceAnalyser:
         ax.set_ylabel("Structure Count")
         ax.set_title("Maximum Force on Atom for Reference Structures")
         if self.save_plot:
-            fig.savefig(self.save_path / f"{self.formula}_fmax_histogram_{self.experimental_string}.png",
+            fig.savefig(self.save_path / f"{self.formula}_fmax_histogram_no_stress{self.experimental_string}.png",
                         format="png")
         else:
             fig.show()
@@ -273,11 +277,15 @@ class ReferenceAnalyser:
 
     def plot_symmetries(self):
         params = {"figure.figsize": [3.5, 2.625]}
+        mpl.rcParams["font.size"] = 8
         mpl.rcParams.update(params)
         fig, ax = plt.subplots()
 
+        experimental = [el for el in self.structures_to_consider if not el.theoretical]
+        labels = ["Experimental and Theoretical", "Experimental"]
+
         all_group_information = []
-        for structure_group in [self.structures_to_consider]:
+        for structure_group in [self.structures_to_consider, experimental]:
             symmetries = defaultdict(list)
             for el in structure_group:
                 symmetry = get_spacegroup(
@@ -288,15 +296,17 @@ class ReferenceAnalyser:
 
         for i, symmetries_in_group in enumerate(all_group_information):
             ax.bar(list(symmetries_in_group.keys()),
-                   [len(value) for value in symmetries_in_group.values()], label=self.reference_ids[i])
+                   [len(value) for value in symmetries_in_group.values()], label=labels[i])
 
         ax.set_ylabel("Structure Count")
         ax.set_xlabel("Symmetry")
         ax.set_title("Symmetries Across Reference Structures")
         plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
                  rotation_mode="anchor")
-        if len(self.structures_to_consider) == 2:
-            fig.legend(loc="center right")
+        ax.legend(prop={'size': 6})
+        # ax.legend(loc="lower center", bbox_to_anchor=(-0.02, 0.5), ncols=2)
+        # if len(self.structures_to_consider) == 2:
+        #     fig.legend(loc="center right")
         plt.tight_layout()
         if self.save_plot:
             fig.savefig(self.save_path / f"{self.formula}_symmetries_histogram_{self.experimental_string}.png",
@@ -434,19 +444,29 @@ class ReferenceAnalyser:
         return blocks
 
 
+    def plot_references_as_groups(self, target_archive: Archive):
+        self.symmetry_evaluator.group_structures_by_symmetry(
+            archive=target_archive,
+            experiment_directory_path=self.save_path,
+            centroid_full_path= self.centroid_folder_path.parent / self.centroid_filename[1:],
+            filename_tag="experimental" if self.experimental_references_only else "exp_and_theory"
+        )
+
 if __name__ == '__main__':
-    elements_list = [["C"], ["Si", "O"], ["Si"], ["Si", "C"], ["Ti", "O"]]
-    atoms_counts_list = [[24], [8, 16], [24], [12, 12], [8, 16]]
-    formulas = ["C", "SiO2", "Si", "SiC", "TiO2"]
+    # elements_list = [["C"], ["Si", "O"], ["Si"], ["Si", "C"], ["Ti", "O"]]
+    # atoms_counts_list = [[24], [8, 16], [24], [12, 12], [8, 16]]
+    # formulas = ["C", "SiO2", "Si", "SiC", "TiO2"]
 
-    # elements_list = [["Ti", "O"]]
-    # atoms_counts_list = [[8, 16]]
-    # formulas = ["TiO2"]
-
+    elements_list = [["Ti", "O"]]
+    atoms_counts_list = [[8, 16]]
+    formulas = ["TiO2"]
+    fitness_limits = [8.7, 9.5]
+    band_gap_limits = [0, 4]
+    shear_moduli_limits = [0, 120]
     reference_data_dump = []
     dict_summary = {}
-
-    for filter_experiment in [False, True]:
+    for filter_experiment in [True]:
+    # for filter_experiment in [False, True]:
         filter_experiment_dump = []
         for i, formula in enumerate(formulas):
             reference_analyser = ReferenceAnalyser(
@@ -455,9 +475,9 @@ if __name__ == '__main__':
                 experimental_references_only=filter_experiment,
                 save_plots=True
             )
-            print(formula)
-            band_gap_limits, shear_moduli_limits = reference_analyser.set_bd_limits(
-                reference_analyser.band_gaps, reference_analyser.shear_moduli)
+            # print(formula)
+            # band_gap_limits, shear_moduli_limits = reference_analyser.set_bd_limits(
+            #     reference_analyser.band_gaps, reference_analyser.shear_moduli)
 
             reference_analyser.return_valid_spacegroups_for_pyxtal(elements=elements_list[i], atoms_counts=atoms_counts_list[i])
             kdt = reference_analyser.initialise_kdt_and_centroids(
@@ -465,7 +485,8 @@ if __name__ == '__main__':
                 band_gap_limits=band_gap_limits,
                 shear_moduli_limits=shear_moduli_limits,
             )
-            fitness_limits = reference_analyser.propose_fitness_limits()
+            if fitness_limits is None:
+                fitness_limits = reference_analyser.propose_fitness_limits()
             bd_minimum_values = np.array([band_gap_limits[0], shear_moduli_limits[0]])
             bd_maximum_values = np.array([band_gap_limits[1], shear_moduli_limits[1]])
             reference_analyser.write_base_config(
@@ -479,18 +500,21 @@ if __name__ == '__main__':
                 save_reference=not filter_experiment,
             )
 
-            normalise_bd_values = (bd_minimum_values, bd_maximum_values) if reference_analyser.normalise_bd else None
-            reference_analyser.plot_cvt_plot(
-                target_archive=target_archive,
-                bd_minimum_values=np.array([0, 0]) if reference_analyser.normalise_bd else bd_minimum_values,
-                bd_maximum_values=np.array([1, 1]) if reference_analyser.normalise_bd else bd_maximum_values,
-                fitness_limits=fitness_limits,
-            )
-            reference_analyser.heatmap_structure_matcher_distances(annotate=False)
-            reference_analyser.plot_symmetries()
+            # normalise_bd_values = (bd_minimum_values, bd_maximum_values) if reference_analyser.normalise_bd else None
+            # reference_analyser.plot_cvt_plot(
+            #     target_archive=target_archive,
+            #     bd_minimum_values=np.array([0, 0]) if reference_analyser.normalise_bd else bd_minimum_values,
+            #     bd_maximum_values=np.array([1, 1]) if reference_analyser.normalise_bd else bd_maximum_values,
+            #     fitness_limits=fitness_limits,
+            #     x_axis_limits=bd_minimum_values,
+            #     y_axis_limits=bd_maximum_values,
+            # )
+            # reference_analyser.plot_references_as_groups(target_archive)
+            # reference_analyser.heatmap_structure_matcher_distances(annotate=False)
+            # reference_analyser.plot_symmetries()
             reference_analyser.plot_fmax()
-            dict_summary[f"{formula}_{filter_experiment}"] = len(reference_analyser.structures_to_consider)
-            print(dict_summary)
+            # dict_summary[f"{formula}_{filter_experiment}"] = len(reference_analyser.structures_to_consider)
+            # print(dict_summary)
 
             # filter_experiment_dump.append()
     # with open("../../.experiment.nosync/mp_reference_analysis/dict_summary.json", "w") as file:

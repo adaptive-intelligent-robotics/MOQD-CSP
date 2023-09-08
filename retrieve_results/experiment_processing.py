@@ -175,13 +175,32 @@ class ExperimentProcessor:
             archive=archive,
             experiment_directory_path=self.experiment_directory_path,
             centroid_full_path=self.centroid_directory_path,
+            x_axis_limits=(self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][0],
+                           self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][0]),
+            y_axis_limits=(self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][1],
+                           self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][1])
         )
+
         if individuals_with_matches and target_data_path is not None:
             plotting_from_archive, plotting_from_mp = symmetry_evaluation.matches_for_plotting(
                 individuals_with_matches)
 
             report_statistic_summary_dict = symmetry_evaluation.write_report_summary_json(
                 plotting_from_archive, directory_string=str(self.experiment_directory_path))
+
+            symmetry_evaluation.plot_matches_energy_difference(
+                archive=archive,
+                plotting_matches=plotting_from_archive,
+                centroids=self.all_centroids,
+                centroids_from_archive=archive.centroid_ids,
+                minval=[0, 0],
+                maxval=[1, 1],
+                directory_string=str(self.experiment_directory_path),
+                annotate=False,
+                x_axis_limits=(self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][0], self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][0]),
+                y_axis_limits=(self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][1], self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][1])
+            )
+
 
             symmetry_evaluation.plot_matches_mapped_to_references(
                 plotting_matches=plotting_from_mp,
@@ -191,6 +210,8 @@ class ExperimentProcessor:
                 maxval=[1, 1] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
                 directory_string=str(self.experiment_directory_path),
                 annotate=annotate,
+                x_axis_limits=(self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][0], self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][0]),
+                y_axis_limits=(self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][1], self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][1])
             )
 
             symmetry_evaluation.plot_matches_mapped_to_references(
@@ -200,7 +221,9 @@ class ExperimentProcessor:
                 minval=[0, 0] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
                 maxval=[1, 1] if self.experiment_parameters.cvt_run_parameters["normalise_bd"] else self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
                 directory_string=str(self.experiment_directory_path),
-                annotate=annotate
+                annotate=annotate,
+                x_axis_limits=(self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][0], self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][0]),
+                y_axis_limits=(self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][1], self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][1])
             )
 
             print("I was here")

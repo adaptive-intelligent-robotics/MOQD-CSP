@@ -27,7 +27,10 @@ if __name__ == '__main__':
                 print(folder)
                 if experiment_organiser.is_experiment_valid(folder):
                     centroid_name = experiment_organiser.get_centroid_name(folder)
-                    experiment_tag = folder.split("TiO2_")[1]
+                    # experiment_tag = folder.split("TiO2_")[1]
+
+                    formula = experiment_organiser.get_formula_from_folder_name(folder)
+                    experiment_tag = folder[15 + len(formula) + 1:]
                     config_match_index = np.argwhere(np.array(experiment_tags_list) == experiment_tag).reshape(-1)
                     if len(config_match_index) == 0:
                         manual_check[folder] = "no matching experiment tag in configs"
@@ -65,11 +68,11 @@ if __name__ == '__main__':
                             except ValueError:
                                 print(f"problem with plotting folder {folder}")
                                 continue
-                        if not symmetry_summary_done:
-                            try:
-                                experiment_processor.process_symmetry()
-                            except ValueError:
-                                print(f"problem with plotting folder {folder}")
+                        # if not symmetry_summary_done:
+                        #     try:
+                        #         experiment_processor.process_symmetry()
+                        #     except ValueError:
+                        #         print(f"problem with plotting folder {folder}")
             except Exception as e:
                 print(f"{traceback.format_exc()}")
                 continue

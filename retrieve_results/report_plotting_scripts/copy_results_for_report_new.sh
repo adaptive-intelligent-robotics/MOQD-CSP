@@ -5,50 +5,37 @@
 
 
 # 0 rattle
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/0_no_relax/all_plots/200k_evals_comparison_maximum_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/0_no_relax
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/0_no_relax/all_plots/200k_evals_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/0_no_relax
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/0_no_relax/all_plots/200k_evals_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/0_no_relax
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/0_no_relax/all_plots/report_200k_evals.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/0_no_relax
 
 
 # 3 local optimisation
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/relax_archive_no_intermediate_relax_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/relax_archive_no_intermediate_relax_comparison_maximum_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/relax_archive_no_intermediate_relax_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
-
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/n_relax_steps_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/n_relax_steps_comparison_maximum_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/n_relax_steps_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
-
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/archive_every_5_step_10_always_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/archive_every_5_step_10_always_comparison_maximum_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/archive_every_5_step_10_always_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
-
-
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/report_n_relax_steps.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/report_relax_archive_no_intermediate_relax.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/3_local_optimisation/all_plots/report_archive_every_5_step_10_always.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/3_local_optimisation
 
 # 4 -  Force Mutation Only
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/4_force_mutation_only/all_plots/gauss_vs_no_gauss_comparison_maximum_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/4_force_mutation_only
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/4_force_mutation_only/all_plots/gauss_vs_no_gauss_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/4_force_mutation_only
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/4_force_mutation_only/all_plots/gauss_vs_no_gauss_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/4_force_mutation_only
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/4_force_mutation_only/all_plots/report_gauss_vs_no_gauss.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/4_force_mutation_only
 
 
 # 7 - benchmark
 
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/all_plots/benchmark_comparison_median_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/benchmark_comparison_median_fitness.png
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/all_plots/benchmark_comparison_maximum_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/benchmark_comparison_maximum_fitness.png
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/all_plots/benchmark_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/benchmark_comparison_qd_score.png
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/all_plots/benchmark_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/benchmark_comparison_coverage.png
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/all_plots/report_benchmark.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark
 
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark_with_threshold/20230826_22_50_TiO2_200_niches_for_benchmark_100_relax_with_threshold_2/cvt_plot_5033.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/with_threshold_cvt.png
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark/20230826_22_53_TiO2_200_niches_for_benchmark_100_relax_4/cvt_plot_5017.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/no_threshold_cvt.png
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark/20230830_01_45_TiO2_200_niches_for_benchmark_100_relax_2/cvt_plot_5032.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/no_threshold_cvt.png
 
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark_with_threshold/20230826_22_50_TiO2_200_niches_for_benchmark_100_relax_with_threshold_2/cvt_by_structure_similarity.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/with_threshold_cvt_by_similarity.png
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark/20230826_22_53_TiO2_200_niches_for_benchmark_100_relax_4/cvt_by_structure_similarity.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/no_threshold_cvt_by_similarity.png
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark/20230830_01_45_TiO2_200_niches_for_benchmark_100_relax_2/cvt_by_structure_similarity.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/no_threshold_cvt_by_similarity.png
 
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark_with_threshold/20230826_22_50_TiO2_200_niches_for_benchmark_100_relax_with_threshold_2/cvt_matches_from_archive_archive_matches_view.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/with_threshold_cvt_archive_matches.png
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark/20230826_22_53_TiO2_200_niches_for_benchmark_100_relax_4/cvt_matches_from_archive_archive_matches_view.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/no_threshold_cvt_archive_matches.png
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark/20230830_01_45_TiO2_200_niches_for_benchmark_100_relax_2/cvt_matches_from_archive_archive_matches_view.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/no_threshold_cvt_archive_matches.png
 
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark_with_threshold/20230826_22_50_TiO2_200_niches_for_benchmark_100_relax_with_threshold_2/cvt_matches_from_archive_mp_reference_view.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/with_threshold_cvt_mp_ref_matches.png
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark/20230826_22_53_TiO2_200_niches_for_benchmark_100_relax_4/cvt_matches_from_archive_mp_reference_view.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/no_threshold_cvt_mp_ref_matches.png
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark/20230830_01_45_TiO2_200_niches_for_benchmark_100_relax_2/cvt_matches_from_archive_mp_reference_view.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/no_threshold_cvt_mp_ref_matches.png
+
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark_with_threshold/20230826_22_50_TiO2_200_niches_for_benchmark_100_relax_with_threshold_2/cvt_energy_diff_matches_from_archive_archive_matches_view.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/with_threshold_cvt_energy.png
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/6_benchmark/benchmark/20230830_01_45_TiO2_200_niches_for_benchmark_100_relax_2/cvt_energy_diff_matches_from_archive_archive_matches_view.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/6_benchmark/no_threshold_cvt_energy.png
+
 
 
 # other materials
@@ -75,17 +62,6 @@ cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.exper
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/report_force_threshold_value.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/report_steps_no_10.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/report_steps.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold
-
-#cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/force_threshold_steps_comparison_median_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold/force_threshold_steps_comparison_median_fitness.png
-#cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/force_threshold_steps_comparison_mean_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold/force_threshold_steps_comparison_mean_fitness.png
-#cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/force_threshold_steps_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold/force_threshold_steps_omparison_qd_score.png
-#cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/force_threshold_steps_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold/force_threshold_steps_omparison_coverage.png
-#
-#
-#cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/steps_no_10_comparison_median_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold/steps_no_10_comparison_median_fitness.png
-#cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/steps_no_10_comparison_mean_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold/steps_no_10_comparison_mean_fitness.png
-#cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/steps_no_10_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold/steps_no_10_comparison_qd_score.png
-#cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/all_plots/steps_no_10_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold/steps_no_10_comparison_coverage.png
 
 #archives
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/1_force_threshold/threshold_1/20230828_13_22_TiO2_force_threshold_1_14/cvt_plot_5020.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/1_force_threshold/cvt_force_threshold_1.png
@@ -120,24 +96,14 @@ cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.exper
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/5_benchmark_params/all_plots/niches_available_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/5_benchmark_params/niches_available_comparison_coverage.png
 
 
-
 # 8- OMG MEGA Selection
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/batch_size_dqd_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/batch_size_dqd_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/batch_size_dqd_comparison_maximum_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/report_batch_size_dqd.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/report_5050_dqd.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/report_lr_dqd.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/report_relax_steps_dqd.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
 
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/5050_dqd_comparison_maximum_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/5050_dqd_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/5050_dqd_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/lr_dqd_comparison_maximum_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/lr_dqd_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/lr_dqd_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/batch_size_dqd_comparison_maximum_fitness.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/batch_size_dqd_comparison_qd_score.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/8_omg_mega_selection/all_plots/batch_size_dqd_comparison_coverage.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/8_omg_mega_selectio
-
+# 9 - ong vs force
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_data/9_omg_vs_force/all_plots/report_dqd_vs_gaus_force.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/9_omg_vs_force
 
 
 # 10 MP Reference Analysis
@@ -161,6 +127,8 @@ cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.exper
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/mp_reference_analysis/TiO2_24/cvt_by_structure_similarity_exp_and_theory.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/mp_reference_analysis
 cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/mp_reference_analysis/TiO2_24/cvt_by_structure_similarity_experimental.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/mp_reference_analysis
 
+#fmax
+cp /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/mp_reference_analysis/TiO2_24/TiO2_fmax_histogram_no_stressexp_and_theory.png /Users/marta/Documents/MSc\ Artificial\ Intelligence/Thesis/csp-elites/.experiment.nosync/report_results/mp_reference_analysis
 
 
 # DQD validation

@@ -11,7 +11,7 @@ class JobsEnum(Enum):
     MEDIUM = "hpc_template_medium.pbs"
     THROUGHPUT_30_MEMORY = "hpc_template.pbs"
     GPU = "hpc_template_gpu.pbs"
-    THROUGHPUT_20_MEMORY = "hpc_template.pbs"
+    THROUGHPUT_20_MEMORY = "hpc_template_20gb.pbs"
 
 def write_bash_script(
         config_name,
@@ -80,7 +80,7 @@ def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_jo
             with open(path_to_save / f"{config_names[i]}_{j}.json", "w") as file:
                 json.dump(el, file)
 
-        scripts_directory = path_to_save.name + "_scripts_sup"
+        scripts_directory = path_to_save.name + "_scripts"
         write_bash_script(
             config_name=f"{path_to_save.name}/{config_names[i]}",
             job_name=config_names[i],
@@ -93,7 +93,7 @@ def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_jo
 if __name__ == '__main__':
     write_configs_from_csv(
         path_to_cofnig_csv=pathlib.Path(__file__).parent.parent.parent / "experiments/experiment_list.csv",
-        number_for_array_job=10,
-        path_to_save=pathlib.Path(__file__).parent.parent.parent / "configs/0831",
-        bash_template=JobsEnum.THROUGHPUT_30_MEMORY
+        number_for_array_job=5,
+        path_to_save=pathlib.Path(__file__).parent.parent.parent / "configs/0903",
+        bash_template=JobsEnum.THROUGHPUT_20_MEMORY
     )

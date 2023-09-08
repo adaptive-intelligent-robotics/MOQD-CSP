@@ -12,7 +12,7 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
         title_tag=None
     )
     if niches_fill:
-        report_generator.plot_mean_statistics(
+        report_generator.plot_combined_figure_for_report(
             folder_names=[
                 "02_niches"
             ],
@@ -26,7 +26,7 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
         )
 
     if n_niches:
-        report_generator.plot_mean_statistics(
+        report_generator.plot_combined_figure_for_report(
             folder_names=[
                 "500_niches"
             ],
@@ -40,7 +40,7 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
         )
 
     if structure_initialise:
-        report_generator.plot_mean_statistics(
+        report_generator.plot_combined_figure_for_report(
             folder_names=[
                 "structure_initialise_40", "structure_initialise_80"
             ],
@@ -54,7 +54,7 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
         )
 
     if batch_size:
-        report_generator.plot_mean_statistics(
+        report_generator.plot_combined_figure_for_report(
             folder_names=[
                 "batch_size_20", "batch_size_50"
             ],
@@ -70,7 +70,7 @@ def benchmark_params(plot_individually=True, niches_fill=True, n_niches=True, st
 
 if __name__ == '__main__':
     benchmark_params(
-        plot_individually=True,
+        plot_individually=False,
         niches_fill=True,
         n_niches=True,
         structure_initialise=True,
