@@ -5,38 +5,50 @@ from math import isnan
 
 import pandas as pd
 
+
 class JobsEnum(Enum):
     MEDIUM = "hpc_template_medium.pbs"
     THROUGHPUT_30_MEMORY = "hpc_template.pbs"
     GPU = "hpc_template_gpu.pbs"
     THROUGHPUT_20_MEMORY = "hpc_template_20gb.pbs"
 
+
 def write_bash_script(
-        config_name,
-        job_name,
-        n_jobs_in_array: int,
-        path_to_save: pathlib.Path,
-        template_name: JobsEnum
+    config_name,
+    job_name,
+    n_jobs_in_array: int,
+    path_to_save: pathlib.Path,
+    template_name: JobsEnum,
 ):
-    with open(pathlib.Path(__file__).parent.parent.parent / f"automation_scripts/hpc/job_templates/{template_name.value}", "r") as file:
+    with open(
+        pathlib.Path(__file__).parent.parent.parent
+        / f"automation_scripts/hpc/job_templates/{template_name.value}",
+        "r",
+    ) as file:
         text = file.readlines()
 
     with open(path_to_save / f"{job_name}.pbs", "w") as file:
         for line in text:
-            if 'CONFIG_NAME' in line:
-                line = line.replace('CONFIG_NAME', config_name + "_${PBS_ARRAY_INDEX}" + ".json")
+            if "CONFIG_NAME" in line:
+                line = line.replace(
+                    "CONFIG_NAME", config_name + "_${PBS_ARRAY_INDEX}" + ".json"
+                )
             elif "N_JOBS" in line:
-                line = line.replace('N_JOBS', str(n_jobs_in_array))
+                line = line.replace("N_JOBS", str(n_jobs_in_array))
             file.write(line)
 
 
-def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_job: int, path_to_save: pathlib.Path,
-                           bash_template: JobsEnum):
+def write_configs_from_csv(
+    path_to_cofnig_csv: pathlib.Path,
+    number_for_array_job: int,
+    path_to_save: pathlib.Path,
+    bash_template: JobsEnum,
+):
     df = pd.read_csv(path_to_cofnig_csv)
     run_params_start_col = df.columns.get_loc("cvt_samples")
     number_of_columns = df.shape[1]
     run_params = df.iloc[:, run_params_start_col:number_of_columns]
-    df["cvt_run_parameters"] = run_params.to_dict(orient='records')
+    df["cvt_run_parameters"] = run_params.to_dict(orient="records")
     df.drop(df.iloc[:, run_params_start_col:number_of_columns], inplace=True, axis=1)
 
     config_names = pd.Series.to_frame(df.loc[:, "config_name"])
@@ -73,8 +85,7 @@ def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_jo
         el["cvt_run_parameters"] = new_cvt_parameters
 
         for j in range(1, number_for_array_job + 1):
-            el["experiment_tag"] = \
-            el["experiment_tag"] + f"_{j}"
+            el["experiment_tag"] = el["experiment_tag"] + f"_{j}"
             with open(path_to_save / f"{config_names[i]}_{j}.json", "w") as file:
                 json.dump(el, file)
 
@@ -85,14 +96,15 @@ def write_configs_from_csv(path_to_cofnig_csv: pathlib.Path, number_for_array_jo
             job_name=config_names[i],
             path_to_save=path_to_save.parent / scripts_directory,
             n_jobs_in_array=number_for_array_job,
-            template_name=bash_template
+            template_name=bash_template,
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     write_configs_from_csv(
-        path_to_cofnig_csv=pathlib.Path(__file__).parent.parent.parent / "experiments/experiment_list.csv",
+        path_to_cofnig_csv=pathlib.Path(__file__).parent.parent.parent
+        / "experiments/experiment_list.csv",
         number_for_array_job=5,
         path_to_save=pathlib.Path(__file__).parent.parent.parent / "configs/0903",
-        bash_template=JobsEnum.THROUGHPUT_20_MEMORY
+        bash_template=JobsEnum.THROUGHPUT_20_MEMORY,
     )

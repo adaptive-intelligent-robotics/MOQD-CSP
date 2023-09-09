@@ -4,12 +4,15 @@ import scienceplots
 
 import numpy as np
 from matplotlib import pyplot as plt
-plt.style.use('science')
-plt.rcParams['savefig.dpi'] = 1000
+
+plt.style.use("science")
+plt.rcParams["savefig.dpi"] = 1000
 
 
-if __name__ == '__main__':
-    path_to_pickles = pathlib.Path(__file__).parent.parent / ".experiment.nosync/report_data"
+if __name__ == "__main__":
+    path_to_pickles = (
+        pathlib.Path(__file__).parent.parent / ".experiment.nosync/report_data"
+    )
     number_of_individuals = [1, 10, 20, 100]
     batch_size = [1, 10, 20, 100]
 
@@ -28,8 +31,6 @@ if __name__ == '__main__':
     with open(path_to_pickles / "relax_comp_marta_timings.pkl", "rb") as file:
         data = pickle.load(file)
         marta_relax_data = np.array(data)
-
-
 
     # plot relax comp
 
@@ -54,8 +55,5 @@ if __name__ == '__main__':
     ax.legend(loc="lower center", bbox_to_anchor=(0.5, -0.4), ncols=4)
     fig.tight_layout()
     fig.savefig(path_to_pickles / "batch_size_comparison.png")
-
-
-
 
     print()

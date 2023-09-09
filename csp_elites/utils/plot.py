@@ -17,19 +17,23 @@ from tqdm import tqdm
 
 import matplotlib.colors as mcolors
 from csp_elites.map_elites.elites_utils import make_hashable
-from csp_elites.utils.asign_target_values_to_centroids import \
-    reassign_data_from_pkl_to_new_centroids
+from csp_elites.utils.asign_target_values_to_centroids import (
+    reassign_data_from_pkl_to_new_centroids,
+)
 
 if TYPE_CHECKING:
     from csp_elites.utils.experiment_parameters import ExperimentParameters
 
 import scienceplots
-plt.style.use('science')
-plt.rcParams['savefig.dpi'] = 300
+
+plt.style.use("science")
+plt.rcParams["savefig.dpi"] = 300
+
+
 def get_voronoi_finite_polygons_2d(
     centroids: np.ndarray, radius: Optional[float] = None
 ) -> Tuple[List, np.ndarray]:
-    """ COPIED FROM QDAX
+    """COPIED FROM QDAX
     Reconstruct infinite voronoi regions in a 2D diagram to finite
     regions."""
     voronoi_diagram = Voronoi(centroids)
@@ -94,6 +98,7 @@ def get_voronoi_finite_polygons_2d(
 
     return new_regions, np.asarray(new_vertices)
 
+
 def plot_2d_map_elites_repertoire_marta(
     centroids: np.ndarray,
     repertoire_fitnesses: np.ndarray,
@@ -104,14 +109,13 @@ def plot_2d_map_elites_repertoire_marta(
     vmin: Optional[float] = None,
     vmax: Optional[float] = None,
     target_centroids: Optional[np.ndarray] = None,
-    directory_string: Optional[str]= None,
+    directory_string: Optional[str] = None,
     filename: Optional[str] = "cvt_plot",
     axis_labels: List[str] = ["Band Gap, eV", "Shear Modulus, GPa"],
     annotations: Optional[Union[List[str], np.ndarray]] = None,
     annotate: bool = True,
     x_axis_limits: Optional[Tuple[float, float]] = None,
     y_axis_limits: Optional[Tuple[float, float]] = None,
-
 ) -> Tuple[Optional[Figure], Axes]:
     """Function adapted from QDAX
     Plot a visual representation of a 2d map elites repertoire.
@@ -186,7 +190,12 @@ def plot_2d_map_elites_repertoire_marta(
         ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
         if target_centroids is not None:
             if centroids[i] in np.array(target_centroids):
-                ax.fill(*zip(*polygon), edgecolor=mcolors.CSS4_COLORS["salmon"], facecolor="none", lw=1)
+                ax.fill(
+                    *zip(*polygon),
+                    edgecolor=mcolors.CSS4_COLORS["salmon"],
+                    facecolor="none",
+                    lw=1,
+                )
     # fill the plot with the colors
     for idx, fitness in enumerate(fitnesses):
         if fitness > -np.inf:
@@ -201,7 +210,13 @@ def plot_2d_map_elites_repertoire_marta(
         polygon = vertices[region]
         if target_centroids is not None:
             if centroids[i] in np.array(target_centroids):
-                ax.fill(*zip(*polygon), edgecolor=mcolors.CSS4_COLORS["salmon"], facecolor="none", lw=1, alpha=1)
+                ax.fill(
+                    *zip(*polygon),
+                    edgecolor=mcolors.CSS4_COLORS["salmon"],
+                    facecolor="none",
+                    lw=1,
+                    alpha=1,
+                )
 
     np.set_printoptions(2)
     # if descriptors are specified, add points location
@@ -223,7 +238,9 @@ def plot_2d_map_elites_repertoire_marta(
                 if isinstance(annotations[i], str) and annotations[i] != "-inf":
                     ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]))
                 elif isinstance(annotations[i], float) and annotations[i] != -np.inf:
-                    ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]), fontsize=4)
+                    ax.annotate(
+                        annotations[i], (centroids[i, 0], centroids[i, 1]), fontsize=4
+                    )
     # aesthetic
     if x_axis_limits is not None and y_axis_limits is not None:
         x_tick_labels = np.linspace(x_axis_limits[0], x_axis_limits[1], 6)
@@ -246,6 +263,7 @@ def plot_2d_map_elites_repertoire_marta(
     else:
         plt.savefig(f"{directory_string}/{filename}.png", format="png")
     return fig, ax
+
 
 def plot_numbered_centroids(
     centroids: np.ndarray,
@@ -312,7 +330,8 @@ def plot_all_statistics_from_file(filename: str, save_location: Optional[str]):
             "Fitness 95th Percentile",
         ]
     elif number_of_metrics == 9:
-        metric_names = ["Evaluation number",
+        metric_names = [
+            "Evaluation number",
             "Archive size",
             "Maximum Fitness",
             "Mean Fitness",
@@ -320,7 +339,7 @@ def plot_all_statistics_from_file(filename: str, save_location: Optional[str]):
             "Fitness 5th Percentile",
             "Fitness 95th Percentile",
             "Coverage",
-            "QD score"
+            "QD score",
         ]
     else:
         raise ValueError("unknown metric present in log file, check, number of columns")
@@ -335,10 +354,13 @@ def plot_all_statistics_from_file(filename: str, save_location: Optional[str]):
         else:
             file_tag = metric_names[metric_id].replace(" ", "")
             plt.savefig(f"{save_location}stats_{file_tag}")
+
+
 def load_centroids(filename: str) -> np.ndarray:
     with open(filename, "r") as file:
         centroids = np.loadtxt(file)
     return centroids
+
 
 def load_archive_from_pickle(filename: str):
     with open(filename, "rb") as file:
@@ -361,11 +383,17 @@ def load_archive_from_pickle(filename: str):
 
     return fitnesses, centroids, descriptors, individuals
 
+
 def convert_fitness_and_descriptors_to_plotting_format(
-        all_centroids:np.ndarray, centroids_from_archive: np.ndarray, fitnesses_from_archive: np.ndarray, descriptors_from_archive: np.ndarray,
+    all_centroids: np.ndarray,
+    centroids_from_archive: np.ndarray,
+    fitnesses_from_archive: np.ndarray,
+    descriptors_from_archive: np.ndarray,
 ):
     fitness_for_plotting = np.full((len(all_centroids)), -np.inf)
-    descriptors_for_plotting = np.full((len(all_centroids), len(descriptors_from_archive[0])), -np.inf)
+    descriptors_for_plotting = np.full(
+        (len(all_centroids), len(descriptors_from_archive[0])), -np.inf
+    )
     for i in range(len(centroids_from_archive)):
         present_centroid = np.argwhere(all_centroids == centroids_from_archive[i])
         fitness_for_plotting[present_centroid[0][0]] = fitnesses_from_archive[i]
@@ -382,11 +410,24 @@ def plot_all_maps_in_archive(
     annotate: bool = True,
     force_replot: bool = False,
 ):
-    list_of_files = [name for name in os.listdir(f"{experiment_directory_path}") if
-                     not os.path.isdir(name)]
-    list_of_archives = [filename for filename in list_of_files if ("archive_" in filename) and (".pkl" in filename)]
-    list_of_plots = [filename for filename in list_of_files if ("cvt_plot" in filename) and (".png" in filename)]
-    list_of_plot_ids = [filename.lstrip("cvt_plot_").rstrip(".png") for filename in list_of_plots]
+    list_of_files = [
+        name
+        for name in os.listdir(f"{experiment_directory_path}")
+        if not os.path.isdir(name)
+    ]
+    list_of_archives = [
+        filename
+        for filename in list_of_files
+        if ("archive_" in filename) and (".pkl" in filename)
+    ]
+    list_of_plots = [
+        filename
+        for filename in list_of_files
+        if ("cvt_plot" in filename) and (".png" in filename)
+    ]
+    list_of_plot_ids = [
+        filename.lstrip("cvt_plot_").rstrip(".png") for filename in list_of_plots
+    ]
 
     for filename in tqdm(list_of_archives):
         if "relaxed_archive" in filename:
@@ -394,8 +435,12 @@ def plot_all_maps_in_archive(
         archive_id = filename.lstrip("relaxed_archive_").rstrip(".pkl")
         if force_replot or (archive_id not in list_of_plot_ids):
             fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
-                f"{experiment_directory_path}/{filename}")
-            fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_descriptors_to_plotting_format(
+                f"{experiment_directory_path}/{filename}"
+            )
+            (
+                fitnesses_for_plotting,
+                descriptors_for_plotting,
+            ) = convert_fitness_and_descriptors_to_plotting_format(
                 all_centroids=all_centroids,
                 centroids_from_archive=centroids,
                 fitnesses_from_archive=fitnesses,
@@ -403,7 +448,10 @@ def plot_all_maps_in_archive(
             )
             if "relaxed" in filename:
                 archive_id += "_relaxed"
-            bd_minimum_values, bd_maximum_values = experiment_parameters.return_min_max_bd_values()
+            (
+                bd_minimum_values,
+                bd_maximum_values,
+            ) = experiment_parameters.return_min_max_bd_values()
             plot_2d_map_elites_repertoire_marta(
                 centroids=all_centroids,
                 repertoire_fitnesses=fitnesses_for_plotting,
@@ -419,19 +467,33 @@ def plot_all_maps_in_archive(
                 filename=f"cvt_plot_{archive_id}",
                 axis_labels=["Band Gap, eV", "Shear Modulus, GPa"],
                 annotate=annotate,
-                x_axis_limits=(experiment_parameters.cvt_run_parameters["bd_minimum_values"][0], experiment_parameters.cvt_run_parameters["bd_maximum_values"][0]),
-                y_axis_limits=(experiment_parameters.cvt_run_parameters["bd_minimum_values"][1], experiment_parameters.cvt_run_parameters["bd_maximum_values"][1])
+                x_axis_limits=(
+                    experiment_parameters.cvt_run_parameters["bd_minimum_values"][0],
+                    experiment_parameters.cvt_run_parameters["bd_maximum_values"][0],
+                ),
+                y_axis_limits=(
+                    experiment_parameters.cvt_run_parameters["bd_minimum_values"][1],
+                    experiment_parameters.cvt_run_parameters["bd_maximum_values"][1],
+                ),
             )
 
+
 def plot_gif(experiment_directory_path: str):
-    plot_list = [name for name in os.listdir(f"{experiment_directory_path}") if
-                     not os.path.isdir(name) and "cvt_plot_" in name and ".png" in name]
-    sorted_plot_list = sorted(plot_list, key=lambda x:int(x.lstrip("cvt_plot_").rstrip(".png")))
+    plot_list = [
+        name
+        for name in os.listdir(f"{experiment_directory_path}")
+        if not os.path.isdir(name) and "cvt_plot_" in name and ".png" in name
+    ]
+    sorted_plot_list = sorted(
+        plot_list, key=lambda x: int(x.lstrip("cvt_plot_").rstrip(".png"))
+    )
 
     frames = []
     for plot_name in sorted_plot_list:
         image = imageio.v2.imread(f"{experiment_directory_path}/{plot_name}")
         frames.append(image)
 
-    imageio.mimsave(f"{experiment_directory_path}/cvt_plot_gif.gif",  # output gif
-                    frames,)  # array of input frames)
+    imageio.mimsave(
+        f"{experiment_directory_path}/cvt_plot_gif.gif",  # output gif
+        frames,
+    )  # array of input frames)

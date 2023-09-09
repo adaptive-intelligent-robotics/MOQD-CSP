@@ -9,12 +9,14 @@ from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 from csp_elites.utils.utils import normalise_between_0_and_1
 
 
-def compute_centroids_for_target_solutions(centroids_file: str,
-                                           target_data_file: str,
-                                           filter_for_number_of_atoms: Optional[int]):
+def compute_centroids_for_target_solutions(
+    centroids_file: str,
+    target_data_file: str,
+    filter_for_number_of_atoms: Optional[int],
+):
     with open(centroids_file, "r") as f:
         c = np.loadtxt(f)
-    kdt = KDTree(c, leaf_size=30, metric='euclidean')
+    kdt = KDTree(c, leaf_size=30, metric="euclidean")
 
     with open(target_data_file, "rb") as file:
         list_of_properties = pickle.load(file)
@@ -43,20 +45,25 @@ def compute_centroids_for_target_solutions(centroids_file: str,
 
     return centroids
 
-def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
-                                           target_data,
-                                           filter_for_number_of_atoms: Optional[int],
-                                            normalise_bd_values: Optional[Tuple[List[float], List[float]]]
-                                            ):
+
+def reassign_data_from_pkl_to_new_centroids(
+    centroids_file: str,
+    target_data,
+    filter_for_number_of_atoms: Optional[int],
+    normalise_bd_values: Optional[Tuple[List[float], List[float]]],
+):
     with open(centroids_file, "r") as f:
         c = np.loadtxt(f)
-    kdt = KDTree(c, leaf_size=30, metric='euclidean')
+    kdt = KDTree(c, leaf_size=30, metric="euclidean")
 
     fitnesses, _, descriptors, individuals = target_data
     if normalise_bd_values is not None:
-        descriptors[:, 0] = normalise_between_0_and_1(descriptors[:, 0], (normalise_bd_values[0][0], normalise_bd_values[1][0]))
-        descriptors[:, 1]  = normalise_between_0_and_1(descriptors[:, 1], (normalise_bd_values[0][1],
-                                                      normalise_bd_values[1][1]))
+        descriptors[:, 0] = normalise_between_0_and_1(
+            descriptors[:, 0], (normalise_bd_values[0][0], normalise_bd_values[1][0])
+        )
+        descriptors[:, 1] = normalise_between_0_and_1(
+            descriptors[:, 1], (normalise_bd_values[0][1], normalise_bd_values[1][1])
+        )
 
     fitnesses_to_enumerate = []
     band_gaps = []
@@ -64,7 +71,9 @@ def reassign_data_from_pkl_to_new_centroids(centroids_file: str,
 
     if filter_for_number_of_atoms is not None:
         for i, atoms in enumerate(individuals):
-            atom_positions = atoms["positions"] if isinstance(atoms, dict) else atoms.get_positions()
+            atom_positions = (
+                atoms["positions"] if isinstance(atoms, dict) else atoms.get_positions()
+            )
             if len(atom_positions) <= filter_for_number_of_atoms:
                 fitnesses_to_enumerate.append(fitnesses[i])
                 band_gaps.append(descriptors[i][0])

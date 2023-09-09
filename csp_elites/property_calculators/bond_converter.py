@@ -11,7 +11,7 @@ class BondConverterTorch(Converter):
     Expand distance with Gaussian basis sit at centers and with width 0.5.
     """
 
-    def __init__(self, centers = torch.linspace(0, 5, 100), width=0.5):
+    def __init__(self, centers=torch.linspace(0, 5, 100), width=0.5):
         """
 
         Args:

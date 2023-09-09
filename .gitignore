@@ -5,26 +5,13 @@ __pycache__
 
 .DS_Store
 
-experiment/
-csp_investigations/
-
 
 used_modes.json
 .experiment.nosync
 
-
 bin/list_of_configs.csv
 
 report_figures/
-/configs/0808/
-/configs/0809/
-/configs/0812/
-/configs/0813/
-/configs/0814/
-/configs/0815/
-configs/0828_scripts
-configs/0828
-configs/0827
 /configs
 /bin
 

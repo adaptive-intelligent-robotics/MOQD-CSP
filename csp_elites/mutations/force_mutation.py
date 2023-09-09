@@ -39,17 +39,26 @@ class ForceMutation(OffspringCreator):
     rng: Random number generator
         By default numpy.random.
     """
-    def __init__(self, blmin, n_top, simple: bool = False,
-                 learning_rate: float = 0.01, test_dist_to_slab=True, use_tags=False,
-                 rattle_prop=0.4,
-                 verbose=False, rng=np.random):
+
+    def __init__(
+        self,
+        blmin,
+        n_top,
+        simple: bool = False,
+        learning_rate: float = 0.01,
+        test_dist_to_slab=True,
+        use_tags=False,
+        rattle_prop=0.4,
+        verbose=False,
+        rng=np.random,
+    ):
         OffspringCreator.__init__(self, verbose, rng=rng)
         self.blmin = blmin
         self.n_top = n_top
         self.test_dist_to_slab = test_dist_to_slab
         self.use_tags = use_tags
 
-        self.descriptor = 'Force Mutation'
+        self.descriptor = "Force Mutation"
         self.min_inputs = 1
         self.learning_rate = learning_rate
         self.rattle_prop = rattle_prop
@@ -61,24 +70,28 @@ class ForceMutation(OffspringCreator):
 
         indi = self.mutate(f)
         if indi is None:
-            return indi, 'mutation: Force Mutation'
+            return indi, "mutation: Force Mutation"
 
         indi = self.initialize_individual(f, indi)
 
         if "confid" in f.x["info"].keys():
-            indi.info['data']['parents'] = [f.x["info"]['confid']]
+            indi.info["data"]["parents"] = [f.x["info"]["confid"]]
         else:
-            indi.info['data']['parents'] = [None]
+            indi.info["data"]["parents"] = [None]
 
-        return self.finalize_individual(indi), 'mutation: DQD rattle'
+        return self.finalize_individual(indi), "mutation: DQD rattle"
 
     def mutate(self, species: Species):
         """Does the actual mutation."""
         atoms = Atoms.fromdict(species.x)
-        gradient_stack = np.vstack([species.fitness_gradient[:len(species.x["positions"])]]).reshape((1, len(species.x["positions"]), 3))
-        all_gradients_normalised = self.normalize_all_gradients_at_once(gradient_stack).reshape((len(species.x["positions"]), 3))
+        gradient_stack = np.vstack(
+            [species.fitness_gradient[: len(species.x["positions"])]]
+        ).reshape((1, len(species.x["positions"]), 3))
+        all_gradients_normalised = self.normalize_all_gradients_at_once(
+            gradient_stack
+        ).reshape((len(species.x["positions"]), 3))
         N = len(atoms)
-        slab = atoms[:len(atoms) - N]
+        slab = atoms[: len(atoms) - N]
         atoms = atoms[-N:]
         tags = atoms.get_tags() if self.use_tags else np.arange(N)
         pos_ref = atoms.get_positions()
@@ -90,7 +103,9 @@ class ForceMutation(OffspringCreator):
             pos = pos_ref.copy()
             mutate_probability = self.rng.random(size=24)
             gradient_mutation_amount = self.learning_rate * all_gradients_normalised
-            gradient_mutation_amount *= (mutate_probability > self.rattle_prop).reshape(-1, 1)
+            gradient_mutation_amount *= (mutate_probability > self.rattle_prop).reshape(
+                -1, 1
+            )
             pos += gradient_mutation_amount
             top = Atoms(num, positions=pos, cell=cell, pbc=pbc, tags=tags)
         else:
@@ -115,8 +130,7 @@ class ForceMutation(OffspringCreator):
                     continue
 
                 top = Atoms(num, positions=pos, cell=cell, pbc=pbc, tags=tags)
-                too_close = atoms_too_close(
-                    top, self.blmin, use_tags=self.use_tags)
+                too_close = atoms_too_close(top, self.blmin, use_tags=self.use_tags)
                 if not too_close and self.test_dist_to_slab:
                     too_close = atoms_too_close_two_sets(top, slab, self.blmin)
 

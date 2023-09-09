@@ -7,7 +7,6 @@ readme = "README.md"
 packages = [
     {include = "csp_elites"},
     {include = "retrieve_results"},
-    {include = "analysis"},
 ]
 
 
@@ -51,7 +50,3 @@ pytest = "^7.3.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-#decision-tree = 'csp_elites.cli.run_experiment:'
-test-cli = "csp_elites.cli.test_cli:start"

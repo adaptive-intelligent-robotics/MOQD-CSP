@@ -11,9 +11,11 @@ from retrieve_results.experiment_organiser import ExperimentOrganiser
 from retrieve_results.experiment_processing import ExperimentProcessor
 
 
-def plot_metrics_for_one_folder(folder_name: str, annotate: bool = True,
-                                override_fitness_values: Optional[Tuple[int, int]] = None) :
-
+def plot_metrics_for_one_folder(
+    folder_name: str,
+    annotate: bool = True,
+    override_fitness_values: Optional[Tuple[int, int]] = None,
+):
     experiment_organiser = ExperimentOrganiser()
     date = experiment_organiser.get_date_from_folder_name(folder_name)
     config_mapping, config_dict_csv = experiment_organiser.get_config_data(date)
@@ -23,10 +25,16 @@ def plot_metrics_for_one_folder(folder_name: str, annotate: bool = True,
     centroid_name = experiment_organiser.get_centroid_name(folder_name)
 
     formula = experiment_organiser.get_formula_from_folder_name(folder_name)
-    experiment_tag = folder_name[15 + len(formula) + 1:]
+    experiment_tag = folder_name[15 + len(formula) + 1 :]
 
-    config_match_index = np.argwhere(np.array(experiment_tags_list) == experiment_tag).reshape(-1)
-    config_filepath = experiment_organiser.repo_location / "configs" / config_names[config_match_index[0]]
+    config_match_index = np.argwhere(
+        np.array(experiment_tags_list) == experiment_tag
+    ).reshape(-1)
+    config_filepath = (
+        experiment_organiser.repo_location
+        / "configs"
+        / config_names[config_match_index[0]]
+    )
     experiment_processor = ExperimentProcessor(
         experiment_label=folder_name,
         config_filepath=config_filepath,
@@ -36,26 +44,38 @@ def plot_metrics_for_one_folder(folder_name: str, annotate: bool = True,
         filter_for_experimental_structures=False,
     )
     if override_fitness_values is not None:
-        experiment_processor.experiment_parameters.fitness_min_max_values = override_fitness_values
+        experiment_processor.experiment_parameters.fitness_min_max_values = (
+            override_fitness_values
+        )
     experiment_processor.plot(annotate=annotate)
     # experiment_processor.process_symmetry()
 
 
-
-def update_configs_csv(path_to_strip: str = "/Users/marta/Documents/MSc Artificial Intelligence/Thesis/csp-elites/configs/"):
+def update_configs_csv(
+    path_to_strip: str = "/Users/marta/Documents/MSc Artificial Intelligence/Thesis/csp-elites/configs/",
+):
     path_to_configs = pathlib.Path(__file__).parent.parent / "configs"
 
-    sub_folders = [name for name in os.listdir(f"{path_to_configs}")
-                         if os.path.isdir(path_to_configs / name)]
+    sub_folders = [
+        name
+        for name in os.listdir(f"{path_to_configs}")
+        if os.path.isdir(path_to_configs / name)
+    ]
 
     all_configs = []
     for sub_folder in sub_folders:
         path = path_to_configs / sub_folder
-        new_configs = [os.path.join(path, o)
-                            for o in os.listdir(path) if os.path.isfile(os.path.join(path,o)) and (".pbs" not in o)(".sh" not in o)]
+        new_configs = [
+            os.path.join(path, o)
+            for o in os.listdir(path)
+            if os.path.isfile(os.path.join(path, o))
+            and (".pbs" not in o)(".sh" not in o)
+        ]
         all_configs += new_configs
 
-    config_names = [config.lstrip(path_to_strip).rstrip(".json") for config in all_configs]
+    config_names = [
+        config.lstrip(path_to_strip).rstrip(".json") for config in all_configs
+    ]
 
     data = {}
 
@@ -75,5 +95,5 @@ def update_configs_csv(path_to_strip: str = "/Users/marta/Documents/MSc Artifici
     print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     update_configs_csv()

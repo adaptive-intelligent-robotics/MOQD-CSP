@@ -18,6 +18,7 @@ class MaterialProperties(str, Enum):
     CONSTRAINT_SHEAR = "constraint_shear"
     ENERGY_FORMATION = "energy_formation"
 
+
 class StartGenerators(str, Enum):
     RANDOM = "random"
     PYXTAL = "pyxtal"

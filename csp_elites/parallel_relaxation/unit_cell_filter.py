@@ -19,17 +19,31 @@ class AtomsFilterForRelaxation:
     ):
         deformation_gradients = []
         for i in range(len(original_cells)):
-            deformation_gradients.append(np.linalg.solve(original_cells[i], new_cells[i]).T)
+            deformation_gradients.append(
+                np.linalg.solve(original_cells[i], new_cells[i]).T
+            )
         return np.array(deformation_gradients)
 
-    def get_positions(self, original_cells, new_cells, list_of_atoms: List[Atoms], cell_factor: np.ndarray):
-        positions = self._get_positions_unit_cell_filter(original_cells, new_cells, list_of_atoms, cell_factor)
+    def get_positions(
+        self,
+        original_cells,
+        new_cells,
+        list_of_atoms: List[Atoms],
+        cell_factor: np.ndarray,
+    ):
+        positions = self._get_positions_unit_cell_filter(
+            original_cells, new_cells, list_of_atoms, cell_factor
+        )
         natoms = len(list_of_atoms[0])
         cur_deform_grad = self.deform_grad(original_cells, new_cells)
-        positions[:, natoms:, :] = np.array([logm(gradient_matrix) for gradient_matrix in cur_deform_grad])
+        positions[:, natoms:, :] = np.array(
+            [logm(gradient_matrix) for gradient_matrix in cur_deform_grad]
+        )
         return positions
 
-    def _get_positions_unit_cell_filter(self, original_cells, new_cells, atoms:List[Atoms], cell_factor: np.ndarray):
+    def _get_positions_unit_cell_filter(
+        self, original_cells, new_cells, atoms: List[Atoms], cell_factor: np.ndarray
+    ):
         """
         this returns an array with shape (natoms + 3,3).
 
@@ -41,9 +55,10 @@ class AtomsFilterForRelaxation:
         natoms = np.array(atoms).shape
         positions = np.zeros((natoms[0], natoms[1] + 3, 3))
         for i in range(len(atoms)):
-            positions[i, :natoms[1], :] = np.linalg.solve(cur_deform_grad[i],
-                                       atoms[i].positions.T).T
-        positions[:, natoms[1]:, :] = cell_factor.reshape((-1, 1, 1)) * cur_deform_grad
+            positions[i, : natoms[1], :] = np.linalg.solve(
+                cur_deform_grad[i], atoms[i].positions.T
+            ).T
+        positions[:, natoms[1] :, :] = cell_factor.reshape((-1, 1, 1)) * cur_deform_grad
         return positions
 
     def set_positions(
@@ -52,11 +67,16 @@ class AtomsFilterForRelaxation:
         atoms_to_update: List[Atoms],
         new_atoms_positions: np.ndarray,
         cell_factors: np.ndarray,
-            # **kwargs?
+        # **kwargs?
     ):
         natoms = len(atoms_to_update[0])
         updated_positions = new_atoms_positions.copy()
-        updated_positions[:, natoms:, :] = np.array([expm(updated_positions[i, natoms:, :]) for i in range(len(updated_positions))])
+        updated_positions[:, natoms:, :] = np.array(
+            [
+                expm(updated_positions[i, natoms:, :])
+                for i in range(len(updated_positions))
+            ]
+        )
         updated_atoms = self._set_positions_unit_cell_filter(
             original_cells,
             atoms_to_update,
@@ -73,18 +93,28 @@ class AtomsFilterForRelaxation:
         cell_factors: np.ndarray,
     ):
         natoms = np.array(atoms_to_update).shape
-        new_atom_positions_updated = new_atoms_positions[:, :natoms[1], :]
-        new_deform_grad = new_atoms_positions[:, natoms[1]:, :] / cell_factors.reshape((-1, 1, 1))
+        new_atom_positions_updated = new_atoms_positions[:, : natoms[1], :]
+        new_deform_grad = new_atoms_positions[:, natoms[1] :, :] / cell_factors.reshape(
+            (-1, 1, 1)
+        )
 
         for i in range(len(atoms_to_update)):
-            atoms_to_update[i].set_cell(original_cells[i] @ new_deform_grad[i].T, scale_atoms=True)
-            atoms_to_update[i].set_positions(new_atom_positions_updated[i] @ new_deform_grad[i].T) #, **kwargs)
+            atoms_to_update[i].set_cell(
+                original_cells[i] @ new_deform_grad[i].T, scale_atoms=True
+            )
+            atoms_to_update[i].set_positions(
+                new_atom_positions_updated[i] @ new_deform_grad[i].T
+            )  # , **kwargs)
 
         return atoms_to_update
 
-    def get_potential_energy(self, energies: np.ndarray, list_of_atoms: List[Atoms]) -> np.ndarray:
+    def get_potential_energy(
+        self, energies: np.ndarray, list_of_atoms: List[Atoms]
+    ) -> np.ndarray:
         # NB get potential energy has two methods depending on value of force_consistent  - in CHGNET both point to the same value
-        return energies + self.scalar_pressure * np.array([atoms.get_volume() for atoms in list_of_atoms])
+        return energies + self.scalar_pressure * np.array(
+            [atoms.get_volume() for atoms in list_of_atoms]
+        )
 
     def get_forces_exp_cell_filter(
         self,
@@ -95,7 +125,6 @@ class AtomsFilterForRelaxation:
         current_atom_cells: List[Cell],
         cell_factors: np.ndarray,
     ):
-
         forces, stress = self._get_forces_unit_cell_filter(
             forces_from_chgnet,
             stresses_from_chgnet,
@@ -109,11 +138,14 @@ class AtomsFilterForRelaxation:
         stresses = self._process_stress_like_ase_atoms(stresses_from_chgnet)
         volumes = np.array([atoms.get_volume() for atoms in list_of_atoms])
 
-        virial = -volumes.reshape((-1, 1, 1)) * (voigt_6_to_full_3x3_stress(stresses) +
-                            np.diag([self.scalar_pressure] * 3))
+        virial = -volumes.reshape((-1, 1, 1)) * (
+            voigt_6_to_full_3x3_stress(stresses) + np.diag([self.scalar_pressure] * 3)
+        )
 
         cur_deform_grad = self.deform_grad(original_cells, current_atom_cells)
-        cur_deform_grad_log = np.array([logm(gradient_matrix) for gradient_matrix in cur_deform_grad])
+        cur_deform_grad_log = np.array(
+            [logm(gradient_matrix) for gradient_matrix in cur_deform_grad]
+        )
         if not (cur_deform_grad_log.shape[1] == cur_deform_grad_log.shape[2]):
             print(cur_deform_grad_log.shape)
             print("matrix isnt square")
@@ -125,7 +157,12 @@ class AtomsFilterForRelaxation:
         Y[:, 0:3, 0:3] = cur_deform_grad_log
         Y[:, 3:6, 3:6] = cur_deform_grad_log
         try:
-            Y[:, 0:3, 3:6] = - np.array([virial[i] @ expm(cur_deform_grad_log[i]) for i in range(len(cur_deform_grad_log))])
+            Y[:, 0:3, 3:6] = -np.array(
+                [
+                    virial[i] @ expm(cur_deform_grad_log[i])
+                    for i in range(len(cur_deform_grad_log))
+                ]
+            )
         except ValueError:
             print(virial.shape)
             print(cur_deform_grad.shape)
@@ -139,19 +176,25 @@ class AtomsFilterForRelaxation:
         deform_grad_log_force_naive = virial.copy()
         deform_grad_log_force = -np.array([expm(Y[i])[0:3, 3:6] for i in range(len(Y))])
 
-        for (i1, i2) in [(0, 1), (0, 2), (1, 2)]:
-            ff = 0.5 * (deform_grad_log_force[:, i1, i2] +
-                        deform_grad_log_force[:, i2, i1])
+        for i1, i2 in [(0, 1), (0, 2), (1, 2)]:
+            ff = 0.5 * (
+                deform_grad_log_force[:, i1, i2] + deform_grad_log_force[:, i2, i1]
+            )
             deform_grad_log_force[:, i1, i2] = ff
             deform_grad_log_force[:, i2, i1] = ff
 
-        all_are_equal = np.all(np.isclose(deform_grad_log_force,
-                                          deform_grad_log_force_naive))
+        all_are_equal = np.all(
+            np.isclose(deform_grad_log_force, deform_grad_log_force_naive)
+        )
 
-        if all_are_equal or \
-            (np.sum(deform_grad_log_force * deform_grad_log_force_naive) /
-             np.sqrt(np.sum(deform_grad_log_force**2) *
-                     np.sum(deform_grad_log_force_naive**2)) > 0.8):
+        if all_are_equal or (
+            np.sum(deform_grad_log_force * deform_grad_log_force_naive)
+            / np.sqrt(
+                np.sum(deform_grad_log_force**2)
+                * np.sum(deform_grad_log_force_naive**2)
+            )
+            > 0.8
+        ):
             deform_grad_log_force = deform_grad_log_force_naive
 
         # Cauchy stress used for convergence testing
@@ -182,11 +225,14 @@ class AtomsFilterForRelaxation:
         current_atom_cells: List[Cell],
         cell_factors: np.ndarray,
     ):
-        stress = self._process_stress_like_ase_atoms(stresses_from_chgnet) # * 1 / 160.21766208)
+        stress = self._process_stress_like_ase_atoms(
+            stresses_from_chgnet
+        )  # * 1 / 160.21766208)
 
         volumes = np.array([atoms.get_volume() for atoms in list_of_atoms])
-        virial = -volumes.reshape((-1, 1, 1)) * (voigt_6_to_full_3x3_stress(stress) +
-                            np.diag([self.scalar_pressure] * 3))
+        virial = -volumes.reshape((-1, 1, 1)) * (
+            voigt_6_to_full_3x3_stress(stress) + np.diag([self.scalar_pressure] * 3)
+        )
         cur_deform_grad = self.deform_grad(original_cells, current_atom_cells)
         atoms_forces = forces_from_chgnet @ cur_deform_grad
         for i in range(len(list_of_atoms)):
@@ -219,7 +265,8 @@ class AtomsFilterForRelaxation:
 
         return forces, stress
 
-
     def _process_stress_like_ase_atoms(self, stresses: np.ndarray):
         """NB ase method also ddifferentiates between voigt = true / false, in teis implementation we only implement the default"""
-        return full_3x3_to_voigt_6_stress(stress_matrix=stresses) * 0.006241509125883258  #* 1 / 160.21766208
+        return (
+            full_3x3_to_voigt_6_stress(stress_matrix=stresses) * 0.006241509125883258
+        )  # * 1 / 160.21766208

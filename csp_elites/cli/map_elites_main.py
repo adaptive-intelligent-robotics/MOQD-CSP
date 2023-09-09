@@ -23,7 +23,7 @@ class HiddenPrints:
     def __enter__(self):
         if self.hide_prints:
             self._original_stdout = sys.stdout
-            sys.stdout = open(os.devnull, 'w')
+            sys.stdout = open(os.devnull, "w")
         else:
             sys.stdout = sys.__stdout__
 
@@ -35,16 +35,27 @@ class HiddenPrints:
             sys.stdout = sys.__stdout__
 
 
-def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False, from_archive_path: Optional[pathlib.Path]= None):
+def main(
+    experiment_parameters: ExperimentParameters,
+    hide_prints: bool = False,
+    from_archive_path: Optional[pathlib.Path] = None,
+):
     with HiddenPrints(hide_prints=hide_prints):
-
         current_time_label = make_current_time_string(with_time=True)
-        experiment_label = \
-            f"{current_time_label}_{experiment_parameters.system_name}_{experiment_parameters.experiment_tag}"
+        experiment_label = f"{current_time_label}_{experiment_parameters.system_name}_{experiment_parameters.experiment_tag}"
 
         print(f"Experiment data is saved in {experiment_label}")
-        alternative_operators = experiment_parameters.cvt_run_parameters["alternative_operators"] if "alternative_operators" in experiment_parameters.cvt_run_parameters.keys() else None
-        learning_rate = experiment_parameters.cvt_run_parameters["dqd_learning_rate"] if "dqd_learning_rate" in experiment_parameters.cvt_run_parameters.keys() else 0.0001
+        alternative_operators = (
+            experiment_parameters.cvt_run_parameters["alternative_operators"]
+            if "alternative_operators"
+            in experiment_parameters.cvt_run_parameters.keys()
+            else None
+        )
+        learning_rate = (
+            experiment_parameters.cvt_run_parameters["dqd_learning_rate"]
+            if "dqd_learning_rate" in experiment_parameters.cvt_run_parameters.keys()
+            else 0.0001
+        )
 
         crystal_system = CrystalSystem(
             atom_numbers_to_optimise=experiment_parameters.blocks,
@@ -58,26 +69,53 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False, f
             learning_rate=learning_rate,
         )
 
-        force_threshold = experiment_parameters.cvt_run_parameters["force_threshold"] if "force_threshold" in experiment_parameters.cvt_run_parameters.keys() else False
-        constrained_qd = experiment_parameters.cvt_run_parameters["constrained_qd"] if "constrained_qd" in experiment_parameters.cvt_run_parameters.keys() else False
+        force_threshold = (
+            experiment_parameters.cvt_run_parameters["force_threshold"]
+            if "force_threshold" in experiment_parameters.cvt_run_parameters.keys()
+            else False
+        )
+        constrained_qd = (
+            experiment_parameters.cvt_run_parameters["constrained_qd"]
+            if "constrained_qd" in experiment_parameters.cvt_run_parameters.keys()
+            else False
+        )
 
-        force_threshold_exp_fmax= experiment_parameters.cvt_run_parameters[
-            "force_threshold_exp_fmax"] if "force_threshold_exp_fmax" in experiment_parameters.cvt_run_parameters.keys() else 1.0
+        force_threshold_exp_fmax = (
+            experiment_parameters.cvt_run_parameters["force_threshold_exp_fmax"]
+            if "force_threshold_exp_fmax"
+            in experiment_parameters.cvt_run_parameters.keys()
+            else 1.0
+        )
 
-        fmax_threshold = experiment_parameters.cvt_run_parameters[
-            "fmax_threshold"] if "fmax_threshold" in experiment_parameters.cvt_run_parameters.keys() else 0.2
+        fmax_threshold = (
+            experiment_parameters.cvt_run_parameters["fmax_threshold"]
+            if "fmax_threshold" in experiment_parameters.cvt_run_parameters.keys()
+            else 0.2
+        )
 
-        normalise_bd = experiment_parameters.cvt_run_parameters["normalise_bd"] if "normalise_bd" in experiment_parameters.cvt_run_parameters.keys() else False
+        normalise_bd = (
+            experiment_parameters.cvt_run_parameters["normalise_bd"]
+            if "normalise_bd" in experiment_parameters.cvt_run_parameters.keys()
+            else False
+        )
 
-
-        compute_gradients = experiment_parameters.cvt_run_parameters["dqd"] if "dqd" in experiment_parameters.cvt_run_parameters.keys() else False
+        compute_gradients = (
+            experiment_parameters.cvt_run_parameters["dqd"]
+            if "dqd" in experiment_parameters.cvt_run_parameters.keys()
+            else False
+        )
         crystal_evaluator = CrystalEvaluator(
             with_force_threshold=force_threshold,
             constrained_qd=constrained_qd,
             fmax_relaxation_convergence=fmax_threshold,
             force_threshold_fmax=force_threshold_exp_fmax,
             compute_gradients=compute_gradients,
-            bd_normalisation=(experiment_parameters.cvt_run_parameters["bd_minimum_values"], experiment_parameters.cvt_run_parameters["bd_maximum_values"]) if normalise_bd else None
+            bd_normalisation=(
+                experiment_parameters.cvt_run_parameters["bd_minimum_values"],
+                experiment_parameters.cvt_run_parameters["bd_maximum_values"],
+            )
+            if normalise_bd
+            else None,
         )
 
         cvt = CVT(
@@ -113,16 +151,20 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False, f
 
         # # Variables setting
 
-
         if experiment_parameters.cvt_run_parameters["normalise_bd"]:
             bd_minimum_values, bd_maximum_values = [0, 0], [1, 1]
         else:
-            bd_minimum_values, bd_maximum_values = experiment_parameters.cvt_run_parameters["bd_minimum_values"], experiment_parameters.cvt_run_parameters["bd_maximum_values"]
+            bd_minimum_values, bd_maximum_values = (
+                experiment_parameters.cvt_run_parameters["bd_minimum_values"],
+                experiment_parameters.cvt_run_parameters["bd_maximum_values"],
+            )
 
         centroid_filename = __centroids_filename(
             k=experiment_parameters.number_of_niches,
             dim=experiment_parameters.n_behavioural_descriptor_dimensions,
-            bd_names=experiment_parameters.cvt_run_parameters["behavioural_descriptors"],
+            bd_names=experiment_parameters.cvt_run_parameters[
+                "behavioural_descriptors"
+            ],
             bd_minimum_values=bd_minimum_values,
             bd_maximum_values=bd_maximum_values,
             formula=experiment_parameters.system_name,
@@ -136,7 +178,7 @@ def main(experiment_parameters: ExperimentParameters, hide_prints: bool=False, f
             fitness_limits=experiment_parameters.fitness_min_max_values,
             save_structure_images=False,
             filter_for_experimental_structures=False,
-            experiment_location=pathlib.Path(__file__).parent.parent.parent
+            experiment_location=pathlib.Path(__file__).parent.parent.parent,
         )
 
         experiment_processor.plot()

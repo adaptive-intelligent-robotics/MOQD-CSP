@@ -9,14 +9,22 @@ def get_all_materials_with_formula(formula: str):
     https://docs.materialsproject.org/downloading-data/using-the-api/querying-data
     """
     with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
-        docs = mpr.summary.search(formula=formula,
-                                  # band_gap=(0.5, 1.0),
-                                  fields=["material_id",
-                                          "band_gap",
-                                          "volume", "lattice", "formation_energy_per_atom", "energy_above_hull",
-                                          "structure", "energy_per_atom", "uncorrected_energy_per_atom",
-                                          "theoretical"
-                                          ])
+        docs = mpr.summary.search(
+            formula=formula,
+            # band_gap=(0.5, 1.0),
+            fields=[
+                "material_id",
+                "band_gap",
+                "volume",
+                "lattice",
+                "formation_energy_per_atom",
+                "energy_above_hull",
+                "structure",
+                "energy_per_atom",
+                "uncorrected_energy_per_atom",
+                "theoretical",
+            ],
+        )
 
     atoms = []
     for material in docs:

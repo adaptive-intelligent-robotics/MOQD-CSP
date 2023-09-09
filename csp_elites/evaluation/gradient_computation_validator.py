@@ -12,11 +12,15 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from csp_elites.crystal.materials_data_model import MaterialProperties
 from csp_elites.parallel_relaxation.structure_optimizer import BatchedStructureOptimizer
 from csp_elites.property_calculators.band_gap_calculator import BandGapCalculator
-from csp_elites.property_calculators.shear_modulus_calculator import ShearModulusCalculator
+from csp_elites.property_calculators.shear_modulus_calculator import (
+    ShearModulusCalculator,
+)
 
 import scienceplots
-plt.style.use('science')
-plt.rcParams['savefig.dpi'] = 300
+
+plt.style.use("science")
+plt.rcParams["savefig.dpi"] = 300
+
 
 class PropertyToCalculatorMatcher:
     property_to_calculator_dictionary = {
@@ -39,7 +43,6 @@ class PropertyToCalculatorMatcher:
         MaterialProperties.ENERGY: "Energy per Atom, eV/Atom",
     }
 
-
     @classmethod
     def get_calculator(cls, property: MaterialProperties):
         return cls.property_to_calculator_dictionary[property]
@@ -48,14 +51,25 @@ class PropertyToCalculatorMatcher:
     def get_ylabel(cls, property: MaterialProperties):
         return cls.property_to_ylabel[property]
 
+
 class GradientComputationValidator:
-    def __init__(self, material_property: MaterialProperties, learning_rate: float = 1e-3):
-        self.calculator = PropertyToCalculatorMatcher.get_calculator(material_property)()
+    def __init__(
+        self, material_property: MaterialProperties, learning_rate: float = 1e-3
+    ):
+        self.calculator = PropertyToCalculatorMatcher.get_calculator(
+            material_property
+        )()
         self.learning_rate = learning_rate
-        self._test_structure_mp_references = ["mp-390", "mp-1840"] # structures have 6,, and 24 atoms respectively
+        self._test_structure_mp_references = [
+            "mp-390",
+            "mp-1840",
+        ]  # structures have 6,, and 24 atoms respectively
         self.property = material_property
-        self.save_directory = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync/validation"
-        self.starting_value= None
+        self.save_directory = (
+            pathlib.Path(__file__).parent.parent.parent
+            / ".experiment.nosync/validation"
+        )
+        self.starting_value = None
 
     def _get_test_structure(self, test_structure_index: int = 0):
         with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
@@ -67,7 +81,9 @@ class GradientComputationValidator:
         atoms.rattle(0.3)
         return AseAtomsAdaptor.get_structure(atoms)
 
-    def _update_atoms_positions_with_gradient(self, structure: Structure, gradient: np.ndarray):
+    def _update_atoms_positions_with_gradient(
+        self, structure: Structure, gradient: np.ndarray
+    ):
         position_change = self.learning_rate * gradient
         atoms = AseAtomsAdaptor.get_atoms(structure)
         atoms.set_positions(atoms.get_positions() + position_change)
@@ -81,7 +97,7 @@ class GradientComputationValidator:
         new_structure = self._update_atoms_positions_with_gradient(structure, gradients)
         return new_structure, value
 
-    def step_for_n_steps(self, structure: Optional[Structure], n_steps: int= 5):
+    def step_for_n_steps(self, structure: Optional[Structure], n_steps: int = 5):
         if structure is None:
             structure = self._get_test_structure()
 
@@ -92,8 +108,13 @@ class GradientComputationValidator:
 
         return values_over_steps
 
-    def plot_values_over_steps(self, values: List[float], label: str, fig: Optional[Axes]=None, ax: Optional[Axes]=None):
-
+    def plot_values_over_steps(
+        self,
+        values: List[float],
+        label: str,
+        fig: Optional[Axes] = None,
+        ax: Optional[Axes] = None,
+    ):
         if ax is None:
             ylabel = PropertyToCalculatorMatcher.get_ylabel(self.property)
             title = ylabel.split(", ")[0]
@@ -115,16 +136,31 @@ class GradientComputationValidator:
             values = self.step_for_n_steps(structure, n_steps=n_steps)
             values_by_structure.append(values)
 
-            fig, ax = self.plot_values_over_steps(np.array(values), label=self._test_structure_mp_references[structure_id], fig=fig, ax=ax)
+            fig, ax = self.plot_values_over_steps(
+                np.array(values),
+                label=self._test_structure_mp_references[structure_id],
+                fig=fig,
+                ax=ax,
+            )
 
         plt.legend()
-        plt.savefig(self.save_directory / f"gradient_stepping_{self.property.value}_lr_{self.learning_rate}.png", format="png")
+        plt.savefig(
+            self.save_directory
+            / f"gradient_stepping_{self.property.value}_lr_{self.learning_rate}.png",
+            format="png",
+        )
 
 
-if __name__ == '__main__':
-     # run this code to plot validation plots for all properties
+if __name__ == "__main__":
+    # run this code to plot validation plots for all properties
     n_steps = 1000
     for learning_rate in [1e-3, 1e-4, 1e-5]:
-        for property in [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS, MaterialProperties.ENERGY]:
-            gradient_validator = GradientComputationValidator(material_property=property, learning_rate=learning_rate)
+        for property in [
+            MaterialProperties.BAND_GAP,
+            MaterialProperties.SHEAR_MODULUS,
+            MaterialProperties.ENERGY,
+        ]:
+            gradient_validator = GradientComputationValidator(
+                material_property=property, learning_rate=learning_rate
+            )
             gradient_validator.loop_for_all_test_structures(n_steps=n_steps)

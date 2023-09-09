@@ -7,17 +7,21 @@ from retrieve_results.report_plot_generator import ReportPlotGenerator
 
 def no_relax(plot_individually=False, exp_1=True):
     report_generator = ReportPlotGenerator(
-        path_to_experiments=pathlib.Path(
-            __file__).parent.parent.parent / ".experiment.nosync/report_data/0_no_relax",
+        path_to_experiments=pathlib.Path(__file__).parent.parent.parent
+        / ".experiment.nosync/report_data/0_no_relax",
         plot_labels=None,
-        title_tag=None
+        title_tag=None,
     )
     if exp_1:
         report_generator.plot_combined_figure_for_report(
             folder_names=[
-                "no_relax_materials", "rattle_no_relax",
+                "no_relax_materials",
+                "rattle_no_relax",
             ],
-            labels=["Materials Mutations", "Rattle Mutation",],
+            labels=[
+                "Materials Mutations",
+                "Rattle Mutation",
+            ],
             title_tag="Effect of Gaussian Noise and Large Number of evaluations",
             filename_tag="200k_evals",
             plot_individually=plot_individually,
@@ -27,9 +31,7 @@ def no_relax(plot_individually=False, exp_1=True):
         )
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     plot_archives = True
     no_relax(plot_individually=False, exp_1=True)
     # if plot_archives:
