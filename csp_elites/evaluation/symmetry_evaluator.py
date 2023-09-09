@@ -7,38 +7,32 @@ from enum import Enum
 from typing import List, Dict, Optional, Tuple, Union
 
 import imageio
-import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from PIL import ImageDraw
 from PIL import Image
+from PIL import ImageDraw
 from ase import Atoms
 from ase.ga.ofp_comparator import OFPComparator
 from ase.spacegroup import get_spacegroup
 from matplotlib import cm
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pymatgen.analysis.structure_matcher import StructureMatcher
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.vis.structure_vtk import StructureVis
-import matplotlib.colors as mcolors
 import scienceplots
-
-from csp_elites.utils.asign_target_values_to_centroids import \
-    reassign_data_from_pkl_to_new_centroids
-from csp_elites.utils.utils import normalise_between_0_and_1
 
 plt.style.use('science')
 plt.rcParams['savefig.dpi'] = 1000
 
 from csp_elites.map_elites.archive import Archive
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
-from csp_elites.utils.plot import load_centroids, get_voronoi_finite_polygons_2d, \
-    load_archive_from_pickle
+from csp_elites.utils.plot import load_centroids, get_voronoi_finite_polygons_2d
 
 
 class SpaceGroups(str, Enum):
@@ -142,7 +136,6 @@ class SymmetryEvaluation:
     def compute_symmetries_from_individuals(
         self, individuals: List[Atoms], archive_indices_to_check: Optional[List[int]] = None,
     ) -> Dict[str, List[int]]:
-        # todo: change to take in archive?
         if archive_indices_to_check is None:
             archive_indices_to_check = range(len(individuals))
 
@@ -257,7 +250,7 @@ class SymmetryEvaluation:
             directory_to_save: pathlib.Path, save_primitive: bool = False, save_visuals: bool = True
     ) -> List[int]:
         if matched_space_group_dict is None:
-            space_group_matching_dict, _ = symmetry_evaluation.find_individuals_with_reference_symmetries(
+            space_group_matching_dict, _ = self.find_individuals_with_reference_symmetries(
                 archive.individuals,
                 None,
             )
@@ -300,7 +293,6 @@ class SymmetryEvaluation:
         self, archive: Archive, indices_to_compare: List[int], directory_to_save: pathlib.Path,
             reference_data_path: Optional[pathlib.Path] = None
     ) -> pd.DataFrame:
-        # reference_data = self._load_reference_data_path(reference_data_path)
         summary_data = []
 
         symmetry_to_material_id_dict = self.make_symmetry_to_material_id_dict()
@@ -486,8 +478,6 @@ class SymmetryEvaluation:
         return summary_dict
 
     def _get_maximum_confidence_for_centroid_id(self, centroid_indices_to_check: np.ndarray, plotting_matches: PlottingMatches):
-        unique, counts = np.unique(plotting_matches.centroid_indices, return_counts=True)
-
         for centroid_id in centroid_indices_to_check:
             confidence_levels_ids = np.argwhere(
                 np.array(plotting_matches.centroid_indices) == centroid_id).reshape(-1)
@@ -534,7 +524,7 @@ class SymmetryEvaluation:
     def gif_centroid_over_time(
         self, experiment_directory_path: pathlib.Path, centroid_filepath: pathlib.Path,
             centroid_index: int,
-        save_primitive: bool = False, number_of_frames_for_gif: int = 50,
+        save_primitive: bool = False,
     ):
         list_of_files = [name for name in os.listdir(f"{experiment_directory_path}") if
                          not os.path.isdir(name)]
@@ -649,7 +639,7 @@ class SymmetryEvaluation:
     y_axis_limits: Optional[Tuple[float, float]] = None,
 
     ) -> Tuple[Optional[Figure], Axes]:
-        """Adapted from wdac plot 2d cvt centroids function"""
+        """Adapted from qdax plot 2d cvt centroids function"""
         num_descriptors = centroids.shape[1]
         if num_descriptors != 2:
             raise NotImplementedError("Grid plot supports 2 descriptors only for now.")
@@ -692,12 +682,6 @@ class SymmetryEvaluation:
         ax.set_xlabel(f"{axis_labels[0]}")
         ax.set_ylabel(f"{axis_labels[1]}")
 
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-
-        cbar = plt.colorbar(mpl.cm.ScalarMappable(cmap=my_cmap), cax=cax)
-        cbar.ax.tick_params(labelsize=mpl.rcParams["font.size"])
-
         if x_axis_limits is not None and y_axis_limits is not None:
             x_tick_labels = np.linspace(x_axis_limits[0], x_axis_limits[1], 6)
             y_tick_labels = np.linspace(y_axis_limits[0], y_axis_limits[1], 6)
@@ -727,7 +711,7 @@ class SymmetryEvaluation:
     x_axis_limits: Optional[Tuple[float, float]] = None,
     y_axis_limits: Optional[Tuple[float, float]] = None,
         ):
-        """Adapted from wdac plot 2d cvt centroids function"""
+        """Adapted from qdax plot 2d cvt centroids function"""
         if centroids_from_archive is None:
             centroids_from_archive = []
 
@@ -823,15 +807,22 @@ class SymmetryEvaluation:
         ax.set_xlabel(f"{axis_labels[0]}")
         ax.set_ylabel(f"{axis_labels[1]}")
 
-        ax.set_title(f"MAP-Elites Grid {plotting_matches.plotting_mode.value}")
+        if plotting_matches.plotting_mode == PlottingMode.ARCHIVE_MATCHES_VIEW:
+            title = "Matches - Archive View"
+        elif plotting_matches.plotting_mode == PlottingMode.MP_REFERENCE_VIEW:
+            title = "Matches - Reference View"
+        else:
+            title = "MAP-Elites Grid"
+
+        ax.set_title(title)
         self.legend_without_duplicate_labels(fig, ax)
-        fig.tight_layout()
+
         ax.set_aspect("equal")
 
         if directory_string is None:
             fig.show()
         else:
-            fig.savefig(f"{directory_string}/{filename}_{plotting_matches.plotting_mode.value}.png", format="png")
+            fig.savefig(f"{directory_string}/{filename}_{plotting_matches.plotting_mode.value}.png", format="png", bbox_inches="tight")
         plt.clf()
         return fig, ax
 
@@ -879,7 +870,6 @@ class SymmetryEvaluation:
             "energy_above_reference": mcolors.CSS4_COLORS["rosybrown"],
             "energy_below_reference": mcolors.CSS4_COLORS["mediumaquamarine"],
             ConfidenceLevels.GOLD.value: mcolors.CSS4_COLORS["mediumpurple"]
-            # ConfidenceLevels.GOLD.value: mcolors.TABLEAU_COLORS["tab:purple"]
         }
 
         label_dict = {
@@ -887,8 +877,6 @@ class SymmetryEvaluation:
             "energy_below_reference": "Energy Below Reference",
             "energy_above_reference": "Energy Above Reference",
             "no_match": "Not Accessed",
-
-            # ConfidenceLevels.GOLD.value: mcolors.TABLEAU_COLORS["tab:purple"]
         }
 
         for i, region in enumerate(regions):
@@ -928,26 +916,25 @@ class SymmetryEvaluation:
             if annotate:
                 ax.annotate(plotting_matches.mp_references[list_index], (centroids[centroid_index, 0], centroids[centroid_index, 1]), fontsize=4)
 
+        self.legend_without_duplicate_labels(fig, ax, list(label_dict.values()))
+        ax.set_xlabel(f"{axis_labels[0]}")
+        ax.set_ylabel(f"{axis_labels[1]}")
+
+        title = "Energy Comparison"
+        ax.set_title(title)
+        ax.set_aspect("equal")
+
+
         if x_axis_limits is not None and y_axis_limits is not None:
             x_tick_labels = np.linspace(x_axis_limits[0], x_axis_limits[1], 6)
             y_tick_labels = np.linspace(y_axis_limits[0], y_axis_limits[1], 6)
             ax.set_xticklabels([np.around(el, 1) for el in x_tick_labels])
             ax.set_yticklabels([np.around(el, 1) for el in y_tick_labels])
 
-        self.legend_without_duplicate_labels(fig, ax, list(label_dict.values()))
-        ax.set_xlabel(f"{axis_labels[0]}")
-        ax.set_ylabel(f"{axis_labels[1]}")
-
-        divider = make_axes_locatable(ax)
-
-        ax.set_title(f"MAP-Elites Grid {plotting_matches.plotting_mode.value}")
-        fig.tight_layout()
-        ax.set_aspect("equal")
-
         if directory_string is None:
             fig.show()
         else:
-            fig.savefig(f"{directory_string}/{filename}_{plotting_matches.plotting_mode.value}.png", format="png")
+            fig.savefig(f"{directory_string}/{filename}_{plotting_matches.plotting_mode.value}.png", format="png", bbox_inches="tight")
         plt.clf()
         return fig, ax
 
@@ -960,79 +947,7 @@ class SymmetryEvaluation:
             if sorting_match_list is None:
                 sorting_match_list = np.array([ConfidenceLevels.get_string(el) for el in list(ConfidenceLevels)]) # todo: get this from ConfidenceLevels Enum
             unique = sorted(unique, key=lambda x: np.argwhere(np.array(sorting_match_list) == x[1]).reshape(-1)[0])
-            ax.legend(*zip(*unique), loc="upper center", bbox_to_anchor=(0.5, -0.2), fontsize="x-small", ncols=2)
+            ax.legend(*zip(*unique), loc="upper center", bbox_to_anchor=(0.5, -0.2), fontsize="small", ncols=2)
         except Exception as e:
             print("legend error")
             pass
-
-if __name__ == '__main__':
-    # experiment_tag = "20230813_01_48_TiO2_200_niches_for benchmark_100_relax_2"
-    experiment_tag = "20230826_22_40_TiO2_200_niches_for_benchmark_100_relax_3"
-    centroiid_tag = "centroids_200_2_band_gap_0_1_shear_modulus_0_1"
-    centroid_path = f"{centroiid_tag}.dat"
-    # target_data_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "target_data" / f"target_data_{centroiid_tag}.csv"
-
-    target_data_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync"\
-                       / "mp_reference_analysis" / f"TiO2_24" / f"TiO2_target_data_{centroiid_tag}.csv"
-
-    archive_number = 5051
-    # structure_number = 53
-    experiment_directory_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / experiment_tag
-    centroid_full_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids" / centroid_path
-    # relaxed_archive_location = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" /experiment_tag / f"relaxed_archive_{archive_number}.pkl"
-    unrelaxed_archive_location = experiment_directory_path / f"archive_{archive_number}.pkl"
-
-    archive = Archive.from_archive(unrelaxed_archive_location, centroid_filepath=centroid_full_path)
-
-    target_archive = Archive.from_reference_csv_path(
-        target_data_path=target_data_path,
-        normalise_bd_values=[[0, 0], [4, 120]],
-        centroids_path=centroid_full_path,
-    )
-
-    symmetry_evaluation = SymmetryEvaluation(reference_data_archive=target_archive)
-    df, individuals_with_matches = symmetry_evaluation.executive_summary_csv(
-        archive,
-        list(range(len(archive.individuals))),
-        experiment_directory_path,
-    )
-
-    plotting_from_archive, plotting_from_mp = symmetry_evaluation.matches_for_plotting(individuals_with_matches)
-
-    symmetry_evaluation.plot_matches_energy_difference(
-        archive=archive,
-        plotting_matches=plotting_from_archive,
-        centroids=load_centroids(centroid_full_path),
-        centroids_from_archive=archive.centroid_ids,
-        minval=[0, 0],
-        maxval=[1, 1],
-        directory_string=None,
-        annotate=False
-    )
-
-
-    # symmetry_evaluation.plot_matches_mapped_to_references(
-    #     plotting_matches=plotting_from_mp,
-    #     centroids=load_centroids(centroid_full_path),
-    #     centroids_from_archive=archive.centroid_ids,
-    #     minval=[0, 0],
-    #     maxval=[1, 1],
-    #     directory_string=None,
-    # )
-    #
-    #
-    symmetry_evaluation.plot_matches_mapped_to_references(
-        plotting_matches=plotting_from_archive,
-        centroids=load_centroids(centroid_full_path),
-        centroids_from_archive=archive.centroid_ids,
-        minval=[0, 0],
-        maxval=[1, 1],
-        directory_string=None,
-    )
-
-
-    # symmetry_evaluation.executive_summary_csv(experiment_directory_path / "ind_top_summary_statistics.csv")
-    print()
-    # symmetry_evaluation.gif_centroid_over_time(
-    #     experiment_directory_path=experiment_directory_path, centroid_filepath=centroid_full_path, centroid_index=85,
-    # )

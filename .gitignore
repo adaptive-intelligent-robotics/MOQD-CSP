@@ -27,3 +27,5 @@ configs/0828
 configs/0827
 /configs
 /bin
+
+/.configs_copy.nosync

@@ -1,12 +1,11 @@
 from typing import Optional, Tuple
 
-import dgl
 import matgl
 import torch
 from matgl.ext.pymatgen import Structure2Graph
+from matgl.graph.compute import compute_pair_vector_and_distance
 from mp_api.client import MPRester
 from pymatgen.core import Structure
-from matgl.graph.compute import compute_pair_vector_and_distance
 
 from csp_elites.utils.utils import normalise_between_0_and_1
 
@@ -69,7 +68,6 @@ class BandGapCalculator:
         )[0].detach().numpy()
 
         model_output = model_output.detach()
-        # model_output_converted = self.model_wrapper.transformer.inverse_transform(model_output)
         return model_output, gradient_wrt_positions
 
 

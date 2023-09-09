@@ -5,8 +5,6 @@ from math import isnan
 
 import pandas as pd
 
-from csp_elites.utils.experiment_parameters import ExperimentParameters
-
 class JobsEnum(Enum):
     MEDIUM = "hpc_template_medium.pbs"
     THROUGHPUT_30_MEMORY = "hpc_template.pbs"

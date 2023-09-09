@@ -68,14 +68,6 @@ if __name__ == '__main__':
                             except ValueError:
                                 print(f"problem with plotting folder {folder}")
                                 continue
-                        # if not symmetry_summary_done:
-                        #     try:
-                        #         experiment_processor.process_symmetry()
-                        #     except ValueError:
-                        #         print(f"problem with plotting folder {folder}")
             except Exception as e:
                 print(f"{traceback.format_exc()}")
                 continue
-
-
-        print(manual_check)

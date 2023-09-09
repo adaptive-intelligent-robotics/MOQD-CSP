@@ -1,8 +1,0 @@
-{
-    "remove_energy_model": false,
-    "remove_band_gap_model": false,
-    "remove_shear_model": true,
-    "no_check_population_to_kill": false,
-    "no_mutation": false,
-    "label": "no_shear"
-}

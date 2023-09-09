@@ -1,40 +1,11 @@
-#| This file is a part of the pymap_elites framework.
-#| Copyright 2019, INRIA
-#| Main contributor(s):
+#| This file is based on the implementation map-elites implementation pymap_elites repo by resibots team https://github.com/resibots/pymap_elites
 #| Jean-Baptiste Mouret, jean-baptiste.mouret@inria.fr
 #| Eloise Dalin , eloise.dalin@inria.fr
 #| Pierre Desreumaux , pierre.desreumaux@inria.fr
-#|
-#|
 #| **Main paper**: Mouret JB, Clune J. Illuminating search spaces by
 #| mapping elites. arXiv preprint arXiv:1504.04909. 2015 Apr 20.
-#|
-#| This software is governed by the CeCILL license under French law
-#| and abiding by the rules of distribution of free software.  You
-#| can use, modify and/ or redistribute the software under the terms
-#| of the CeCILL license as circulated by CEA, CNRS and INRIA at the
-#| following URL "http://www.cecill.info".
-#|
-#| As a counterpart to the access to the source code and rights to
-#| copy, modify and redistribute granted by the license, users are
-#| provided only with a limited warranty and the software's author,
-#| the holder of the economic rights, and the successive licensors
-#| have only limited liability.
-#|
-#| In this respect, the user's attention is drawn to the risks
-#| associated with loading, using, modifying and/or developing or
-#| reproducing the software by the user in light of its specific
-#| status of free software, that may mean that it is complicated to
-#| manipulate, and that also therefore means that it is reserved for
-#| developers and experienced professionals having in-depth computer
-#| knowledge. Users are therefore encouraged to load and test the
-#| software's suitability as regards their requirements in conditions
-#| enabling the security of their systems and/or data to be ensured
-#| and, more generally, to use and operate it in the same conditions
-#| as regards security.
-#|
-#| The fact that you are presently reading this means that you have
-#| had knowledge of the CeCILL license and that you accept its terms.
+#
+
 import pathlib
 import pickle
 from datetime import date, datetime
@@ -98,7 +69,6 @@ def cvt(k, number_of_bd_dimensions, samples, bd_minimum_values, bd_maximum_value
             return np.loadtxt(f"{file_location}/{fname}")
     # otherwise, compute cvt
     print("Computing CVT (this can take a while...):", fname)
-
 
     bd_dim_1 = np.random.uniform(bd_minimum_values[0], bd_maximum_values[0], size=(samples, 1))
     bd_dim_2 = np.random.uniform(bd_minimum_values[1], bd_maximum_values[1], size=(samples, 1))
@@ -170,11 +140,6 @@ def evaluate_old(to_evaluate):
     else:
         return Species(z, desc, fit)
 
-
-# evaluate a single vector (x) with a function f and return a species
-# t = vector, function
-# todo: @jit(cache=True)
-# @jit
 def evaluate(z, cellbounds, behavioural_descriptors, n_relaxation_steps, f) -> Optional[Species]:
     really_relax = True
     z, fit, desc, kill = f(z, cellbounds, really_relax, behavioural_descriptors, n_relaxation_steps)
@@ -193,7 +158,6 @@ def make_current_time_string(with_time: bool = True):
     today = date.today().strftime("%Y%m%d")
     time_now = datetime.now().strftime("%H_%M") if with_time else ""
     return f"{today}_{time_now}"
-
 
 
 def evaluate_parallel(to_evaluate) -> List[Optional[Species]]:

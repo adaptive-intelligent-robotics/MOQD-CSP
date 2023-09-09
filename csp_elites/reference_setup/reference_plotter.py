@@ -77,6 +77,7 @@ class ReferencePlotter:
                          textcolors=("black", "white"),
                          threshold=None, **textkw):
         """
+        Taken from matplotlib tutorial
         A function to annotate a heatmap.
 
         Parameters

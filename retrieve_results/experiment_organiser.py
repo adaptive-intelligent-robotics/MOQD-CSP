@@ -155,7 +155,6 @@ class ExperimentOrganiser:
         df.to_csv(self.experiment_directory_path.parent / "evaluations_per_folder.csv")
         pass
 
-
 def load_config_list_into_csv(date: str):
     organiser = ExperimentOrganiser()
     _, config_for_csv = organiser.get_config_data(date=date)
@@ -172,10 +171,3 @@ def load_config_list_into_csv(date: str):
     # today = date.today()
     df.to_csv(
         pathlib.Path(__file__).parent.parent / ".experiment.nosync" / f"{date}_list_of_configs_no_exp_mapping.csv")
-
-
-if __name__ == '__main__':
-    experiment_organiser = ExperimentOrganiser()
-    experiment_organiser.csv_with_archive_count(["0826", "0828", "0829", "0830", "0831", "0901", "0902"])
-
-    # load_config_list_into_csv("0826")

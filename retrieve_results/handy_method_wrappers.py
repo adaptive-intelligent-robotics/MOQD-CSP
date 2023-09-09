@@ -23,7 +23,6 @@ def plot_metrics_for_one_folder(folder_name: str, annotate: bool = True,
     centroid_name = experiment_organiser.get_centroid_name(folder_name)
 
     formula = experiment_organiser.get_formula_from_folder_name(folder_name)
-    # experiment_tag = experiment_folder.split(f"{formula}_")[1]
     experiment_tag = folder_name[15 + len(formula) + 1:]
 
     config_match_index = np.argwhere(np.array(experiment_tags_list) == experiment_tag).reshape(-1)
@@ -43,7 +42,7 @@ def plot_metrics_for_one_folder(folder_name: str, annotate: bool = True,
 
 
 
-def update_configs_csv():
+def update_configs_csv(path_to_strip: str = "/Users/marta/Documents/MSc Artificial Intelligence/Thesis/csp-elites/configs/"):
     path_to_configs = pathlib.Path(__file__).parent.parent / "configs"
 
     sub_folders = [name for name in os.listdir(f"{path_to_configs}")
@@ -56,9 +55,7 @@ def update_configs_csv():
                             for o in os.listdir(path) if os.path.isfile(os.path.join(path,o)) and (".pbs" not in o)(".sh" not in o)]
         all_configs += new_configs
 
-
-    # config_names = [str(config.name.rstrip(".json")) for config in all_configs]
-    config_names = [config.lstrip("/Users/marta/Documents/MSc Artificial Intelligence/Thesis/csp-elites/configs/").rstrip(".json") for config in all_configs]
+    config_names = [config.lstrip(path_to_strip).rstrip(".json") for config in all_configs]
 
     data = {}
 

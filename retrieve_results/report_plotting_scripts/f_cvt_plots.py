@@ -21,5 +21,8 @@ if __name__ == '__main__':
             title_tag=None,
         )
         report_generator.plot_cvt_and_symmetry(
-            override_fitness_values=fitness_values[i], force_replot=False, all_sub_experiments=True, plot_cvt=False,
+            override_fitness_values=fitness_values[i], force_replot=False, all_sub_experiments=False, plot_cvt=False,
                                                experiment_list=["benchmark"])
+
+
+# 20230830_01_45_TiO2_200_niches_for_benchmark_100_relax_2

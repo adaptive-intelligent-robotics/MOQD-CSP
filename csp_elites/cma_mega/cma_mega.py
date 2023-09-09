@@ -11,7 +11,7 @@ from sklearn.neighbors import KDTree
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
 from csp_elites.map_elites.elites_utils import cvt, write_centroids, make_experiment_folder, \
-    Species, add_to_archive, save_archive
+    add_to_archive, save_archive
 
 
 class CMAMEGA:
@@ -106,6 +106,7 @@ class CMAMEGA:
                       run_parameters,
                       experiment_label,
                       ):
+        """This function follows the algorithm implemented within pyribs."""
         self.initialise_starting_parameters(number_of_niches,maximum_evaluations, run_parameters, experiment_label)
         print("hello cma")
         solution_theta = self.crystal_system.create_one_individual(self.configuration_counter)
@@ -270,6 +271,8 @@ class CMAMEGA:
 
     def _check_restart(self, num_parents):
         """Emitter-side checks for restarting the optimizer.
+
+        Function copied from pyribs.
 
         The optimizer also has its own checks.
 

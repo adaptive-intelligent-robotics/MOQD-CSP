@@ -11,7 +11,7 @@ from mp_api.client import MPRester
 from pymatgen.io.ase import AseAtomsAdaptor
 from tqdm import tqdm
 
-from csp_elites.parallel_relaxation.structure_optimizer import MultiprocessOptimizer
+from csp_elites.parallel_relaxation.structure_optimizer import BatchedStructureOptimizer
 
 if __name__ == '__main__':
     with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     atoms_to_test = copy.deepcopy(atoms_for_ref)
     converted_structure = AseAtomsAdaptor.get_structure(atoms_for_ref)
 
-    optimizer = MultiprocessOptimizer()
+    optimizer = BatchedStructureOptimizer()
     optimizer_ref = StructOptimizer()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     optimizer_ref.calculator.model = CHGNet.load().to(device)

@@ -3,17 +3,16 @@ from typing import List
 import numpy as np
 from ase import Atoms
 from ase.ga.offspring_creator import OffspringCreator
-from ase.ga.utilities import atoms_too_close, atoms_too_close_two_sets, closest_distances_generator
-from chgnet.model import CHGNetCalculator
-from mp_api.client import MPRester
-from pymatgen.io.ase import AseAtomsAdaptor
+from ase.ga.utilities import atoms_too_close, atoms_too_close_two_sets
 
 from csp_elites.map_elites.elites_utils import Species
-from csp_elites.mutations.omg_mega_gradient_mutation import DQDMutationOMGMEGA
 
 
 class ForceMutation(OffspringCreator):
-    """An implementation of the rattle mutation as described in:
+    """This implementation is based on the Rattle mutation in ase.
+    Rattle docstring below:
+
+    An implementation of the rattle mutation as described in:
 
     R.L. Johnston Dalton Transactions, Vol. 22,
     No. 22. (2003), pp. 4193-4207
@@ -40,8 +39,6 @@ class ForceMutation(OffspringCreator):
     rng: Random number generator
         By default numpy.random.
     """
-    # def __init__(self, test_dist_to_slab=True, use_tags=False,
-    #              verbose=False, rng=np.random):
     def __init__(self, blmin, n_top, simple: bool = False,
                  learning_rate: float = 0.01, test_dist_to_slab=True, use_tags=False,
                  rattle_prop=0.4,
@@ -52,9 +49,8 @@ class ForceMutation(OffspringCreator):
         self.test_dist_to_slab = test_dist_to_slab
         self.use_tags = use_tags
 
-        self.descriptor = 'DQDMutation'
+        self.descriptor = 'Force Mutation'
         self.min_inputs = 1
-        # self.model = CHGNet.load()
         self.learning_rate = learning_rate
         self.rattle_prop = rattle_prop
         self.simple = simple
@@ -65,7 +61,7 @@ class ForceMutation(OffspringCreator):
 
         indi = self.mutate(f)
         if indi is None:
-            return indi, 'mutation: DQD rattle'
+            return indi, 'mutation: Force Mutation'
 
         indi = self.initialize_individual(f, indi)
 
@@ -89,7 +85,6 @@ class ForceMutation(OffspringCreator):
         num = atoms.get_atomic_numbers()
         cell = atoms.get_cell()
         pbc = atoms.get_pbc()
-        # st = 2. * self.rattle_strength
         self.counter += 1
         if self.simple:
             pos = pos_ref.copy()

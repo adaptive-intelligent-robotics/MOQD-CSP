@@ -24,6 +24,24 @@ class ExperimentParameters:
     fitness_min_max_values: []
     fitler_comparison_data_for_n_atoms: Optional[int]
     start_generator: StartGenerators
+    """ Parameter explanations
+        system_name: str - formula of your system
+        blocks: List[int] - list of integers of length number of atoms, each atom is represented by its elemnt number
+        volume: int - intiial volume of unit cell. 
+        ratio_of_covalent_radii: float - ratio to compute the minimum allowed distance between atom centres
+        splits: Dict[Tuple[int], int] - unit cell splits required for random structure generator
+        cellbounds: CellBounds - limits for optimisation 
+        operator_probabilities: List[float] - if using ase operators, what probailities to set. check CrystalSystem for order
+        n_behavioural_descriptor_dimensions: int - number of BDs
+        number_of_niches: int - number of centroids in map
+        maximum_evaluations: int - maximum number of evaluation s in the qd optimisation 
+        cvt_run_parameters: Dict[str, Any] - dictionary explained in detail in default_cvt_run_parameters
+        experiment_tag: str - tag to add to the experiment folder name
+        fitness_min_max_values: [] - minimum values of fitness, for plotting
+        fitler_comparison_data_for_n_atoms: Optional[int] - maximum number of atoms for reference structures for plotting
+        start_generator: StartGenerators - type of start generator (random / pyxtal)
+    """
+
 
     @classmethod
     def generate_default_to_populate(cls):
@@ -67,20 +85,34 @@ class ExperimentParameters:
                 # min/max of parameters
                 "bd_minimum_values": (0, 0),
                 "bd_maximum_values": (100, 120),
-                "behavioural_descriptors": [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS],
+                "behavioural_descriptors": [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS], # currently only this combination is handled natively
+                # number of relaxation for lal individuals
                 "number_of_relaxation_steps": 0,
+                # if seeding is used, the maximum number of atoms in structures to use
                 "filter_starting_Structures": 24,
+                # whether to add reference structures into the search
                 "seed": False,
+                # whether to apply force threshold
                 "force_threshold": True,
+                # value of force threshold
                 "force_threshold_exp_fmax": 2.0,
+                # whether to use constrained QD - currently deprecated
                 "constrained_qd": False,
+                # relax generated individuals by 100 steps every n generations - not reported
                 "relax_every_n_generations": 0,
+                # list of operators implemented in this work and their probabilities, for list of operators consult CrystalSystem
                 "alternative_operators": [("dqd", 10)],
+                # relaxes whole archive every n generation, doesnt relax whole archive if set to 0
                 "relax_archive_every_n_generations": 0,
+                # if whole archive is being relaxed
                 "relax_archive_every_n_generations_n_relaxation_steps": 0,
-                "fmax_threshold": 0.4,
+                # fmax threshold for fire algorithm
+                "fmax_threshold": 0.2,
+                # whther to compute gradients, MUST BE TRUE IF GRADIENT OPERATORS ARE USED
                 "dqd": True,
-                "dqd_learning_rate": 0.0001,
+                # learning rate for OMG MEGa mutation operator
+                "dqd_learning_rate": 1,
+                # CMA-MEGA parameters
                 "cma_learning_rate": 1,
                 "cma_sigma_0": 1
             }

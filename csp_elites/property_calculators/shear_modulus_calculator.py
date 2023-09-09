@@ -2,18 +2,19 @@ from typing import Optional, Tuple, List
 
 import dgl
 import numpy as np
+import tensorflow as tf
 import torch
 # from matgl.config import DEFAULT_ELEMENT_TYPES
 from matgl.ext.pymatgen import Structure2Graph
 from matgl.graph.compute import compute_pair_vector_and_distance
 from megnet.utils.models import load_model as megnet_load_model
-import tensorflow as tf
 from mp_api.client import MPRester
 from pymatgen.core import Structure
 
 from csp_elites.property_calculators.bond_converter import BondConverterTorch
 from csp_elites.utils.utils import normalise_between_0_and_1
 
+# copying default element types from matgl config because there was a weird bug. Should be able to remove this and replace with import
 DEFAULT_ELEMENT_TYPES = (
     "H",
     "He",
@@ -193,7 +194,7 @@ class ShearModulusCalculator:
     def _compute_pair_vector_and_distance(self, g: dgl.DGLGraph):
         """Calculate bond vectors and distances using dgl graphs.
 
-        This function mirrors XXX from matgl
+        This function mirrors compute_pair_and_distances from matgl
 
         Args:
         g: DGL graph

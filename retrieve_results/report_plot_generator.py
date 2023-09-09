@@ -260,7 +260,7 @@ class ReportPlotGenerator:
         unique = sorted(unique,
                         key=lambda x: np.argwhere(np.array(labels) == x[1]).reshape(-1)[0])
         ax[1].legend(*zip(*unique), loc="upper center", bbox_to_anchor=(0.5, -0.4),
-                     fontsize="small", ncols=min(4, len(labels) +int(reference_path is not None)))
+                     fontsize="x-small", ncols=min(4, len(labels) +int(reference_path is not None)))
 
         fig.tight_layout()
         plt.subplots_adjust(wspace=0.3)
@@ -276,7 +276,7 @@ class ReportPlotGenerator:
             handles, labels = ax.get_legend_handles_labels()
             unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
             unique = sorted(unique, key=lambda x: np.argwhere(np.array(sorting_match_list) == x[1]).reshape(-1)[0])
-            ax.legend(*zip(*unique), loc="upper center", bbox_to_anchor=(0.5, -0.2), fontsize="small", ncols=2)
+            ax.legend(*zip(*unique), loc="upper center", bbox_to_anchor=(0.5, -0.2), fontsize="x-small", ncols=2)
         except Exception as e:
             print("legend error")
             pass
@@ -307,7 +307,7 @@ class ReportPlotGenerator:
                 if plot_cvt:
                     experiment_processor.plot(annotate=annotate, force_replot=force_replot)
 
-                path_to_group= self._path_to_all_experiments / experiment /sub_experiment /"number_of_groups.json"
+                path_to_group = self._path_to_all_experiments / experiment /sub_experiment /"number_of_groups.json"
                 if path_to_group.exists():
                     continue
                 else:
@@ -414,9 +414,6 @@ class ReportPlotGenerator:
                               "count": "ground_state"})
 
             df3.to_csv(self._path_to_all_experiments / experiment / "match_statistics.csv")
-
-
-
 
 
 

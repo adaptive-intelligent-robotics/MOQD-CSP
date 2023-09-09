@@ -7,6 +7,7 @@ class OverridenFire:
     def __init__(self, dt=0.1,dtmax=1.0, Nmin=5,
                  finc=1.1, fdec=0.5,
                  astart=0.1, fa=0.99, a=0.1):
+        """Vectorised implementation of default parameter of FIRE class in ase."""
 
         self.dt = dt
         self.Nsteps = 0

@@ -13,7 +13,7 @@ from csp_elites.parallel_relaxation.fire import OverridenFire
 from csp_elites.parallel_relaxation.unit_cell_filter import AtomsFilterForRelaxation
 
 
-class MultiprocessOptimizer:
+class BatchedStructureOptimizer:
     def __init__(self, batch_size=10, fmax_threshold: float = 0.2):
         self.overriden_optimizer = OverridenFire()
         self.atoms_filter = AtomsFilterForRelaxation()
@@ -37,8 +37,6 @@ class MultiprocessOptimizer:
     def relax(self, list_of_atoms: List[Atoms], n_relaxation_steps: int, verbose: bool = False):
         self.reset_timings()
         all_relaxed = False
-        # for i in range(len(list_of_atoms)):
-        #     list_of_atoms[i].calc = CHGNetCalculator()
         v = None
         Nsteps = 0
         dt = np.full(len(list_of_atoms), 0.1)
@@ -49,7 +47,7 @@ class MultiprocessOptimizer:
         converged_atoms = list(np.zeros(len(list_of_atoms)))
         atom_list_indices = list(np.arange(len(list_of_atoms)))
         original_cells = np.array([atoms.cell.array for atoms in list_of_atoms])
-        # trajectories = defaultdict(list)
+
         while not all_relaxed:
             forces, energies, stresses = self._evaluate_list_of_atoms(list_of_atoms)
 
@@ -109,8 +107,6 @@ class MultiprocessOptimizer:
                     original_cells = np.array([el for i, el in enumerate(original_cells) if
                                      i not in converged_atoms_indices])
 
-                    # list_of_atoms, atom_list_indices, v, dt, a, n_relax_steps, original_cells = list_of_atoms_1, atom_list_indices_1, v_1, dt_1, a_1, n_relax_steps_1, original_cells_1
-
                 Nsteps += 1
                 all_relaxed = self._end_relaxation(Nsteps, n_relaxation_steps, converged_mask)
                 if all_relaxed:
@@ -121,10 +117,6 @@ class MultiprocessOptimizer:
                             converged_atoms[atom_index] = atom_object
                     list_of_atoms = converged_atoms
 
-
-            # trajectories["forces"].append(forces)
-            # trajectories["energies"].append(energies)
-            # trajectories["stresses"].append(stresses)
 
         final_structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
         if n_relaxation_steps != 0:
@@ -182,7 +174,6 @@ class MultiprocessOptimizer:
             return_crystal_feas=False,
             batch_size=self.batch_size,
         )
-        # predictions = self.model.predict_structure(list_of_structures, batch_size=10)
         if isinstance(predictions, dict):
             predictions = [predictions]
 
@@ -192,7 +183,6 @@ class MultiprocessOptimizer:
 
         if hotfix_graphs:
             print("hotfix graph")
-            # todo: make this dynamic
             for i in indices_to_update:
                 forces = np.insert(forces, i, np.full((24,3), 100), axis=0)
                 energies = np.insert(energies, i, 10000)
@@ -207,10 +197,8 @@ class MultiprocessOptimizer:
             trajectories[i].stresses.append(stresses)
         return trajectories
 
-
     def _end_relaxation(self, nsteps: int, max_steps: int, forces_mask:np.ndarray):
         return (nsteps > max_steps) or forces_mask.all()
-
 
     def compute(self, structure, compute_gradients: bool = False):
         """This is a utility method for testing of gradients and should not be used beyond this."""

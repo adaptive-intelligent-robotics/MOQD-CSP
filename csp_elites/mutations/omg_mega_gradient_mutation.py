@@ -9,7 +9,8 @@ from csp_elites.map_elites.elites_utils import Species
 
 
 class DQDMutationOMGMEGA(OffspringCreator):
-    """
+    """This implementation is based on the Rattle mutation in ase.
+    Rattle docstring below:
 
     Parameters:
 
@@ -33,8 +34,6 @@ class DQDMutationOMGMEGA(OffspringCreator):
     rng: Random number generator
         By default numpy.random.
     """
-    # def __init__(self, test_dist_to_slab=True, use_tags=False,
-    #              verbose=False, rng=np.random):
     def __init__(self, blmin, n_top, force_only: bool = False, simple: bool = True, learning_rate: float = 0.01, test_dist_to_slab=True, use_tags=False,
                  rattle_prop=0.4,
                  verbose=False, rng=np.random):
@@ -91,7 +90,6 @@ class DQDMutationOMGMEGA(OffspringCreator):
             atoms.set_positions(pos)
             mutant = atoms
         else:
-            print("materials")
             N = len(atoms)
             slab = atoms[:len(atoms) - N]
             atoms = atoms[-N:]
@@ -107,7 +105,6 @@ class DQDMutationOMGMEGA(OffspringCreator):
                 count += 1
                 pos = pos_ref.copy()
                 if self.force_only:
-                    print("force")
                     coeficients = np.random.default_rng().normal(loc=0.0, scale=self.learning_rate,
                                                                  size=(1)).reshape((1, 1, 1))
                     gradient_mutation_amount = coeficients * all_gradients_normalised[0]

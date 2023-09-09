@@ -109,9 +109,6 @@ class ReferenceAnalyser:
         band_gap_limits = np.array([band_gaps.min(), band_gaps.max()], dtype=float)
         shear_moduli_limits = np.array([shear_moduli.min(), shear_moduli.max()], dtype=float)
 
-        # band_gap_limits = np.array([np.floor(band_gaps.min()) * 0.9, np.ceil(band_gaps.max() * 1.1)], dtype=int)
-        # shear_moduli_limits = np.array([np.floor(shear_moduli.min()) * 0.9, np.ceil(shear_moduli.max()) * 1.1], dtype=int)
-
         band_gap_min_max_diff = band_gap_limits[1] - band_gap_limits[0]
         shear_moduli_min_max_diff = shear_moduli_limits[1] - shear_moduli_limits[0]
         if not np.abs(shear_moduli_min_max_diff - band_gap_min_max_diff) < 0.2 * max([shear_moduli_min_max_diff, band_gap_min_max_diff]):

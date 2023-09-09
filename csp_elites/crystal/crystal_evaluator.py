@@ -10,7 +10,7 @@ from pymatgen.core import Structure
 
 from csp_elites.crystal.materials_data_model import BandGapEnum
 from csp_elites.map_elites.elites_utils import Species
-from csp_elites.parallel_relaxation.structure_optimizer import MultiprocessOptimizer
+from csp_elites.parallel_relaxation.structure_optimizer import BatchedStructureOptimizer
 from csp_elites.property_calculators.band_gap_calculator import BandGapCalculator
 from csp_elites.property_calculators.shear_modulus_calculator import ShearModulusCalculator
 warnings.simplefilter("ignore")
@@ -30,10 +30,9 @@ class CrystalEvaluator:
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        self.relaxer = MultiprocessOptimizer(
+        self.relaxer = BatchedStructureOptimizer(
             fmax_threshold=fmax_relaxation_convergence
         )
-        # self.relaxer.model.to(device)
         if bd_normalisation is not None:
             band_gap_normalisation = (bd_normalisation[0][0], bd_normalisation[1][0])
             shear_modulus_normalisation = (bd_normalisation[0][1], bd_normalisation[1][1])
@@ -41,10 +40,7 @@ class CrystalEvaluator:
             band_gap_normalisation, shear_modulus_normalisation = None, None
 
         self.band_gap_calculator = BandGapCalculator(band_gap_normalisation)
-        # try:
-        #     self.band_gap_calculator.model_wrapper.to(device)
-        # except RuntimeError:
-        #     print("Band gap model not on gpu")
+
         self.shear_modulus_calculator = ShearModulusCalculator(shear_modulus_normalisation)
         self.fmax_relaxation_convergence = fmax_relaxation_convergence
         self.with_force_threshold = with_force_threshold
@@ -95,7 +91,6 @@ class CrystalEvaluator:
         if self.constrained_qd:
             distance_to_bg = self.ground_state_data["band_gap"] - np.array(band_gaps)
             distance_to_shear = self.ground_state_data["shear_modulus"] - np.array(shear_moduli)
-            # descriptors = (distance_to_bg, distance_to_shear)
             forces = np.array([relaxation_results[i]["trajectory"]["forces"] for i in
                                range(len(relaxation_results))])
             distance_to_0_force_normalised_to_100 = self.compute_fmax(forces) * 100 # TODO: change this normalisation
@@ -137,7 +132,6 @@ class CrystalEvaluator:
         return species_list
 
     def _batch_band_gap_compute(self, list_of_structures: List[Structure]):
-        # structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms]
         band_gaps = []
         all_gradients = []
         for i in range(len(list_of_structures)):
@@ -172,10 +166,6 @@ class CrystalEvaluator:
     def _batch_shear_modulus_compute(self, list_of_structures: List[Structure]):
         shear_moduli = []
         all_gradients = []
-        # if not self.compute_gradients:
-        #     shear_moduli = self.shear_modulus_calculator.compute_no_grad_batch(list_of_structures)
-        #     gradients = None
-        # else:
         for structure in list_of_structures:
             shear_modulus, gradients = self.shear_modulus_calculator.compute(
                 structure, compute_gradients=self.compute_gradients,

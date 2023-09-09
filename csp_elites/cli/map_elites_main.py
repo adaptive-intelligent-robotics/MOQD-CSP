@@ -1,4 +1,3 @@
-import os
 import json
 import os
 import pathlib
@@ -7,17 +6,12 @@ import time
 from dataclasses import asdict
 from typing import Optional
 
-import psutil
-import torch
-from ase.ga.ofp_comparator import OFPComparator
-
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
 from csp_elites.map_elites.cvt_csp import CVT
 from csp_elites.map_elites.elites_utils import __centroids_filename
 from csp_elites.map_elites.elites_utils import make_current_time_string
 from csp_elites.utils.experiment_parameters import ExperimentParameters
-from csp_elites.utils.plot import load_centroids
 from retrieve_results.experiment_processing import ExperimentProcessor
 
 

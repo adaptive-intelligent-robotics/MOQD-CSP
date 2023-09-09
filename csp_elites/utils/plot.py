@@ -113,7 +113,8 @@ def plot_2d_map_elites_repertoire_marta(
     y_axis_limits: Optional[Tuple[float, float]] = None,
 
 ) -> Tuple[Optional[Figure], Axes]:
-    """Plot a visual representation of a 2d map elites repertoire.
+    """Function adapted from QDAX
+    Plot a visual representation of a 2d map elites repertoire.
 
     function is very specific to repertoires.
 
@@ -422,101 +423,11 @@ def plot_all_maps_in_archive(
                 y_axis_limits=(experiment_parameters.cvt_run_parameters["bd_minimum_values"][1], experiment_parameters.cvt_run_parameters["bd_maximum_values"][1])
             )
 
-if __name__ == '__main__':
-    # centroid_filename = "centroids_200_2_band_gap_0_100_shear_modulus_0_100.dat"
-    # centroids_path = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids" / centroid_filename
-
-    # centroids = load_centroids(centroids_path)
-    # plot_numbered_centroids(centroids=centroids,
-    #                         minval=[0, 0],
-    #                         maxval=[100, 120],
-    #                         )
-
-    archive_number = 5011
-    directory_string = pathlib.Path(
-        __file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "20230813_23_55_TiO2_constrained_qd_bg_shear"
-
-    # a = [name for name in os.listdir(f"{directory_string}") if
-    #  not os.path.isdir(name)]
-
-    # Variables setting
-    archive_filename = directory_string / f"archive_{archive_number}.pkl"
-    # centroid_filename = pathlib.Path(__file__).parent.parent.parent / "experiments" / "centroids"/ "centroids_200_2_constraint_band_gap_-60_30_constraint_shear_-70_50.dat"
-    centroid_filename = pathlib.Path(
-        __file__).parent.parent.parent / ".experiment.nosync" / "experiments" / "centroids"/ "centroids_200_2_constraint_band_gap_-60_30_constraint_shear_-70_50.dat"
-    reassign_centroids = True
-    comparison_data = pathlib.Path(
-        __file__).parent.parent.parent / ".experiment.nosync/mp_reference_analysis/TiO2_24/TiO2_band_gap_shear_modulus.pkl"
-    # filename_for_save = f"cvt_plot_{archive_number}"
-    filename_for_save = None
-    # fitness_plotting_filename = "TiO2_dat.dat"  # TODO: get fitness from the right place - is this it
-    descriptor_minimum_values = np.array([-60, -70])
-    descriptor_maximum_values = np.array([30, 50])
-    fitness_min_max_values = (8, 9.5)
-    target_centroids = None
-
-    # ToDo: Pass target centroids in better
-    # target_centroids = compute_centroids_for_target_solutions(
-    #     centroids_file=centroid_filename,
-    #     target_data_file=comparison_data,
-    #     filter_for_number_of_atoms=24
-    # )
-
-    comparison_data_packed = load_archive_from_pickle(comparison_data)
-    target_centroids = reassign_data_from_pkl_to_new_centroids(
-        centroids_file=centroid_filename,
-        target_data=comparison_data_packed,
-        filter_for_number_of_atoms=24,
-        normalise_bd_values=None
-    )
-
-    # with open(archive_filename, "rb") as file:
-    #     fitnesses, centroids, descriptors, individuals = pickle.load(file)
-
-    fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(archive_filename)
-    all_centroids = load_centroids(centroid_filename)
-    kdt = KDTree(all_centroids, leaf_size=30, metric='euclidean')
-
-    if reassign_centroids:
-        centroids = []
-        for i in range(len(fitnesses)):
-            niche_index = kdt.query([(descriptors[i][0], descriptors[i][1])], k=1)[1][0][0]
-            niche = kdt.data[niche_index]
-            n = make_hashable(niche)
-            centroids.append(n)
-
-
-    # plot_fitness_from_file(fitness_plotting_filename)
-
-    fitnesses_for_plotting, descriptors_for_plotting = convert_fitness_and_descriptors_to_plotting_format(
-        all_centroids=all_centroids,
-        centroids_from_archive=centroids,
-        fitnesses_from_archive=fitnesses,
-        descriptors_from_archive=descriptors,
-    )
-    plot_2d_map_elites_repertoire_marta(
-        centroids=all_centroids,
-        repertoire_fitnesses=fitnesses_for_plotting,
-        minval=descriptor_minimum_values,
-        maxval=descriptor_maximum_values,
-        repertoire_descriptors=descriptors_for_plotting,
-        vmin=fitness_min_max_values[0],
-        vmax=fitness_min_max_values[1],
-        target_centroids=None,
-        directory_string=pathlib.Path(
-        __file__).parent.parent.parent / ".experiment.nosync" / "report_results/2_constrained",
-        filename=filename_for_save,
-        annotate=False
-    )
-
-
 def plot_gif(experiment_directory_path: str):
-
     plot_list = [name for name in os.listdir(f"{experiment_directory_path}") if
                      not os.path.isdir(name) and "cvt_plot_" in name and ".png" in name]
     sorted_plot_list = sorted(plot_list, key=lambda x:int(x.lstrip("cvt_plot_").rstrip(".png")))
 
-    print()
     frames = []
     for plot_name in sorted_plot_list:
         image = imageio.v2.imread(f"{experiment_directory_path}/{plot_name}")

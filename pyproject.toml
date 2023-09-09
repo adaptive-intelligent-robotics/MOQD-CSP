@@ -4,7 +4,12 @@ version = "0.1.0"
 description = ""
 authors = ["Marta Wolinska <marta.wolinska16@imperial.ac.uk>"]
 readme = "README.md"
-packages = [{include = "csp_elites"}]
+packages = [
+    {include = "csp_elites"},
+    {include = "retrieve_results"},
+    {include = "analysis"},
+]
+
 
 [tool.poetry.dependencies]
 python = "^3.8, <3.11"
@@ -37,6 +42,7 @@ seaborn = "^0.12.2"
 ribs = "^0.5.2"
 black = "^23.7.0"
 scienceplots = "^2.1.0"
+click = "^8.1.7"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -45,3 +51,7 @@ pytest = "^7.3.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+#decision-tree = 'csp_elites.cli.run_experiment:'
+test-cli = "csp_elites.cli.test_cli:start"

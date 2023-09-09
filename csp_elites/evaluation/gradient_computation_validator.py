@@ -2,18 +2,18 @@ import pathlib
 from typing import Tuple, List, Optional
 
 import numpy as np
-from ase.ga.utilities import closest_distances_generator
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from mp_api.client import MPRester
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 
-from csp_elites.crystal.force_mutation import DQDMutationOMGMEGA
+
 from csp_elites.crystal.materials_data_model import MaterialProperties
+from csp_elites.parallel_relaxation.structure_optimizer import BatchedStructureOptimizer
 from csp_elites.property_calculators.band_gap_calculator import BandGapCalculator
 from csp_elites.property_calculators.shear_modulus_calculator import ShearModulusCalculator
-from csp_elites.property_calculators.structure_optimizer import MultiprocessOptimizer
+
 import scienceplots
 plt.style.use('science')
 plt.rcParams['savefig.dpi'] = 300
@@ -26,7 +26,7 @@ class PropertyToCalculatorMatcher:
         MaterialProperties.CONSTRAINT_FORCE: None,
         MaterialProperties.CONSTRAINT_BG: None,
         MaterialProperties.CONSTRAINT_SHEAR: None,
-        MaterialProperties.ENERGY: MultiprocessOptimizer,
+        MaterialProperties.ENERGY: BatchedStructureOptimizer,
     }
 
     property_to_ylabel = {
@@ -48,18 +48,12 @@ class PropertyToCalculatorMatcher:
     def get_ylabel(cls, property: MaterialProperties):
         return cls.property_to_ylabel[property]
 
-
-class DQDMutation:
-    pass
-
-
 class GradientComputationValidator:
     def __init__(self, material_property: MaterialProperties, learning_rate: float = 1e-3):
         self.calculator = PropertyToCalculatorMatcher.get_calculator(material_property)()
         self.learning_rate = learning_rate
         self._test_structure_mp_references = ["mp-390", "mp-1840"] # structures have 6,, and 24 atoms respectively
         self.property = material_property
-        self.omg_mega_mutation = DQDMutation
         self.save_directory = pathlib.Path(__file__).parent.parent.parent / ".experiment.nosync/validation"
         self.starting_value= None
 
@@ -128,9 +122,9 @@ class GradientComputationValidator:
 
 
 if __name__ == '__main__':
+     # run this code to plot validation plots for all properties
     n_steps = 1000
     for learning_rate in [1e-3, 1e-4, 1e-5]:
         for property in [MaterialProperties.BAND_GAP, MaterialProperties.SHEAR_MODULUS, MaterialProperties.ENERGY]:
-        # for property in [MaterialProperties.SHEAR_MODULUS]:
             gradient_validator = GradientComputationValidator(material_property=property, learning_rate=learning_rate)
             gradient_validator.loop_for_all_test_structures(n_steps=n_steps)

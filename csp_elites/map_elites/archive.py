@@ -25,6 +25,7 @@ class Archive:
         centroid_ids: Optional[np.ndarray],
         labels: Optional[List[str]] = None
     ):
+        """This class is only used for archive analysis after optimisation is completed."""
         self.fitnesses = fitnesses
         self.centroids = centroids
         self.descriptors = descriptors

@@ -4,7 +4,7 @@ from megnet.data.graph import Converter
 
 class BondConverterTorch(Converter):
     """
-    This class is an exact copy of XXX converter from MEGNET except implemented in torch to allow
+    This class is an exact copy of BondConverter converter from MEGNET except implemented in torch to allow
     automatic differentiation
     megnet/data/graph.py
 
@@ -29,5 +29,4 @@ class BondConverterTorch(Converter):
         Returns
             (matrix) N*M matrix with N the length of d and M the length of centers
         """
-        # d = np.array(d)
         return torch.exp(-((d[:, None] - self.centers[None, :]) ** 2) / self.width**2)

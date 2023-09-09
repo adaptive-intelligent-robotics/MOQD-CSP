@@ -1,45 +1,13 @@
-#| This file is a part of the pymap_elites framework.
-#| Copyright 2019, INRIA
-#| Main contributor(s):
+#| This file is based on the implementation map-elites implementation pymap_elites repo by resibots team https://github.com/resibots/pymap_elites
 #| Jean-Baptiste Mouret, jean-baptiste.mouret@inria.fr
 #| Eloise Dalin , eloise.dalin@inria.fr
 #| Pierre Desreumaux , pierre.desreumaux@inria.fr
-#|
-#|
 #| **Main paper**: Mouret JB, Clune J. Illuminating search spaces by
 #| mapping elites. arXiv preprint arXiv:1504.04909. 2015 Apr 20.
-#|
-#| This software is governed by the CeCILL license under French law
-#| and abiding by the rules of distribution of free software.  You
-#| can use, modify and/ or redistribute the software under the terms
-#| of the CeCILL license as circulated by CEA, CNRS and INRIA at the
-#| following URL "http://www.cecill.info".
-#|
-#| As a counterpart to the access to the source code and rights to
-#| copy, modify and redistribute granted by the license, users are
-#| provided only with a limited warranty and the software's author,
-#| the holder of the economic rights, and the successive licensors
-#| have only limited liability.
-#|
-#| In this respect, the user's attention is drawn to the risks
-#| associated with loading, using, modifying and/or developing or
-#| reproducing the software by the user in light of its specific
-#| status of free software, that may mean that it is complicated to
-#| manipulate, and that also therefore means that it is reserved for
-#| developers and experienced professionals having in-depth computer
-#| knowledge. Users are therefore encouraged to load and test the
-#| software's suitability as regards their requirements in conditions
-#| enabling the security of their systems and/or data to be ensured
-#| and, more generally, to use and operate it in the same conditions
-#| as regards security.
-#|
-#| The fact that you are presently reading this means that you have
-#| had knowledge of the CeCILL license and that you accept its terms.
-# import multiprocessing
+
 import gc
 import os
 import pickle
-from typing import List, Dict, Union
 
 import numpy as np
 import psutil
@@ -53,7 +21,7 @@ from tqdm import tqdm
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
 from csp_elites.map_elites.elites_utils import cvt, save_archive, add_to_archive, \
-    write_centroids, make_experiment_folder, Species, evaluate_parallel
+    write_centroids, make_experiment_folder, Species
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 from csp_elites.utils.plot import load_archive_from_pickle
 
@@ -279,14 +247,8 @@ class CVT:
                                       experiment_label: str,
                                       run_parameters,
                                       number_of_niches, maximum_evaluations):
-
-
-        # experiment_directory_path = make_experiment_folder(experiment_label)
         self.initialise_run_parameters(number_of_niches, maximum_evaluations, run_parameters, experiment_label)
         self.log_file = open(f'{experiment_to_load_directory_path}/{experiment_label}_continued.dat', 'w')
-        # with open(f'{experiment_to_load_directory_path}/{experiment_label}.dat', 'r') as file:
-        #     all_lines = file.readlines()
-        #     self.n_evals = int(all_lines[-1][0])
         last_archive = max([int(name.lstrip("archive_").rstrip(".pkl")) for name in os.listdir(experiment_to_load_directory_path) if ((not os.path.isdir(name)) and ("archive_" in name) and (".pkl" in name))])
         self.archive = self._convert_saved_archive_to_experiment_archive(
             experiment_directory_path=experiment_to_load_directory_path,

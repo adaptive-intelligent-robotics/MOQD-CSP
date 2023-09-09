@@ -37,8 +37,6 @@ class CrystalSystem:
         self.volume = volume
         self.atom_numbers_to_optimise = atom_numbers_to_optimise
         self.atomic_numbers = np.unique(np.array(self.atom_numbers_to_optimise))
-        self._atom_count = {"Ti": sum(np.array(atom_numbers_to_optimise) == 22),
-                            "O": sum(np.array(atom_numbers_to_optimise) == 8)}
         self.ratio_of_covalent_radii = ratio_of_covalent_radii
         self.splits = splits if splits is not None else {(2,): 1, (1,): 1}
         self.cellbounds = cellbounds if cellbounds is not None else CellBounds(bounds={'phi': [20, 160], 'chi': [20, 160],
@@ -60,10 +58,9 @@ class CrystalSystem:
 
         self.graph_converter = CrystalGraphConverter()
 
-
-
     def load_possible_pyxtal_spacegroups(self):
         if self.compound_formula is None:
+            # hard coded list of possible structures or TiO2 with 24 structures, for backward compatibility
             return [1,  8, 11, 12, 14, 15, 25, 35, 59, 60, 61, 62, 63, 74, 87, 136,
                     141, 156, 186, 189, 194, 205, 227]
         else:
@@ -72,7 +69,6 @@ class CrystalSystem:
                 valid_spacegroups_for_combination = json.load(file)
 
             return valid_spacegroups_for_combination
-
 
     def create_one_individual(self, individual_id: Optional[int]):
         if isinstance(self._start_generator, StartGenerator):

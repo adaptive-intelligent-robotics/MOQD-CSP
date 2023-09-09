@@ -47,7 +47,6 @@ def force_threshold_exp(plot_individually=True,
             plot_individually=plot_individually,
         )
 
-
 def compute_match_stats():
     report_generator = ReportPlotGenerator(
         path_to_experiments=pathlib.Path(

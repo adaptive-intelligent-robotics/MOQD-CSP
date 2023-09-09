@@ -1,6 +1,3 @@
-
-from ase.ga.ofp_comparator import OFPComparator
-
 from csp_elites.cma_mega.cma_mega import CMAMEGA
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
@@ -10,11 +7,6 @@ from csp_elites.utils.experiment_parameters import ExperimentParameters
 def main_cma(experiment_parameters: ExperimentParameters):
     alternative_operators = experiment_parameters.cvt_run_parameters[
         "alternative_operators"] if "alternative_operators" in experiment_parameters.cvt_run_parameters.keys() else None
-
-    comparator = OFPComparator(n_top=len(experiment_parameters.blocks), dE=1.0,
-                               cos_dist_max=1e-3, rcut=10., binwidth=0.05,
-                               pbc=[True, True, True], sigma=0.05, nsigma=4,
-                               recalculate=False)
 
     crystal_system = CrystalSystem(
         atom_numbers_to_optimise=experiment_parameters.blocks,
