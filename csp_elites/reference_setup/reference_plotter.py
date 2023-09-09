@@ -1,6 +1,10 @@
 import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
+import scienceplots
+
+plt.style.use("science")
+plt.rcParams["savefig.dpi"] = 300
 
 
 class ReferencePlotter:
@@ -8,9 +12,19 @@ class ReferencePlotter:
         self.save_plots = save_plots
         pass
 
-    def heatmap(self, data, row_labels, col_labels, xlabel, ylabel, title, ax=None,
-                cbar_kw=None, cbarlabel="",
-                **kwargs):
+    def heatmap(
+        self,
+        data,
+        row_labels,
+        col_labels,
+        xlabel,
+        ylabel,
+        title,
+        ax=None,
+        cbar_kw=None,
+        cbarlabel="",
+        **kwargs
+    ):
         """Taken from matplotlib tutorial
         Create a heatmap from a numpy array and two lists of labels.
 
@@ -51,30 +65,35 @@ class ReferencePlotter:
         ax.set_yticks(np.arange(data.shape[0]), labels=row_labels)
 
         # Let the horizontal axes labeling appear on top.
-        ax.tick_params(top=True, bottom=False,
-                       labeltop=True, labelbottom=False)
+        ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
 
         # Rotate the tick labels and set their alignment.
-        plt.setp(ax.get_xticklabels(), rotation=45, ha="left",
-                 rotation_mode="anchor")
+        plt.setp(ax.get_xticklabels(), rotation=45, ha="left", rotation_mode="anchor")
 
         # Turn spines off and create white grid.
         ax.spines[:].set_visible(False)
 
-        ax.set_xticks(np.arange(data.shape[1] + 1) - .5, minor=True)
-        ax.set_yticks(np.arange(data.shape[0] + 1) - .5, minor=True)
+        ax.set_xticks(np.arange(data.shape[1] + 1) - 0.5, minor=True)
+        ax.set_yticks(np.arange(data.shape[0] + 1) - 0.5, minor=True)
         ax.set_ylabel(ylabel)
         ax.set_xlabel(xlabel)
         ax.set_title(title)
-        ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
+        ax.grid(which="minor", color="w", linestyle="-", linewidth=0.5)
         ax.tick_params(which="minor", bottom=False, left=False)
 
         return im, cbar
 
-    def annotate_heatmap(self, im, data=None, valfmt="{x:.2f}",
-                         textcolors=("black", "white"),
-                         threshold=None, **textkw):
+    def annotate_heatmap(
+        self,
+        im,
+        data=None,
+        valfmt="{x:.2f}",
+        textcolors=("black", "white"),
+        threshold=None,
+        **textkw
+    ):
         """
+        Taken from matplotlib tutorial
         A function to annotate a heatmap.
 
         Parameters
@@ -106,12 +125,11 @@ class ReferencePlotter:
         if threshold is not None:
             threshold = im.norm(threshold)
         else:
-            threshold = im.norm(data.max()) / 2.
+            threshold = im.norm(data.max()) / 2.0
 
         # Set default alignment to center, but allow it to be
         # overwritten by textkw.
-        kw = dict(horizontalalignment="center",
-                  verticalalignment="center")
+        kw = dict(horizontalalignment="center", verticalalignment="center")
         kw.update(textkw)
 
         # Get the formatter in case a string is supplied
@@ -136,6 +154,8 @@ class ReferencePlotter:
         plt.hist(minimum_distances, range=(0, 0.5), bins=20)
         plt.xlabel("Minimum Non-Zero Cosine Distance Between Reference Structures")
         plt.ylabel("Number of Structures")
-        plt.title("Minimum Non-Zero Cosine Distance Between Reference Structures Across References")
+        plt.title(
+            "Minimum Non-Zero Cosine Distance Between Reference Structures Across References"
+        )
         plt.show()
         # plt.savefig(pathlib.Path(__file__).parent.parent / "report_figures" / "reference_data_analysis" / f"distances_histogram_{experimental_string}.png", format="png")

@@ -4,9 +4,10 @@ import numpy as np
 
 
 class OverridenFire:
-    def __init__(self, dt=0.1,dtmax=1.0, Nmin=5,
-                 finc=1.1, fdec=0.5,
-                 astart=0.1, fa=0.99, a=0.1):
+    def __init__(
+        self, dt=0.1, dtmax=1.0, Nmin=5, finc=1.1, fdec=0.5, astart=0.1, fa=0.99, a=0.1
+    ):
+        """Vectorised implementation of default parameter of FIRE class in ase."""
 
         self.dt = dt
         self.Nsteps = 0
@@ -19,8 +20,6 @@ class OverridenFire:
         self.astart = astart
         self.fa = fa
         self.a = a
-
-        self.fmax = 0.1
 
     def step_override(
         self,
@@ -44,20 +43,40 @@ class OverridenFire:
             vdot_ff = np.diag(f.reshape(len(f), -1) @ f.reshape(len(f), -1).T)
             vdot_vv = np.diag(v.reshape(len(f), -1) @ v.reshape(len(f), -1).T)
             v_positive = (1.0 - a).reshape((-1, 1, 1)) * (
-                        v * vf_positive_mask) + a.reshape((-1, 1, 1)) * (
-                                     f * vf_positive_mask) / np.sqrt(
-                vdot_ff).reshape(-1, 1, 1) * np.sqrt(vdot_vv).reshape((-1, 1, 1))
+                v * vf_positive_mask
+            ) + a.reshape((-1, 1, 1)) * (f * vf_positive_mask) / np.sqrt(
+                vdot_ff
+            ).reshape(
+                -1, 1, 1
+            ) * np.sqrt(
+                vdot_vv
+            ).reshape(
+                (-1, 1, 1)
+            )
             v_negative = v * vf_negative_mask * 0
             v = v_positive + v_negative
 
             Nsteps_bigger_than_n_min = Nsteps > self.Nmin
             Nsteps_smaller_than_n_min = ~Nsteps_bigger_than_n_min
-            dt_1 = np.min(np.vstack([dt * vf_positive_mask.reshape(-1) * Nsteps_bigger_than_n_min * self.finc, [self.dtmax] * len(f)]), axis=0)
+            dt_1 = np.min(
+                np.vstack(
+                    [
+                        dt
+                        * vf_positive_mask.reshape(-1)
+                        * Nsteps_bigger_than_n_min
+                        * self.finc,
+                        [self.dtmax] * len(f),
+                    ]
+                ),
+                axis=0,
+            )
             dt_1b = dt * vf_positive_mask.reshape(-1) * Nsteps_smaller_than_n_min
             dt_2 = dt * vf_negative_mask.reshape(-1) * self.fdec
             dt = dt_1 + dt_1b + dt_2
 
-            Nsteps[vf_positive_mask.reshape(-1)] = (Nsteps[vf_positive_mask.reshape(-1)] + 1)
+            Nsteps[vf_positive_mask.reshape(-1)] = (
+                Nsteps[vf_positive_mask.reshape(-1)] + 1
+            )
             Nsteps_1 = Nsteps * vf_positive_mask.reshape(-1)
             Nsteps_2 = Nsteps * vf_negative_mask.reshape(-1) * 0
             Nsteps = Nsteps_1 + Nsteps_2
@@ -77,11 +96,16 @@ class OverridenFire:
         update_dr_mask_negative = ~update_dr_mask_positive
         dr_1 = dr * update_dr_mask_negative.reshape((-1, 1, 1))
 
-        dr_2 = dr * update_dr_mask_positive.reshape((-1, 1, 1)) * self.maxstep / normdr.reshape((-1, 1, 1))
+        dr_2 = (
+            dr
+            * update_dr_mask_positive.reshape((-1, 1, 1))
+            * self.maxstep
+            / normdr.reshape((-1, 1, 1))
+        )
         dr = dr_1 + dr_2
 
         return v, dt, Nsteps, a, dr
 
     def converged(self, forces, fmax):
         """Did the optimization converge?"""
-        return np.max((forces ** 2).sum(axis=2), axis=1) < 0.2 ** 2
+        return np.max((forces**2).sum(axis=2), axis=1) < fmax**2

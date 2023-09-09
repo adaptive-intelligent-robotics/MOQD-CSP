@@ -4,7 +4,11 @@ version = "0.1.0"
 description = ""
 authors = ["Marta Wolinska <marta.wolinska16@imperial.ac.uk>"]
 readme = "README.md"
-packages = [{include = "csp_elites"}]
+packages = [
+    {include = "csp_elites"},
+    {include = "retrieve_results"},
+]
+
 
 [tool.poetry.dependencies]
 python = "^3.8, <3.11"
@@ -35,6 +39,9 @@ chemview = "^0.6"
 pillow = "^10.0.0"
 seaborn = "^0.12.2"
 ribs = "^0.5.2"
+black = "^23.7.0"
+scienceplots = "^2.1.0"
+click = "^8.1.7"
 
 
 [tool.poetry.group.dev.dependencies]

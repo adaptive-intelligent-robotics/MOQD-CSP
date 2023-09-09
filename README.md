@@ -1,92 +1,135 @@
-# CSP-Elites
+# QD4CSP: Quality Diversity for Crystal Structure Prediction
+
+`QD4CSP` is the first of its kind implementation combining the strengths of Quality Diversity algorithms
+for inorganic crstal structure prediction. 
+
+This project is the result of the _MSc Thesis_ project completed as part of the _MSc Artificial Intelligence_.
+It was supervised by Dr Antoine Cully, with expert materials science input provided by Professor Aron Walsh, 
+Chair of Materials Design at the Department of Materials at Imperial College London. 
 
 
+### Getting started with the package
+To get started with this package clone this repo:
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
+```bash
+git clone https://gitlab.doc.ic.ac.uk/AIRL/students_projects/2022-2023/marta_wolinska/csp-elites.git
 ```
-cd existing_repo
-git remote add origin https://gitlab.doc.ic.ac.uk/AIRL/students_projects/2022-2023/marta_wolinska/csp-elites.git
-git branch -M master
-git push -uf origin master
+Then enter the correct directory on your machine:
+```bash
+cd csp-elites
 ```
 
-## Integrate with your tools
+We provide two installation methods, one using poetry (preferred) and using standard `requirements.txt`.
 
-- [ ] [Set up project integrations](https://gitlab.doc.ic.ac.uk/AIRL/students_projects/2022-2023/marta_wolinska/csp-elites/-/settings/integrations)
+#### Poetry
+This package uses [poetry](https://python-poetry.org) dependency manager. 
+To install all dependencies run:
+```bash
+poetry install
+```
 
-## Collaborate with your team
+#### Python virtual environments
+Once you have cloned the repository, create and activate your virtual environment:
+```shell
+python3 -m venv ./venv
+source venv/bin/activate
+```
+Then install the requirements:
+```shell script
+pip3 install -r requirements.txt
+```
+### Using the package
+To run a demo experiment run:
+```shell
+ python3 csp_scripts/experiment_from_config.py experiment_configs/demo.json
+```
+This will run a very simple demo with 2 TiO2 structures. All results will be saved under the `experiments_folder`.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+Experiments are most conveniently defined using a configuration file. These files can be generated individually or in batches using the directions below 
 
-## Test and Deploy
+## Generating Configuration Files
+To generate a configuration file for your experiment simply run 
 
-Use the built-in continuous integration in GitLab.
+```shell
+python3 csp_scripts/generate_pre_filled_config.py <config_filename> <config_folder>
+```
+Passing the `<config_folder>` parameter will create a subfolder within `experiment_configs`.
+If it is not passed the config file will save directly within `experiment_configs`.
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+This will be filled with some default values and the resulting json should then be updated directly.
 
-***
+### Mass generating configs
+However, if you are running many experiments the above is not suitable. 
+Therefore, you can generate multiple config files from a csv file. 
+This method will also generate hpc scripts required to run batch jobs
 
-# Editing this README
+You can generate multiple config files at a time for an array job on the hpc by running 
+```shell
+python3 csp_scripts/automation/generate_configs_from_csv.py
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
+By default, this will create the framework for an array job with 5 experiments.
+It will read from `automation_scripts/experiment_list.csv` to produce 5 configuration files
+saved within the folder with the dat and time.
+It will also create a folder with the same and `_scripts` which will have the required jobs scripts for the hpc. 
+The templates are stored within `automation_scripts/hpc/job_templates`
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+To add a new template, create a new file in this repository. 
+Then add a new Enum to `JobsEnum` class within `csp_elites/utils/csv_loading.py`
 
-## Name
-Choose a self-explaining name for your project.
+To copy the desired_folders to the home directory of the hpc amend the `automation_scripts/hpc/copy_configs_and_scripts.sh`
+with the desired folders. 
+Then run
+```shell
+bash automation_scripts/hpc/copy_configs_and_scripts.sh
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## Running an Experiment 
+You can run an experiment from a configuration file or directly from a file. 
+The latter is recommended for debugging new features. 
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### Running from a configuration file
+To run your job simply run
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```shell
+python3 csp_scripts/experiment_from_config.py configs/<your-config-name>.json
+```
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Or if you prefer to change parameters directly in a python script you can amend them in `csp_scripts/`
+### Running Feature Debugging Script
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+```shell
+python3 csp_scripts/run_experiment.py  
+```
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+### Configuring cython to use fast algorithm conversion in \texttt{CHGNet}
+As guidelines were not available on the package at the time of writing we provide our method to ensure
+cython is set up correctly to be used with \texttt{CHGNet}
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+First clone the CHGNet repository and enter the folder
+```shell
+git clone https://github.com/CederGroupHub/chgnet.git
+cd chgnet
+```
+Run 
+```shell
+python3 setup.py build_ext --inplace
+```
+Now we will need to copy the generated filed into our virtual environment 
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+```shell
+cd chgnet/graph
+copy *.c venv/lib/chgnet/graph
+copy *.pyx venv/lib/chgnet/graph
+```
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+You can verify this by running a script containing the following:
+```python
+from chgnet.model import CHGNet
 
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+if __name__ == '__main__':
+    model = CHGNet.load()
+    print(model.graph_converter.algorithm)
+```
