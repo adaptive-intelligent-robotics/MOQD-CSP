@@ -17,7 +17,7 @@ def benchmark_params(
         title_tag=None,
     )
     if niches_fill:
-        report_generator.plot_combined_figure_for_report(
+        report_generator.plot_mean_statistics(
             folder_names=["02_niches"],
             labels=["0.2 Niches Filled"],
             title_tag="Niches Filled with Random Generation",
@@ -29,7 +29,7 @@ def benchmark_params(
         )
 
     if n_niches:
-        report_generator.plot_combined_figure_for_report(
+        report_generator.plot_mean_statistics(
             folder_names=["500_niches"],
             labels=["500 Niches"],
             title_tag="Number of Niches Available",
@@ -41,7 +41,7 @@ def benchmark_params(
         )
 
     if structure_initialise:
-        report_generator.plot_combined_figure_for_report(
+        report_generator.plot_mean_statistics(
             folder_names=["structure_initialise_40", "structure_initialise_80"],
             labels=["40 Individuals", "80 Individuals"],
             title_tag="Number of Individuals Initialised",
@@ -53,7 +53,7 @@ def benchmark_params(
         )
 
     if batch_size:
-        report_generator.plot_combined_figure_for_report(
+        report_generator.plot_mean_statistics(
             folder_names=["batch_size_20", "batch_size_50"],
             labels=["Batch Size 20", "Batch Size 50"],
             title_tag="Number of Individuals Initialised",

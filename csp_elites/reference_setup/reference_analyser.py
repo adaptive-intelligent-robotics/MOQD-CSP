@@ -397,7 +397,7 @@ class ReferenceAnalyser:
         fig, ax = plt.subplots()
 
         experimental = [el for el in self.structures_to_consider if not el.theoretical]
-        labels = ["Experimental and Theoretical", "Experimental"]
+        labels = ["Theoretical", "Experimental"]
 
         all_group_information = []
         for structure_group in [self.structures_to_consider, experimental]:
@@ -604,7 +604,7 @@ class ReferenceAnalyser:
         blocks.sort()
         return blocks
 
-    def plot_references_as_groups(self, target_archive: Archive):
+    def plot_references_as_groups(self, target_archive: Archive, x_axis_limits, y_axis_limits):
         self.symmetry_evaluator.group_structures_by_symmetry(
             archive=target_archive,
             experiment_directory_path=self.save_path,
@@ -613,6 +613,8 @@ class ReferenceAnalyser:
             filename_tag="experimental"
             if self.experimental_references_only
             else "exp_and_theory",
+        x_axis_limits=x_axis_limits,
+        y_axis_limits=y_axis_limits,
         )
 
 
@@ -629,8 +631,8 @@ if __name__ == "__main__":
     shear_moduli_limits = [0, 120]
     reference_data_dump = []
     dict_summary = {}
-    for filter_experiment in [True]:
-        # for filter_experiment in [False, True]:
+    # for filter_experiment in [True]:
+    for filter_experiment in [False, True]:
         filter_experiment_dump = []
         for i, formula in enumerate(formulas):
             reference_analyser = ReferenceAnalyser(
@@ -655,29 +657,32 @@ if __name__ == "__main__":
                 fitness_limits = reference_analyser.propose_fitness_limits()
             bd_minimum_values = np.array([band_gap_limits[0], shear_moduli_limits[0]])
             bd_maximum_values = np.array([band_gap_limits[1], shear_moduli_limits[1]])
-            reference_analyser.write_base_config(
-                bd_minimum_values=bd_minimum_values.tolist(),
-                bd_maximum_values=bd_maximum_values.tolist(),
-                fitness_limits=fitness_limits,
-            )
+            # reference_analyser.write_base_config(
+            #     bd_minimum_values=bd_minimum_values.tolist(),
+            #     bd_maximum_values=bd_maximum_values.tolist(),
+            #     fitness_limits=fitness_limits,
+            # )
             target_archive = reference_analyser.create_model_archive(
                 bd_minimum_values=bd_minimum_values,
                 bd_maximum_values=bd_maximum_values,
                 save_reference=not filter_experiment,
             )
 
-            # normalise_bd_values = (bd_minimum_values, bd_maximum_values) if reference_analyser.normalise_bd else None
-            # reference_analyser.plot_cvt_plot(
-            #     target_archive=target_archive,
-            #     bd_minimum_values=np.array([0, 0]) if reference_analyser.normalise_bd else bd_minimum_values,
-            #     bd_maximum_values=np.array([1, 1]) if reference_analyser.normalise_bd else bd_maximum_values,
-            #     fitness_limits=fitness_limits,
-            #     x_axis_limits=bd_minimum_values,
-            #     y_axis_limits=bd_maximum_values,
-            # )
-            # reference_analyser.plot_references_as_groups(target_archive)
-            # reference_analyser.heatmap_structure_matcher_distances(annotate=False)
-            # reference_analyser.plot_symmetries()
+            normalise_bd_values = (bd_minimum_values, bd_maximum_values) if reference_analyser.normalise_bd else None
+            reference_analyser.plot_cvt_plot(
+                target_archive=target_archive,
+                bd_minimum_values=np.array([0, 0]) if reference_analyser.normalise_bd else bd_minimum_values,
+                bd_maximum_values=np.array([1, 1]) if reference_analyser.normalise_bd else bd_maximum_values,
+                fitness_limits=fitness_limits,
+                x_axis_limits=bd_minimum_values,
+                y_axis_limits=bd_maximum_values,
+            )
+            reference_analyser.plot_references_as_groups(target_archive,
+                                                         x_axis_limits=bd_minimum_values,
+                                                         y_axis_limits=bd_maximum_values,
+                                                         )
+            reference_analyser.heatmap_structure_matcher_distances(annotate=False)
+            reference_analyser.plot_symmetries()
             reference_analyser.plot_fmax()
             # dict_summary[f"{formula}_{filter_experiment}"] = len(reference_analyser.structures_to_consider)
             # print(dict_summary)

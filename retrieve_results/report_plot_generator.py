@@ -312,7 +312,7 @@ class ReportPlotGenerator:
                     filter_coverage_for_valid_solutions_only=filter_coverage_for_valid_solutions_only,
                 )
 
-                generation_data = generation_data.T
+                generation_data = generation_data .T
                 data_for_1_experiment.append(generation_data)
 
             all_experiment_data.append(data_for_1_experiment)

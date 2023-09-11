@@ -75,7 +75,7 @@ def relaxation_exp(
             / ".experiment.nosync/report_data/1_force_threshold/threshold_1",
             reference_label="100 Steps Always",
             y_limits_dict={
-                "Maximum Fitness": (8.5, 9.42),
+                "Maximum Fitness": (9.3, 9.42),
             },
         )
 
@@ -83,7 +83,7 @@ def relaxation_exp(
 if __name__ == "__main__":
     relaxation_exp(
         plot_individually=False,
-        relax_archive_every_5=True,
-        relax_steps=True,
+        relax_archive_every_5=False,
+        relax_steps=False,
         archive_relax_no_intermediate_relax=True,
     )
