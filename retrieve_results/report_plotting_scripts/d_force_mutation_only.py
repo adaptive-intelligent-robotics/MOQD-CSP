@@ -91,7 +91,7 @@ def force_mut_only(
                 "no_gaussian_lr1",
                 "lr1",
             ],
-            labels=["Deterministic", "Probailistic"],
+            labels=["Deterministic", "Probabilistic"],
             title_tag="Deterministic vsa Probabilistic Force Mutation",
             filename_tag="gauss_vs_no_gauss",
             plot_individually=plot_individually,

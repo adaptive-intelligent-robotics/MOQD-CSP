@@ -37,7 +37,7 @@ if __name__ == "__main__":
     fig, ax = plt.subplots()
 
     ax.plot(number_of_individuals, ase_relax_data, label="Standard")
-    ax.plot(number_of_individuals, marta_relax_data, label="MACS-Elites")
+    ax.plot(number_of_individuals, marta_relax_data, label="This Work")
     ax.set_xlabel("Number of Individuals")
     ax.set_ylabel("Total Time Taken, s")
     ax.legend(loc="lower center", bbox_to_anchor=(0.5, -0.4), ncols=4)

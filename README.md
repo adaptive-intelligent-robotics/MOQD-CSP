@@ -1,7 +1,7 @@
 # QD4CSP: Quality Diversity for Crystal Structure Prediction
 
 `QD4CSP` is the first of its kind implementation combining the strengths of Quality Diversity algorithms
-for inorganic crstal structure prediction. 
+for inorganic crystal structure prediction. 
 
 This project is the result of the _MSc Thesis_ project completed as part of the _MSc Artificial Intelligence_.
 It was supervised by Dr Antoine Cully, with expert materials science input provided by Professor Aron Walsh, 
@@ -113,7 +113,7 @@ First clone the CHGNet repository and enter the folder
 git clone https://github.com/CederGroupHub/chgnet.git
 cd chgnet
 ```
-Run 
+Then run:
 ```shell
 python3 setup.py build_ext --inplace
 ```

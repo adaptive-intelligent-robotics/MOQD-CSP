@@ -15,13 +15,15 @@ def dqd(
     if lr:
         report_generator.plot_combined_figure_for_report(
             folder_names=[
+                "lr-5",
                 "lr-3",
+                "lr_05",
                 "lr_01",
                 "lr_1",
             ],
-            labels=["1e-3", "1e-1", "1"],
+            labels=["1e-5", "1e-3", "0.05", "1e-1", "1"],
             title_tag="Learning Rate Impact",
-            filename_tag="lr_dqd",
+            filename_tag="lr_dqd_appendix",
             plot_individually=plot_individually,
             reference_path=pathlib.Path(__file__).parent.parent.parent
             / ".experiment.nosync/report_data/6_benchmark/benchmark_with_threshold",
@@ -113,8 +115,8 @@ def dqd(
 if __name__ == "__main__":
     dqd(
         plot_individually=False,
-        lr=False,
+        lr=True,
         relax_steps=False,
-        batch_size=True,
+        batch_size=False,
         dqd_rattle=False,
     )
