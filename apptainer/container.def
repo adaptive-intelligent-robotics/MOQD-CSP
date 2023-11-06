@@ -1,0 +1,59 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%labels
+	Author hnj21@imperial.ac.uk
+
+%help
+	Multi-Objective Quality-Diversity for Crystal Structure Prediction
+
+%environment
+	# Activate virtual environment permanently
+	export VIRTUAL_ENV="/venv"
+	export _OLD_VIRTUAL_PATH="$PATH"
+	export PATH="$VIRTUAL_ENV/bin:$PATH"
+
+	# Add submodules to python path
+	export PYTHONPATH=/project/megnet
+	
+	# System
+	export TZ=Europe/London
+	export OPENBLAS_NUM_THREADS=1
+
+%post
+	export DEBIAN_FRONTEND=noninteractive
+
+	# Update and install required libraries
+	apt update
+	apt install -y wget git software-properties-common tmux
+
+	# Install Python
+	add-apt-repository ppa:deadsnakes/ppa
+	apt install -y python3.10 python3.10-venv
+
+	# Create a virtual environment
+	python3.10 -m venv /venv
+	. /venv/bin/activate
+	python -m ensurepip
+	pip install --upgrade pip
+
+	# Install JAX
+	pip install --upgrade "jax[cuda11_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+
+	# Install Megnet
+	#cd /tmp/
+	#git clone -b v1.3.2 https://github.com/materialsvirtuallab/megnet.git
+	#cd megnet/
+    
+	# Clone repository to /project/
+	git clone --recurse-submodules https://gitlab.doc.ic.ac.uk/AIRL/research_projects/hannah_janmohamed/moqd-csp.git /project/
+	cd /project/
+	git checkout $COMMIT
+
+	# Install requirements
+	pip install -r requirements.txt
+
+
+%runscript
+	# Run main
+	python /project/main.py "$@"

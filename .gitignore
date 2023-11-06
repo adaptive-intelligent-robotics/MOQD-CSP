@@ -12,7 +12,11 @@ used_modes.json
 bin/list_of_configs.csv
 
 report_figures/
-/configs
+
 /bin
 
 /.configs_copy.nosync
+
+apptainer/container.sif
+apptainer/tmp/
+apptainer/var_tmp/

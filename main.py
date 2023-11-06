@@ -3,7 +3,7 @@ import sys
 
 from ase.ga.utilities import CellBounds
 
-from csp_elites.cli.main import main
+from csp_elites.cli.map_elites_main import main
 from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
 from csp_elites.utils.experiment_parameters import ExperimentParameters
 
