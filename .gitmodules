@@ -1,3 +1,6 @@
 [submodule "megnet"]
 	path = megnet
 	url = https://github.com/materialsvirtuallab/megnet.git
+[submodule "chgnet"]
+	path = chgnet
+	url = https://github.com/CederGroupHub/chgnet
