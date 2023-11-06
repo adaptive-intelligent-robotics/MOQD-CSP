@@ -15,7 +15,8 @@ From: ubuntu:22.04
 
 	# Add submodules to python path
 	export PYTHONPATH=/project/megnet
-	
+	export PYTHONPATH="/project/chgnet:$PYTHONPATH"
+
 	# System
 	export TZ=Europe/London
 	export OPENBLAS_NUM_THREADS=1
