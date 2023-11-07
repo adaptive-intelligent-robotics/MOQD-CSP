@@ -4186,6 +4186,16 @@ typing-extensions = {version = ">=3.10.0", markers = "python_version < \"3.10\""
 spelling = ["pyenchant (>=3.2,<4.0)"]
 testutils = ["gitpython (>3)"]
 
+[[package]]
+name = "pymatgen"
+version = "2023.6.28"
+description = "Python Materials Genomics is a robust materials analysis code that defines core object representations for structures and molecules with support for many electronic structure codes. It is currently the core analysis code powering the Materials Project (https://materialsproject.org)."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pymatgen-2023.6.28-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:d43e79abdbfc74b7005854bbe1230c95dbe87e18e4b503be6fab39496d95fec8"},
+    {file = "pymatgen-2023.6.28.tar.gz", hash = "sha256:0d82fb4241d3c6d43ac22eeac6a325f4dcf26eb9b59b1e21ad5e1e96be433376"},
+]
 
 [package.dependencies]
 frozendict = "*"
