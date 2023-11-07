@@ -32,7 +32,6 @@ cairosvg = "^2.7.0"
 pyxtal = "^0.5.8"
 csp-cryspy = "^1.2.0"
 pandas = "^2.0.3"
-chgnet = {git = "https://github.com/CederGroupHub/chgnet.git"}
 vtk = "^9.2.6"
 chemview = "^0.6"
 pillow = "^10.0.0"
