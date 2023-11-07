@@ -41,7 +41,7 @@ ribs = "^0.5.2"
 black = "^23.7.0"
 scienceplots = "^2.1.0"
 click = "^8.1.7"
-pymatgen==2023.9.25
+pymatgen = "2023.9.25"
 
 
 [tool.poetry.group.dev.dependencies]
