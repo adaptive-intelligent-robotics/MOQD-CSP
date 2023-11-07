@@ -38,13 +38,13 @@ From: ubuntu:22.04
 	python -m ensurepip
 	pip install --upgrade pip
 
+	# Install pipx and poetry
+	python3 -m pip install pipx
+	python3 -m pipx ensurepath
+	pipx install poetry
+
 	# Install JAX
 	pip install --upgrade "jax[cuda11_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-
-	# Install Megnet
-	#cd /tmp/
-	#git clone -b v1.3.2 https://github.com/materialsvirtuallab/megnet.git
-	#cd megnet/
     
 	# Clone repository to /project/
 	git clone --recurse-submodules https://gitlab.doc.ic.ac.uk/AIRL/research_projects/hannah_janmohamed/moqd-csp.git /project/
@@ -52,7 +52,8 @@ From: ubuntu:22.04
 	git checkout $COMMIT
 
 	# Install requirements
-	pip install -r requirements.txt
+	#pip install -r requirements.txt
+	poetry install
 
 
 %runscript
