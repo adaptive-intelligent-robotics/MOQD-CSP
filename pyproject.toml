@@ -44,7 +44,6 @@ pymatgen = "2023.9.25"
 hydra-core = "^1.3.0"
 wandb = "^0.15.1"
 latex = "^0.7.0"
-texlive = "^0.1.0"
 
 
 [tool.poetry.group.dev.dependencies]
