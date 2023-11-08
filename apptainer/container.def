@@ -38,11 +38,6 @@ From: ubuntu:22.04
 	python -m ensurepip
 	pip install --upgrade pip
 
-	# Install pipx and poetry
-	python3 -m pip install pipx
-	python3 -m pipx ensurepath
-	pipx install poetry
-
 	# Install JAX
 	pip install --upgrade "jax[cuda11_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
     
@@ -52,8 +47,9 @@ From: ubuntu:22.04
 	git checkout $COMMIT
 
 	# Install requirements
-	#pip install -r requirements.txt
-	poetry install
+	pip install -r requirements.txt
+
+
 
 
 %runscript
