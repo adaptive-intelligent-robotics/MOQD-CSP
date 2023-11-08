@@ -11,11 +11,8 @@ from tqdm import tqdm
 from csp_elites.map_elites.archive import Archive
 from retrieve_results.experiment_organiser import ExperimentOrganiser
 
-import scienceplots
-
 from retrieve_results.experiment_processing import ExperimentProcessor
 
-plt.style.use("science")
 plt.rcParams["savefig.dpi"] = 500
 
 

@@ -24,9 +24,7 @@ from csp_elites.utils.asign_target_values_to_centroids import (
 if TYPE_CHECKING:
     from csp_elites.utils.experiment_parameters import ExperimentParameters
 
-import scienceplots
 
-plt.style.use("science")
 plt.rcParams["savefig.dpi"] = 300
 
 

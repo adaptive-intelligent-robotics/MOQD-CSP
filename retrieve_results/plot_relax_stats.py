@@ -1,11 +1,9 @@
 import pathlib
 import pickle
-import scienceplots
 
 import numpy as np
 from matplotlib import pyplot as plt
 
-plt.style.use("science")
 plt.rcParams["savefig.dpi"] = 1000
 
 

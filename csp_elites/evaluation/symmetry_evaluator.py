@@ -25,9 +25,7 @@ from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.vis.structure_vtk import StructureVis
-import scienceplots
 
-plt.style.use("science")
 plt.rcParams["savefig.dpi"] = 1000
 
 from csp_elites.map_elites.archive import Archive

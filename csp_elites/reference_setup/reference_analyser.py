@@ -31,9 +31,7 @@ from csp_elites.utils.asign_target_values_to_centroids import (
 from csp_elites.utils.experiment_parameters import ExperimentParameters
 from csp_elites.utils.plot import load_centroids, plot_2d_map_elites_repertoire_marta
 
-import scienceplots
 
-plt.style.use("science")
 plt.rcParams["savefig.dpi"] = 300
 
 
