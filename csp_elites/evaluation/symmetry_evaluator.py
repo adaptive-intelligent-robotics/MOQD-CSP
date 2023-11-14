@@ -112,7 +112,7 @@ class SymmetryEvaluation:
             nsigma=4,
             recalculate=False,
         )
-        self.structure_viewer = StructureVis(show_polyhedron=False, show_bonds=True)
+        #self.structure_viewer = StructureVis(show_polyhedron=False, show_bonds=True)
         self.structure_matcher = StructureMatcher()
         self.fingerprint_distance_threshold = 0.1
         self.reference_data = (
@@ -260,14 +260,14 @@ class SymmetryEvaluation:
                 individual_as_structure = SpacegroupAnalyzer(
                     structure=individual_as_structure
                 ).find_primitive()
-            self.structure_viewer.set_structure(individual_as_structure)
+            #self.structure_viewer.set_structure(individual_as_structure)
             individual_confid = archive.individuals[individual_index].info["confid"]
 
             filename = f"ind_{archive.centroid_ids[individual_index]}_{file_tag}_{individual_confid}{primitive_string}.png"
-            self.structure_viewer.write_image(
-                str(directory_to_save / filename),
-                magnification=5,
-            )
+            #self.structure_viewer.write_image(
+            #    str(directory_to_save / filename),
+            #    magnification=5,
+            #)
         return filename
 
     def save_best_structures_by_energy(
@@ -705,8 +705,8 @@ class SymmetryEvaluation:
 
     def quick_view_structure(self, archive: Archive, individual_index: int):
         structure = AseAtomsAdaptor.get_structure(archive.individuals[individual_index])
-        self.structure_viewer.set_structure(structure)
-        self.structure_viewer.show()
+        #self.structure_viewer.set_structure(structure)
+        #self.structure_viewer.show()
 
     def gif_centroid_over_time(
         self,
