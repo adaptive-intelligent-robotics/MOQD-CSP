@@ -16,9 +16,7 @@ from csp_elites.property_calculators.shear_modulus_calculator import (
     ShearModulusCalculator,
 )
 
-import scienceplots
 
-plt.style.use("science")
 plt.rcParams["savefig.dpi"] = 300
 
 
