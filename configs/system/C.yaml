@@ -1,0 +1,21 @@
+# System params
+system_name: "C"
+blocks: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6]
+volume: 450
+ratio_of_covalent_radii: 0.4
+fitler_comparison_data_for_n_atoms: 24
+
+# Initialisation params
+start_generator: "pyxtal"
+
+# Variation operator params
+operator_probabilities: null
+batch_size: 10
+
+# BD params
+n_behavioural_descriptor_dimensions: 2
+bd_minimum_values: [0, 4]
+bd_maximum_values: [5.5, 535]
+
+# Fitness params
+fitness_min_max_values: [6.5, 9.5]

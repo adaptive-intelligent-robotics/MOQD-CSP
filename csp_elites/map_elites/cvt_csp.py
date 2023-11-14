@@ -251,8 +251,8 @@ class CVT:
             bd_minimum_values, bd_maximum_values = [0, 0], [1, 1]
         else:
             bd_minimum_values, bd_maximum_values = (
-                run_parameters["bd_minimum_values"],
-                run_parameters["bd_maximum_values"],
+                run_parameters.system.bd_minimum_values,
+                run_parameters.system.bd_maximum_values,
             )
 
         c = cvt(
@@ -271,8 +271,8 @@ class CVT:
             c,
             experiment_folder=experiment_directory_path,
             bd_names=run_parameters["behavioural_descriptors"],
-            bd_minimum_values=run_parameters["bd_minimum_values"],
-            bd_maximum_values=run_parameters["bd_maximum_values"],
+            bd_minimum_values=run_parameters.system.bd_minimum_values,
+            bd_maximum_values=run_parameters.system.bd_maximum_values,
             formula=self.crystal_system.compound_formula,
         )
         del c

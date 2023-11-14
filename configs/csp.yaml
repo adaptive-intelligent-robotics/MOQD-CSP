@@ -1,0 +1,47 @@
+hydra:
+    run:
+        dir: ./output/{system.system_name}/${algo.algo_name}/${now:%Y-%m-%d_%H%M%S}_${seed}
+
+# Defaults
+defaults:
+    - algo: mapelites
+    - system: TiO2
+experiment_tag: ${system.system_name}_${algo.algo_name}
+
+# CVT params
+number_of_niches: 200
+maximum_evaluations: 5000
+maximum_evaluations: 10
+cvt_samples: 25000
+
+
+
+# Initialisation parameters
+random_init: 0.1
+random_init_batch: 20
+
+# Algorithm running parameters
+dump_period: 200
+parallel: True
+cvt_use_cache: True
+seed: False
+
+# Materials parameters
+relaxation_probability: 0
+behavioural_descriptors: ["band_gap","shear_modulus"]
+number_of_relaxation_steps: 100
+filter_starting_Structures: 24
+profiling: False
+force_threshold: True
+
+## Other algorithm params
+curiosity_weights: true
+constrained_qd: False
+force_threshold_exp_fmax: 1.0
+fmax_threshold: 0.2
+normalise_bd: true
+
+alternative_operators: null
+compute_gradients: False
+dqd_learning_rate: 0.0001
+from_archive_path: null

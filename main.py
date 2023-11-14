@@ -1,22 +1,70 @@
-import json
-import sys
-
 from ase.ga.utilities import CellBounds
 
-from csp_elites.cli.map_elites_main import main
 from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
-from csp_elites.utils.experiment_parameters import ExperimentParameters
+
+from dataclasses import dataclass
+import hydra
+from hydra.core.config_store import ConfigStore
+from typing import Tuple
+
+import json
+import os
+import pathlib
+import sys
+import time
+from dataclasses import asdict
+from typing import Optional
+
+from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
+from csp_elites.crystal.crystal_system import CrystalSystem
+from csp_elites.map_elites.cvt_csp import CVT
+from csp_elites.map_elites.elites_utils import __centroids_filename
+from retrieve_results.experiment_processing import ExperimentProcessor
 
 
-if __name__ == "__main__":
-    file_location = ""
-    if file_location == "":
-        file_location = sys.argv[1]
-    with open(file_location, "r") as file:
-        experiment_parameters = json.load(file)
 
-    experiment_parameters = ExperimentParameters(**experiment_parameters)
-    experiment_parameters.cellbounds = (
+@dataclass
+class ExperimentConfig:
+    
+    number_of_niches: int
+    maximum_evaluations: int
+    experiment_tag: str
+
+    ### CVT params
+    cvt_samples: int
+    batch_size: int
+    random_init: int
+    random_init_batch: int
+    dump_period: int
+    parallel: bool
+    cvt_use_cache: bool
+    bd_minimum_values: Tuple[float, ...]
+    bd_maximum_values: Tuple[float, ...]
+    relaxation_probability: float
+    behavioural_descriptors: Tuple[str, ...]
+    number_of_relaxation_steps: int
+    curiosity_weights: bool
+    filter_starting_Structures: int
+
+
+    ## Algorithm params
+    seed: bool
+    profiling: bool
+    force_threshold: bool
+    force_threshold_exp_fmax: float
+    fmax_threshold: float
+    constrained_qd: bool
+    normalise_bd: bool
+    
+    alternative_operators: Tuple[float,...]
+    compute_gradients: bool # use DQD or not
+    from_archive_path: bool
+
+
+@hydra.main(config_path="configs/", config_name="csp")
+def main(config:ExperimentConfig) -> None:
+    
+    cellbounds = (
         CellBounds(
             bounds={
                 "phi": [20, 160],
@@ -28,13 +76,104 @@ if __name__ == "__main__":
             }
         ),
     )
-    experiment_parameters.splits = {(2,): 1, (4,): 1}
-    experiment_parameters.cvt_run_parameters["behavioural_descriptors"] = [
-        MaterialProperties(value)
-        for value in experiment_parameters.cvt_run_parameters["behavioural_descriptors"]
+    splits = {(2,): 1, (4,): 1}
+    
+    config.behavioural_descriptors = [
+        MaterialProperties(value) for value in config.behavioural_descriptors
     ]
 
-    experiment_parameters.start_generator = StartGenerators(
-        experiment_parameters.start_generator
+    start_generator = StartGenerators(
+        config.system.start_generator
     )
-    main(experiment_parameters, hide_prints=False)
+
+    crystal_system = CrystalSystem(
+            atom_numbers_to_optimise=config.system.blocks,
+            volume=config.system.volume,
+            ratio_of_covalent_radii=config.system.ratio_of_covalent_radii,
+            splits=splits,
+            compound_formula=config.system.system_name,
+            operator_probabilities=config.system.operator_probabilities,
+            start_generator=start_generator,
+            alternative_operators=config.alternative_operators,
+            learning_rate=config.dqd_learning_rate,
+    )
+
+    crystal_evaluator = CrystalEvaluator(
+        with_force_threshold=config.force_threshold,
+        constrained_qd=config.constrained_qd,
+        fmax_relaxation_convergence=config.fmax_threshold,
+        force_threshold_fmax=config.force_threshold_exp_fmax,
+        compute_gradients=config.compute_gradients,
+        bd_normalisation=(
+            config.system.bd_minimum_values,
+            config.system.bd_maximum_values,
+        )
+        if config.normalise_bd
+        else None,
+    )
+
+    cvt = CVT(
+        number_of_bd_dimensions=config.system.n_behavioural_descriptor_dimensions,
+        crystal_system=crystal_system,
+        crystal_evaluator=crystal_evaluator,
+    )
+
+    tic = time.time()
+
+    if config.from_archive_path is not None:
+        print("Running from archive")
+        experiment_directory_path, archive = cvt.start_experiment_from_archive(
+            experiment_to_load_directory_path=config.from_archive_path,
+            number_of_niches=config.number_of_niches,
+            maximum_evaluations=config.maximum_evaluations,
+            run_parameters=config,
+            experiment_label=config.experiment_tag,
+        )
+    else:
+        experiment_directory_path, archive = cvt.batch_compute_with_list_of_atoms(
+            number_of_niches=config.number_of_niches,
+            maximum_evaluations=config.maximum_evaluations,
+            run_parameters=config,
+            experiment_label=config.experiment_tag,
+        )
+    print(f"time taken {time.time() - tic}")
+
+    # # Variables setting
+
+    if config.normalise_bd:
+        bd_minimum_values, bd_maximum_values = [0, 0], [1, 1]
+    else:
+        bd_minimum_values, bd_maximum_values = (
+            config.system.bd_minimum_values,
+            config.system.bd_maximum_values,
+        )
+
+    centroid_filename = __centroids_filename(
+        k=config.number_of_niches,
+        dim=config.system.n_behavioural_descriptor_dimensions,
+        bd_names=config.behavioural_descriptors,
+        bd_minimum_values=bd_minimum_values,
+        bd_maximum_values=bd_maximum_values,
+        formula=config.system.system_name,
+    )
+
+    # experiment_processor = ExperimentProcessor(
+    #     experiment_label=config.experiment_tag,
+    #     config_filepath=".hydra/config.yaml",
+    #     centroid_filename=centroid_filename,
+    #     fitness_limits=config.system.fitness_min_max_values,
+    #     save_structure_images=False,
+    #     filter_for_experimental_structures=False,
+    #     experiment_location=pathlib.Path(__file__).parent.parent.parent,
+    # )
+
+    # # experiment_processor.plot()
+    # # experiment_processor.process_symmetry()
+
+
+if __name__ == "__main__":
+    cs = ConfigStore.instance()
+    cs.store(name="main", node=ExperimentConfig)
+    main()
+
+   
