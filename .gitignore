@@ -20,3 +20,4 @@ report_figures/
 apptainer/container.sif
 apptainer/tmp/
 apptainer/var_tmp/
+output/
