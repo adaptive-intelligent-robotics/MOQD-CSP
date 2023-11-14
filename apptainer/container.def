@@ -16,6 +16,7 @@ From: ubuntu:22.04
 	# Add submodules to python path
 	export PYTHONPATH=/project/megnet
 	export PYTHONPATH="/project/chgnet:$PYTHONPATH"
+	export PYTHONPATH="/project/QDax:$PYTHONPATH"
 
 	# System
 	export TZ=Europe/London
@@ -42,8 +43,10 @@ From: ubuntu:22.04
 	pip install --upgrade "jax[cuda11_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
     
 	# Download wheels for VTK package
-	wget https://www.vtk.org/files/release/9.3/vtk-9.3.0rc2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-	pip install vtk-9.3.0rc2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+	### THIS WORKS but get segmentation fault
+	apt-get update
+	apt-get -y install python3-vtk9
+	pip install https://www.vtk.org/files/release/9.3/vtk-9.3.0rc2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
 
 	# Clone repository to /project/
 	git clone --recurse-submodules https://gitlab.doc.ic.ac.uk/AIRL/research_projects/hannah_janmohamed/moqd-csp.git /project/
