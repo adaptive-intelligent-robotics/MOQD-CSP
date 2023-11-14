@@ -4,3 +4,6 @@
 [submodule "chgnet"]
 	path = chgnet
 	url = https://github.com/CederGroupHub/chgnet
+[submodule "QDax"]
+	path = QDax
+	url = https://github.com/adaptive-intelligent-robotics/QDax.git
