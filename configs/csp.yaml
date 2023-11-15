@@ -1,6 +1,6 @@
 hydra:
     run:
-        dir: ./results/${system.system_name}/${algo.algo_name}/${now:%Y-%m-%d_%H%M%S}
+        dir: ./output/${system.system_name}/${algo.algo_name}/${now:%Y-%m-%d_%H%M%S}
 
 # Defaults
 defaults:
@@ -12,7 +12,6 @@ experiment_tag: ${now:%Y-%m-%d_%H%M%S}
 number_of_niches: 200
 maximum_evaluations: 5000
 cvt_samples: 25000
-
 
 
 # Initialisation parameters

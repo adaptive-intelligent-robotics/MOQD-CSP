@@ -55,7 +55,7 @@ class ExperimentConfig:
 @hydra.main(config_path="configs/", config_name="csp")
 def main(config:ExperimentConfig) -> None:
     
-    experiment_save_dir = f"results/{config.system.system_name}/{config.algo.algo_name}/{config.experiment_tag}"
+    experiment_save_dir = f"output/{config.system.system_name}/{config.algo.algo_name}/{config.experiment_tag}"
 
     cellbounds = (
         CellBounds(
