@@ -212,7 +212,7 @@ def evaluate(
 
 def make_experiment_folder(directory_name: str):
     path = Path(__file__).parent.parent.parent
-    new_path = path / "experiments" / directory_name
+    new_path = path / directory_name
     new_path.mkdir(exist_ok=True)
     return new_path
 

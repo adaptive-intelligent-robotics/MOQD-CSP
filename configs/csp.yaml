@@ -1,17 +1,16 @@
 hydra:
     run:
-        dir: ./output/{system.system_name}/${algo.algo_name}/${now:%Y-%m-%d_%H%M%S}_${seed}
+        dir: ./results/${system.system_name}/${algo.algo_name}/${now:%Y-%m-%d_%H%M%S}
 
 # Defaults
 defaults:
     - algo: mapelites
     - system: TiO2
-experiment_tag: ${system.system_name}_${algo.algo_name}
+experiment_tag: ${now:%Y-%m-%d_%H%M%S}
 
 # CVT params
 number_of_niches: 200
 maximum_evaluations: 5000
-maximum_evaluations: 10
 cvt_samples: 25000
 
 

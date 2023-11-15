@@ -1,26 +1,18 @@
-from ase.ga.utilities import CellBounds
-
-from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
-
-from dataclasses import dataclass
-import hydra
-from hydra.core.config_store import ConfigStore
-from typing import Tuple
-
-import json
-import os
 import pathlib
-import sys
-import time
-from dataclasses import asdict
-from typing import Optional
 
+from ase.ga.utilities import CellBounds
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
+from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
 from csp_elites.map_elites.cvt_csp import CVT
 from csp_elites.map_elites.elites_utils import __centroids_filename
 from retrieve_results.experiment_processing import ExperimentProcessor
 
+from dataclasses import dataclass
+import hydra
+from hydra.core.config_store import ConfigStore
+import time
+from typing import Tuple
 
 
 @dataclass
@@ -28,7 +20,6 @@ class ExperimentConfig:
     
     number_of_niches: int
     maximum_evaluations: int
-    experiment_tag: str
 
     ### CVT params
     cvt_samples: int
@@ -64,6 +55,8 @@ class ExperimentConfig:
 @hydra.main(config_path="configs/", config_name="csp")
 def main(config:ExperimentConfig) -> None:
     
+    experiment_save_dir = f"results/{config.system.system_name}/{config.algo.algo_name}/{config.experiment_tag}"
+
     cellbounds = (
         CellBounds(
             bounds={
@@ -113,32 +106,25 @@ def main(config:ExperimentConfig) -> None:
     )
 
     cvt = CVT(
-        number_of_bd_dimensions=config.system.n_behavioural_descriptor_dimensions,
         crystal_system=crystal_system,
         crystal_evaluator=crystal_evaluator,
+        number_of_niches=config.number_of_niches,
+        number_of_bd_dimensions=config.system.n_behavioural_descriptor_dimensions,
+        run_parameters=config,
+        experiment_save_dir=experiment_save_dir,
     )
-
+    
     tic = time.time()
 
-    if config.from_archive_path is not None:
-        print("Running from archive")
-        experiment_directory_path, archive = cvt.start_experiment_from_archive(
-            experiment_to_load_directory_path=config.from_archive_path,
-            number_of_niches=config.number_of_niches,
-            maximum_evaluations=config.maximum_evaluations,
-            run_parameters=config,
-            experiment_label=config.experiment_tag,
-        )
-    else:
-        experiment_directory_path, archive = cvt.batch_compute_with_list_of_atoms(
-            number_of_niches=config.number_of_niches,
-            maximum_evaluations=config.maximum_evaluations,
-            run_parameters=config,
-            experiment_label=config.experiment_tag,
-        )
+    experiment_directory_path, archive = cvt.batch_compute_with_list_of_atoms(
+        number_of_niches=config.number_of_niches,
+        maximum_evaluations=config.maximum_evaluations,
+        run_parameters=config,
+    )
+    
     print(f"time taken {time.time() - tic}")
 
-    # # Variables setting
+    # Variables setting
 
     if config.normalise_bd:
         bd_minimum_values, bd_maximum_values = [0, 0], [1, 1]
@@ -158,7 +144,6 @@ def main(config:ExperimentConfig) -> None:
     )
 
     # experiment_processor = ExperimentProcessor(
-    #     experiment_label=config.experiment_tag,
     #     config_filepath=".hydra/config.yaml",
     #     centroid_filename=centroid_filename,
     #     fitness_limits=config.system.fitness_min_max_values,
@@ -167,8 +152,8 @@ def main(config:ExperimentConfig) -> None:
     #     experiment_location=pathlib.Path(__file__).parent.parent.parent,
     # )
 
-    # # experiment_processor.plot()
-    # # experiment_processor.process_symmetry()
+    # experiment_processor.plot()
+    # experiment_processor.process_symmetry()
 
 
 if __name__ == "__main__":

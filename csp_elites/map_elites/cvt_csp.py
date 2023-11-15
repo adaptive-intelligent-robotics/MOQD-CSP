@@ -35,42 +35,28 @@ from csp_elites.utils.plot import load_archive_from_pickle
 class CVT:
     def __init__(
         self,
-        number_of_bd_dimensions: int,
         crystal_system: CrystalSystem,
         crystal_evaluator: CrystalEvaluator,
+        number_of_niches: int,
+        number_of_bd_dimensions: int,
+        run_parameters: dict,
+        experiment_save_dir: str,
+        centroids_load_dir: str="./experiments/centroids"
     ):
-        self.number_of_bd_dimensions = number_of_bd_dimensions
+        # Initialise Crystal functions
         self.crystal_system = crystal_system
         self.crystal_evaluator = crystal_evaluator
         self.graph_converter = CrystalGraphConverter()
+        
+        # Set up lodding
+        self.experiment_save_dir = make_experiment_folder(experiment_save_dir)
+        self.centroids_load_dir = make_experiment_folder(centroids_load_dir)
+        self.log_file = open(f"{self.experiment_save_dir}/main_log.dat", "w")
 
-    def initialise_run_parameters(
-        self, number_of_niches, maximum_evaluations, run_parameters, experiment_label
-    ):
-        self.experiment_directory_path = make_experiment_folder(experiment_label)
-        self.log_file = open(
-            f"{self.experiment_directory_path}/{experiment_label}.dat", "w"
-        )
-        self.memory_log = open(f"{self.experiment_directory_path}/memory_log.dat", "w")
-        with open(
-            f"{self.experiment_directory_path}/experiment_parameters.pkl", "wb"
-        ) as file:
-            pickle.dump(run_parameters, file)
-
-        self.archive = {}  # init archive (empty)
-        self.n_evals = 0  # number of evaluations since the beginning
-        self.b_evals = 0  # number evaluation since the last dump
+        # Store parameters
         self.n_relaxation_steps = run_parameters["number_of_relaxation_steps"]
-        self.configuration_counter = 0
-        # create the CVT
-        self.kdt = self._initialise_kdt_and_centroids(
-            experiment_directory_path=self.experiment_directory_path,
-            number_of_niches=number_of_niches,
-            run_parameters=run_parameters,
-        )
         self.number_of_niches = number_of_niches
         self.run_parameters = run_parameters
-        self.maximum_evaluations = maximum_evaluations
 
         self.relax_every_n_generations = (
             run_parameters["relax_every_n_generations"]
@@ -82,25 +68,31 @@ class CVT:
             if "relax_archive_every_n_generations" in run_parameters.keys()
             else 0
         )
+               
+        # Initialise archives and counters  
+        self.archive = {}  # init archive (empty)
+        self.n_evals = 0  # number of evaluations since the beginning
+        self.b_evals = 0  # number evaluation since the last dump
+        self.configuration_counter = 0
         self.generation_counter = 0
-        self.run_parameters = run_parameters
+        self.number_of_bd_dimensions = number_of_bd_dimensions
 
+        # Initialise centroids
+        self.kdt = self._initialise_kdt_and_centroids(
+            experiment_directory_path=self.centroids_load_dir,
+            number_of_niches=number_of_niches,
+            run_parameters=run_parameters,
+        )
+        
     def batch_compute_with_list_of_atoms(
         self,
         number_of_niches,
         maximum_evaluations,
         run_parameters,
-        experiment_label,
     ):
-        # create the CVT
-        self.initialise_run_parameters(
-            number_of_niches, maximum_evaluations, run_parameters, experiment_label
-        )
 
-        ram_logging = []
         pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations, position=2)
         while self.n_evals < maximum_evaluations:  ### NUMBER OF GENERATIONS
-            ram_logging.append(psutil.virtual_memory()[3] / 1000000000)
             self.generation_counter += 1
             # random initialization
             population = []
@@ -113,7 +105,7 @@ class CVT:
                 population += individuals
 
                 with open(
-                    f"{self.experiment_directory_path}/starting_population.pkl", "wb"
+                    f"{self.experiment_save_dir}/starting_population.pkl", "wb"
                 ) as file:
                     pickle.dump(population, file)
 
@@ -161,9 +153,9 @@ class CVT:
             del descriptors
             del kill_list
 
-        save_archive(self.archive, self.n_evals, self.experiment_directory_path)
-        self.plot_memory(ram_logging)
-        return self.experiment_directory_path, self.archive
+        save_archive(self.archive, self.n_evals, self.experiment_save_dir)
+
+        return self.experiment_save_dir, self.archive
 
     def initialise_known_atoms(self):
         _, known_atoms = get_all_materials_with_formula(
@@ -181,15 +173,6 @@ class CVT:
                 individuals.append(atoms)
         del known_atoms
         return individuals
-
-    def plot_memory(self, ram_logging):
-        plt.plot(range(len(ram_logging)), ram_logging)
-        plt.xlabel("Number of Times Evaluation Loop Was Ran")
-        plt.ylabel("Amount of RAM Used")
-        plt.title("RAM over time")
-        plt.savefig(
-            f"{self.experiment_directory_path}/memory_over_time.png", format="png"
-        )
 
     def update_archive(
         self, population, fitness_scores, descriptors, kill_list, gradients
@@ -212,11 +195,11 @@ class CVT:
             and self.run_parameters["dump_period"] != -1
         ):
             print(
-                "[{}/{}]".format(self.n_evals, int(self.maximum_evaluations)),
+                "[{}/{}]".format(self.n_evals, int(self.running_parameters.maximum_evaluations)),
                 end=" ",
                 flush=True,
             )
-            save_archive(self.archive, self.n_evals, self.experiment_directory_path)
+            save_archive(self.archive, self.n_evals, self.experiment_save_dir)
             self.b_evals = 0
         # write log
         if self.log_file != None:
@@ -238,9 +221,7 @@ class CVT:
                 )
             )
             self.log_file.flush()
-        memory = psutil.virtual_memory()[3] / 1000000000
-        self.memory_log.write("{} {}\n".format(self.n_evals, memory))
-        self.memory_log.flush()
+            
         gc.collect()
 
     def _initialise_kdt_and_centroids(
@@ -324,145 +305,3 @@ class CVT:
             n_relaxation_steps = self.run_parameters["number_of_relaxation_steps"]
 
         return n_relaxation_steps
-
-    def start_experiment_from_archive(
-        self,
-        experiment_to_load_directory_path: str,
-        experiment_label: str,
-        run_parameters,
-        number_of_niches,
-        maximum_evaluations,
-    ):
-        self.initialise_run_parameters(
-            number_of_niches, maximum_evaluations, run_parameters, experiment_label
-        )
-        self.log_file = open(
-            f"{experiment_to_load_directory_path}/{experiment_label}_continued.dat", "w"
-        )
-        last_archive = max(
-            [
-                int(name.lstrip("archive_").rstrip(".pkl"))
-                for name in os.listdir(experiment_to_load_directory_path)
-                if (
-                    (not os.path.isdir(name))
-                    and ("archive_" in name)
-                    and (".pkl" in name)
-                )
-            ]
-        )
-        self.archive = self._convert_saved_archive_to_experiment_archive(
-            experiment_directory_path=experiment_to_load_directory_path,
-            archive_number=last_archive,
-            experiment_label=experiment_label,
-            kdt=self.kdt,
-            archive=self.archive,
-        )
-        self.experiment_directory_path = experiment_to_load_directory_path
-        self.n_evals = 6
-        ram_logging = []
-        pbar = tqdm(
-            desc="Number of evaluations", total=self.maximum_evaluations, position=2
-        )
-        while self.n_evals < self.maximum_evaluations:  ### NUMBER OF GENERATIONS
-            ram_logging.append(psutil.virtual_memory()[3] / 1000000000)
-            self.generation_counter += 1
-            # random initialization
-            population = []
-            if len(self.archive) <= run_parameters["random_init"] * number_of_niches:
-                individuals = self.crystal_system.create_n_individuals(
-                    run_parameters["random_init_batch"]
-                )
-                if run_parameters["seed"]:
-                    individuals = self.initialise_known_atoms()
-                population += individuals
-
-                with open(
-                    f"{self.experiment_directory_path}/starting_population.pkl", "wb"
-                ) as file:
-                    pickle.dump(population, file)
-
-            elif (
-                (self.relax_archive_every_n_generations != 0)
-                and (
-                    self.generation_counter % self.relax_archive_every_n_generations
-                    == 0
-                )
-                and (self.generation_counter != 0)
-            ):
-                population = [species.x for species in list(self.archive.values())]
-
-            else:  # variation/selection loop
-                mutated_individuals = self.mutate_individuals(
-                    run_parameters["batch_size"]
-                )
-                population += mutated_individuals
-
-            n_relaxation_steps = self.set_number_of_relaxation_steps()
-
-            (
-                population_as_atoms,
-                population,
-                fitness_scores,
-                descriptors,
-                kill_list,
-                gradients,
-            ) = self.crystal_evaluator.batch_compute_fitness_and_bd(
-                list_of_atoms=population, n_relaxation_steps=n_relaxation_steps
-            )
-
-            if population is not None:
-                self.crystal_system.update_operator_scaling_volumes(
-                    population=population_as_atoms
-                )
-                del population_as_atoms
-
-            self.update_archive(
-                population, fitness_scores, descriptors, kill_list, gradients
-            )
-            pbar.update(len(population))
-            del population
-            del fitness_scores
-            del descriptors
-            del kill_list
-
-        save_archive(self.archive, self.n_evals, self.experiment_directory_path)
-        self.plot_memory(ram_logging)
-        return self.experiment_directory_path, self.archive
-
-    def _convert_saved_archive_to_experiment_archive(
-        self,
-        experiment_directory_path,
-        experiment_label,
-        archive_number,
-        kdt,
-        archive,
-        individual_type="atoms",
-    ):
-        fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
-            filename=f"{experiment_directory_path}/archive_{archive_number}.pkl"
-        )
-
-        if isinstance(individuals[0], Atoms):
-            species_list = [
-                Species(
-                    x=individuals[i].todict(),
-                    desc=descriptors[i],
-                    fitness=fitnesses[i],
-                    centroid=None,
-                )
-                for i in range(len(individuals))
-            ]
-        elif isinstance(individuals[0], dict):
-            species_list = [
-                Species(
-                    x=individuals[i],
-                    desc=descriptors[i],
-                    fitness=fitnesses[i],
-                    centroid=None,
-                )
-                for i in range(len(individuals))
-            ]
-        for i in range(len(species_list)):
-            add_to_archive(species_list[i], descriptors[i], archive=archive, kdt=kdt)
-
-        return archive
