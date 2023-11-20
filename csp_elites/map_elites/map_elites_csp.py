@@ -90,7 +90,7 @@ class MapElites:
         )
         
 
-    def batch_compute_with_list_of_atoms(
+    def run(
         self,
         number_of_niches,
         maximum_evaluations,
@@ -100,37 +100,12 @@ class MapElites:
         pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations, position=2)
         while self.n_evals < maximum_evaluations:  ### NUMBER OF GENERATIONS
             self.generation_counter += 1
-            # random initialization
-            population = []
-            if len(self.archive) <= run_parameters.random_init * number_of_niches:
-                individuals = self.crystal_system.create_n_individuals(
-                    run_parameters.random_init_batch
-                )
-                if run_parameters.seed:
-                    individuals = self.initialise_known_atoms()
-                population += individuals
-
-                with open(
-                    f"{self.experiment_save_dir}/starting_population.pkl", "wb"
-                ) as file:
-                    pickle.dump(population, file)
-
-            elif (
-                (self.relax_archive_every_n_generations != 0)
-                and (
-                    self.generation_counter % self.relax_archive_every_n_generations
-                    == 0
-                )
-                and (self.generation_counter != 0)
-            ):
-                population = [species.x for species in list(self.archive.values())]
-
-            else:  # variation/selection loop
-                mutated_individuals = self.mutate_individuals(
-                    run_parameters.system.batch_size
-                )
-                population += mutated_individuals
-
+            
+            population = self.get_population(
+                run_parameters=run_parameters,
+                number_of_niches=number_of_niches,    
+            )
+            
             n_relaxation_steps = self.set_number_of_relaxation_steps()
 
             (
@@ -141,7 +116,8 @@ class MapElites:
                 kill_list,
                 gradients,
             ) = self.crystal_evaluator.batch_compute_fitness_and_bd(
-                list_of_atoms=population, n_relaxation_steps=n_relaxation_steps
+                list_of_atoms=population,
+                n_relaxation_steps=n_relaxation_steps
             )
 
             if population is not None:
@@ -163,6 +139,49 @@ class MapElites:
 
         return self.archive
 
+    def get_population(
+        self,
+        run_parameters,
+        number_of_niches,
+    ):
+        # random initialization
+        population = []
+        
+        # Make sure we have enough niches filled to start with
+        if len(self.archive) <= run_parameters.random_init * number_of_niches:
+            individuals = self.crystal_system.create_n_individuals(
+                run_parameters.random_init_batch
+            )
+            if run_parameters.seed:
+                individuals = self.initialise_known_atoms()
+            population += individuals
+
+            with open(
+                f"{self.experiment_save_dir}/starting_population.pkl", "wb"
+            ) as file:
+                pickle.dump(population, file)
+
+        # Get individuals for relaxation
+        elif (
+            (self.relax_archive_every_n_generations != 0)
+            and (
+                self.generation_counter % self.relax_archive_every_n_generations
+                == 0
+            )
+            and (self.generation_counter != 0)
+        ):
+            population = [species.x for species in list(self.archive.values())]
+
+        # Otherwise select indviduals from archive and mutate them
+        else:  # variation/selection loop
+            mutated_individuals = self.mutate_individuals(
+                run_parameters.system.batch_size
+            )
+            population += mutated_individuals
+
+        return population
+    
+    
     def initialise_known_atoms(self):
         _, known_atoms = get_all_materials_with_formula(
             self.crystal_system.compound_formula

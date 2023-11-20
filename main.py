@@ -4,7 +4,7 @@ from ase.ga.utilities import CellBounds
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
 from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
-from csp_elites.map_elites.cvt_csp import MapElites
+from csp_elites.map_elites.map_elites_csp import MapElites
 from csp_elites.map_elites.elites_utils import __centroids_filename
 from retrieve_results.experiment_processing import ExperimentProcessor
 
@@ -116,7 +116,7 @@ def main(config:ExperimentConfig) -> None:
     
     tic = time.time()
 
-    archive = map_elites.batch_compute_with_list_of_atoms(
+    archive = map_elites.run(
         number_of_niches=config.number_of_niches,
         maximum_evaluations=config.maximum_evaluations,
         run_parameters=config,
@@ -148,8 +148,8 @@ def main(config:ExperimentConfig) -> None:
         save_structure_images=False,
         filter_for_experimental_structures=False,
         centroid_filename=centroid_filename,
-        centroids_load_dir=cvt.centroids_load_dir,
-        experiment_save_dir=cvt.experiment_save_dir,
+        centroids_load_dir=map_elites.centroids_load_dir,
+        experiment_save_dir=map_elites.experiment_save_dir,
     )
 
     experiment_processor.plot()
