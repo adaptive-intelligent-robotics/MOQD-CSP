@@ -4,7 +4,7 @@ from ase.ga.utilities import CellBounds
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
 from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
-from csp_elites.map_elites.cvt_csp import CVT
+from csp_elites.map_elites.cvt_csp import MapElites
 from csp_elites.map_elites.elites_utils import __centroids_filename
 from retrieve_results.experiment_processing import ExperimentProcessor
 
@@ -105,7 +105,7 @@ def main(config:ExperimentConfig) -> None:
         else None,
     )
 
-    cvt = CVT(
+    map_elites = MapElites(
         crystal_system=crystal_system,
         crystal_evaluator=crystal_evaluator,
         number_of_niches=config.number_of_niches,
@@ -116,7 +116,7 @@ def main(config:ExperimentConfig) -> None:
     
     tic = time.time()
 
-    archive = cvt.batch_compute_with_list_of_atoms(
+    archive = map_elites.batch_compute_with_list_of_atoms(
         number_of_niches=config.number_of_niches,
         maximum_evaluations=config.maximum_evaluations,
         run_parameters=config,

@@ -31,7 +31,7 @@ from csp_elites.map_elites.elites_utils import (
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 
 
-class CVT:
+class MapElites:
     def __init__(
         self,
         crystal_system: CrystalSystem,
