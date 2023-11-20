@@ -826,7 +826,7 @@ class SymmetryEvaluation:
         )
 
     def get_limits_from_centroid_path(self, centroid_path: pathlib.Path):
-        filename = centroid_path.name.rstrip(".dat")
+        filename = centroid_path.rstrip(".dat")
         limits_as_string = filename.split("band_gap")[1].split("shear_modulus")
         limits = [limit.split("_") for limit in limits_as_string]
         return (int(limits[0][1]), int(limits[1][1])), (

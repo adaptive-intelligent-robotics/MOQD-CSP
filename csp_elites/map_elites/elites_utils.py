@@ -53,7 +53,7 @@ def __centroids_filename(
     for i, bd_name in enumerate(bd_names):
         bd_tag += f"_{bd_name.value}_{bd_minimum_values[i]}_{bd_maximum_values[i]}"
 
-    return "/centroids/centroids_" + str(k) + "_" + str(dim) + bd_tag + ".dat"
+    return "/centroids_" + str(k) + "_" + str(dim) + bd_tag + ".dat"
 
 
 def write_centroids(
@@ -69,7 +69,7 @@ def write_centroids(
     filename = __centroids_filename(
         k, dim, bd_names, bd_minimum_values, bd_maximum_values, formula
     )
-    file_path = Path(experiment_folder).parent
+    file_path = Path(experiment_folder)
     with open(f"{file_path}{filename}", "w") as f:
         for p in centroids:
             for item in p:
@@ -87,6 +87,8 @@ def cvt(
     bd_names: List[MaterialProperties],
     cvt_use_cache=True,
     formula: str = "",
+    centroids_load_dir=None,
+    centroids_save_dir=None,
 ):
     # check if we have cached values
     fname = __centroids_filename(
@@ -97,11 +99,10 @@ def cvt(
         bd_maximum_values,
         formula=formula,
     )
-    file_location = pathlib.Path(experiment_folder).parent
     if cvt_use_cache:
-        if Path(f"{file_location}/{fname}").is_file():
+        if Path(f"{centroids_load_dir}/{fname}").is_file():
             print("WARNING: using cached CVT:", fname)
-            return np.loadtxt(f"{file_location}/{fname}")
+            return np.loadtxt(f"{centroids_load_dir}/{fname}")
     # otherwise, compute cvt
     print("Computing CVT (this can take a while...):", fname)
 
@@ -124,7 +125,7 @@ def cvt(
     k_means.fit(x)
     write_centroids(
         k_means.cluster_centers_,
-        experiment_folder,
+        centroids_save_dir,
         bd_names,
         bd_minimum_values,
         bd_maximum_values,

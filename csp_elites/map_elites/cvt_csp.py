@@ -29,7 +29,6 @@ from csp_elites.map_elites.elites_utils import (
     Species,
 )
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
-from csp_elites.utils.plot import load_archive_from_pickle
 
 
 class CVT:
@@ -41,7 +40,7 @@ class CVT:
         number_of_bd_dimensions: int,
         run_parameters: dict,
         experiment_save_dir: str,
-        centroids_load_dir: str="./experiments/centroids"
+        centroids_load_dir: str="./experiments/centroids/"
     ):
         # Initialise Crystal functions
         self.crystal_system = crystal_system
@@ -54,17 +53,17 @@ class CVT:
         self.log_file = open(f"{self.experiment_save_dir}/main_log.dat", "w")
 
         # Store parameters
-        self.n_relaxation_steps = run_parameters["number_of_relaxation_steps"]
+        self.n_relaxation_steps = run_parameters.number_of_relaxation_steps
         self.number_of_niches = number_of_niches
         self.run_parameters = run_parameters
 
         self.relax_every_n_generations = (
-            run_parameters["relax_every_n_generations"]
+            run_parameters.relax_every_n_generations
             if "relax_every_n_generations" in run_parameters.keys()
             else 0
         )
         self.relax_archive_every_n_generations = (
-            run_parameters["relax_archive_every_n_generations"]
+            run_parameters.relax_archive_every_n_generations
             if "relax_archive_every_n_generations" in run_parameters.keys()
             else 0
         )
@@ -77,6 +76,12 @@ class CVT:
         self.generation_counter = 0
         self.number_of_bd_dimensions = number_of_bd_dimensions
 
+        # Set up where to save centroids:
+        if self.run_parameters.cvt_use_cache:
+            self.centroids_save_dir = self.centroids_load_dir
+        else:
+            self.centroids_save_dir = self.experiment_save_dir
+        
         # Initialise centroids
         self.kdt = self._initialise_kdt_and_centroids(
             experiment_directory_path=self.centroids_load_dir,
@@ -84,6 +89,7 @@ class CVT:
             run_parameters=run_parameters,
         )
         
+
     def batch_compute_with_list_of_atoms(
         self,
         number_of_niches,
@@ -96,11 +102,11 @@ class CVT:
             self.generation_counter += 1
             # random initialization
             population = []
-            if len(self.archive) <= run_parameters["random_init"] * number_of_niches:
+            if len(self.archive) <= run_parameters.random_init * number_of_niches:
                 individuals = self.crystal_system.create_n_individuals(
-                    run_parameters["random_init_batch"]
+                    run_parameters.random_init_batch
                 )
-                if run_parameters["seed"]:
+                if run_parameters.seed:
                     individuals = self.initialise_known_atoms()
                 population += individuals
 
@@ -121,7 +127,7 @@ class CVT:
 
             else:  # variation/selection loop
                 mutated_individuals = self.mutate_individuals(
-                    run_parameters["batch_size"]
+                    run_parameters.system.batch_size
                 )
                 population += mutated_individuals
 
@@ -155,7 +161,7 @@ class CVT:
 
         save_archive(self.archive, self.n_evals, self.experiment_save_dir)
 
-        return self.experiment_save_dir, self.archive
+        return self.archive
 
     def initialise_known_atoms(self):
         _, known_atoms = get_all_materials_with_formula(
@@ -165,7 +171,7 @@ class CVT:
         for atoms in known_atoms:
             if (
                 len(atoms.get_atomic_numbers())
-                == self.run_parameters["filter_starting_Structures"]
+                == self.run_parameters.filter_starting_Structures
             ):
                 atoms.rattle()
                 atoms.info = None
@@ -191,8 +197,8 @@ class CVT:
                 self.configuration_counter += 1
                 add_to_archive(s, s.desc, self.archive, self.kdt)
         if (
-            self.b_evals >= self.run_parameters["dump_period"]
-            and self.run_parameters["dump_period"] != -1
+            self.b_evals >= self.run_parameters.dump_period
+            and self.run_parameters.dump_period != -1
         ):
             print(
                 "[{}/{}]".format(self.n_evals, int(self.running_parameters.maximum_evaluations)),
@@ -228,7 +234,7 @@ class CVT:
         self, experiment_directory_path, number_of_niches, run_parameters
     ):
         # create the CVT
-        if run_parameters["normalise_bd"]:
+        if run_parameters.normalise_bd:
             bd_minimum_values, bd_maximum_values = [0, 0], [1, 1]
         else:
             bd_minimum_values, bd_maximum_values = (
@@ -239,19 +245,21 @@ class CVT:
         c = cvt(
             number_of_niches,
             self.number_of_bd_dimensions,
-            run_parameters["cvt_samples"],
+            run_parameters.cvt_samples,
             bd_minimum_values,
             bd_maximum_values,
             experiment_directory_path,
-            run_parameters["behavioural_descriptors"],
-            run_parameters["cvt_use_cache"],
+            run_parameters.behavioural_descriptors,
+            run_parameters.cvt_use_cache,
             formula=self.crystal_system.compound_formula,
+            centroids_load_dir=self.centroids_load_dir,
+            centroids_save_dir=self.centroids_save_dir,
         )
         kdt = KDTree(c, leaf_size=30, metric="euclidean")
         write_centroids(
             c,
-            experiment_folder=experiment_directory_path,
-            bd_names=run_parameters["behavioural_descriptors"],
+            experiment_folder=self.centroids_save_dir,
+            bd_names=run_parameters.behavioural_descriptors,
             bd_minimum_values=run_parameters.system.bd_minimum_values,
             bd_maximum_values=run_parameters.system.bd_maximum_values,
             formula=self.crystal_system.compound_formula,
@@ -288,7 +296,7 @@ class CVT:
             if self.generation_counter // self.relax_every_n_generations == 0:
                 n_relaxation_steps = 100
             else:
-                n_relaxation_steps = self.run_parameters["number_of_relaxation_steps"]
+                n_relaxation_steps = self.run_parameters.number_of_relaxation_steps
         elif (self.relax_archive_every_n_generations != 0) and (
             self.generation_counter % self.relax_archive_every_n_generations == 0
         ):
@@ -302,6 +310,6 @@ class CVT:
             )
 
         else:
-            n_relaxation_steps = self.run_parameters["number_of_relaxation_steps"]
+            n_relaxation_steps = self.run_parameters.number_of_relaxation_steps
 
         return n_relaxation_steps

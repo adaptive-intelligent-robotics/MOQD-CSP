@@ -10,11 +10,9 @@ from csp_elites.crystal.materials_data_model import MaterialProperties, StartGen
 from csp_elites.evaluation.symmetry_evaluator import SymmetryEvaluation
 
 from csp_elites.map_elites.archive import Archive
-from csp_elites.utils import experiment_parameters
 from csp_elites.utils.asign_target_values_to_centroids import (
     reassign_data_from_pkl_to_new_centroids,
 )
-from csp_elites.utils.experiment_parameters import ExperimentParameters
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 from csp_elites.utils.plot import (
     load_centroids,
@@ -29,93 +27,63 @@ from retrieve_results.experiment_organiser import ExperimentOrganiser
 class ExperimentProcessor:
     def __init__(
         self,
-        experiment_label: str,
-        centroid_filename: str,
-        config_filepath: Union[pathlib.Path, ExperimentParameters],
-        fitness_limits=(6.5, 10),
+        config,
         save_structure_images: bool = True,
         filter_for_experimental_structures: bool = False,
-        experiment_location: pathlib.Path = pathlib.Path(__file__).parent.parent
-        / ".experiment.nosync",
-        centroid_directory_path: Optional[pathlib.Path] = None,
-        experiment_directory_path: Optional[pathlib.Path] = None,
+        centroid_filename: str = None,
+        centroids_load_dir: Optional[pathlib.Path] = None,
+        experiment_save_dir: Optional[pathlib.Path] = None,
     ):
-        self.repo_location = pathlib.Path(__file__).parent.parent
-        self.experiment_label = experiment_label
-        self.experiment_location = experiment_location
-        self.experiment_directory_path = (
-            self.experiment_location / "experiments" / experiment_label
-            if experiment_directory_path is None
-            else experiment_directory_path
-        )
-        self.centroid_directory_path = (
-            self.experiment_location / "experiments" / centroid_filename[1:]
-            if centroid_directory_path is None
-            else centroid_directory_path
-        )
-        self.all_centroids = load_centroids(str(self.centroid_directory_path))
-        self.experiment_parameters = self._load_experiment_parameters(config_filepath)
-        self.fitness_limits = fitness_limits
+        # Save config
+        self.config = config
+        self.formula = config.system.system_name
+
+        # Plotting options
         self.save_structure_images = save_structure_images
         self.filter_for_experimental_structures = filter_for_experimental_structures
-        self.formula = experiment_label[15:].split("_")[0]
 
-    @staticmethod
-    def _load_experiment_parameters(
-        file_location: Union[pathlib.Path, ExperimentParameters]
-    ):
-        if isinstance(file_location, pathlib.Path):
-            with open(file_location, "r") as file:
-                experiment_parameters = json.load(file)
-            experiment_parameters = ExperimentParameters(**experiment_parameters)
-            experiment_parameters.cellbounds = (
-                CellBounds(
-                    bounds={
-                        "phi": [20, 160],
-                        "chi": [20, 160],
-                        "psi": [20, 160],
-                        "a": [2, 40],
-                        "b": [2, 40],
-                        "c": [2, 40],
-                    }
-                ),
-            )
-            experiment_parameters.splits = {(2,): 1, (4,): 1}
-            experiment_parameters.cvt_run_parameters["behavioural_descriptors"] = [
-                MaterialProperties(value)
-                for value in experiment_parameters.cvt_run_parameters[
-                    "behavioural_descriptors"
-                ]
-            ]
-
-            experiment_parameters.start_generator = StartGenerators(
-                experiment_parameters.start_generator
-            )
-        else:
-            experiment_parameters = file_location
-
-        return experiment_parameters
-
+        # Set up directories
+        self.experiment_location: Optional[pathlib.Path] = pathlib.Path(__file__).parent.parent
+        self.experiment_save_dir = experiment_save_dir
+        if self.config.cvt_use_cache:
+            self.centroid_directory_path =  centroids_load_dir
+        else:   
+            self.centroid_directory_path = experiment_save_dir
+        self.centroid_filename = centroid_filename
+        
+        # Load archive
+        self.all_centroids = load_centroids(str(self.centroid_directory_path)+centroid_filename)
+        self.fitness_limits = config.system.fitness_min_max_values
+        
+        
     def plot(self, annotate: bool = True, force_replot: bool = False):
+        
+        if self.config.normalise_bd:
+            min_bds, max_bds = [0, 0], [1, 1]
+        else:
+            min_bds, max_bds = self.config.bd_minimum_values, self.config.bd_maximum_values
+        
         plot_all_maps_in_archive(
-            experiment_directory_path=str(self.experiment_directory_path),
-            experiment_parameters=self.experiment_parameters,
+            experiment_directory_path=str(self.experiment_save_dir),
+            experiment_parameters=self.config,
             all_centroids=self.all_centroids,
             target_centroids=self.compute_target_centroids(),
+            bd_minimum_values=min_bds,
+            bd_maximum_values=max_bds,
             annotate=annotate,
             force_replot=force_replot,
         )
-        plot_gif(experiment_directory_path=str(self.experiment_directory_path))
+        plot_gif(experiment_directory_path=str(self.experiment_save_dir))
         plot_all_statistics_from_file(
-            filename=f"{self.experiment_directory_path}/{self.experiment_label}.dat",
-            save_location=f"{self.experiment_directory_path}/",
+            filename=f"{self.experiment_save_dir}/main_log.dat",
+            save_location=f"{self.experiment_save_dir}/",
         )
 
     def _get_last_archive_number(self):
         return max(
             [
                 int(name.lstrip("archive_").rstrip(".pkl"))
-                for name in os.listdir(self.experiment_directory_path)
+                for name in os.listdir(self.experiment_save_dir)
                 if (
                     (not os.path.isdir(name))
                     and ("archive_" in name)
@@ -124,60 +92,52 @@ class ExperimentProcessor:
             ]
         )
 
-    def compute_target_centroids(self):
-        number_of_atoms = len(self.experiment_parameters.blocks)
+    def compute_target_centroids(self,
+        ):
+        number_of_atoms = len(self.config.system.blocks)
         bd_tag = [
             bd.value
-            for bd in self.experiment_parameters.cvt_run_parameters[
-                "behavioural_descriptors"
-            ]
+            for bd in self.config.behavioural_descriptors
         ]
         tag = ""
         for el in bd_tag:
             tag += f"{el}_"
-        comparison_data_location = (
-            self.experiment_location
-            / "mp_reference_analysis"
-            / f"{self.formula}_{number_of_atoms}"
-            / f"{self.formula}_{tag[:-1]}.pkl"
-        )
-
-        comparison_data_packed = load_archive_from_pickle(str(comparison_data_location))
+            
+        comparison_data_location = f"/mp_reference_analysis/{self.formula}_{number_of_atoms}/{self.formula}_{tag[:-1]}.pkl"
+        comparison_data_packed = load_archive_from_pickle(str(self.experiment_location) + comparison_data_location)
 
         normalise_bd_values = (
             (
-                self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
-                self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
+                self.config.system.bd_minimum_values,
+                self.config.system.bd_maximum_values,
             )
-            if self.experiment_parameters.cvt_run_parameters["normalise_bd"]
+            if self.config.normalise_bd
             else None
         )
 
         target_centroids = reassign_data_from_pkl_to_new_centroids(
-            centroids_file=str(self.centroid_directory_path),
+            centroids_file=str(self.centroid_directory_path) + self.centroid_filename,
             target_data=comparison_data_packed,
-            filter_for_number_of_atoms=self.experiment_parameters.fitler_comparison_data_for_n_atoms,
+            filter_for_number_of_atoms=self.config.system.fitler_comparison_data_for_n_atoms,
             normalise_bd_values=normalise_bd_values,
         )
         return target_centroids
 
     def get_material_project_info(self):
         structure_info, known_structures = get_all_materials_with_formula(
-            experiment_parameters.system_name
+            self.config.system.system_name
         )
         return structure_info, known_structures
 
     def process_symmetry(self, annotate=True):
         archive_number = self._get_last_archive_number()
         unrelaxed_archive_location = (
-            self.experiment_directory_path / f"archive_{archive_number}.pkl"
+            self.experiment_save_dir / f"archive_{archive_number}.pkl"
         )
 
-        centroid_tag = str(self.centroid_directory_path.name).rstrip(".dat")
-        # target_data_path = self.experiment_location / "experiments" / "target_data" / f"target_data_{centroid_tag}.csv"
-        number_of_atoms = self.experiment_parameters.cvt_run_parameters[
-            "filter_starting_Structures"
-        ]
+        centroid_tag = str(self.centroid_filename)[1:].rstrip(".dat")
+
+        number_of_atoms = self.config.filter_starting_Structures
         target_data_path = (
             self.experiment_location
             / "mp_reference_analysis"
@@ -190,22 +150,23 @@ class ExperimentProcessor:
             target_data_path = None
 
         archive = Archive.from_archive(
-            unrelaxed_archive_location, centroid_filepath=self.centroid_directory_path
+            unrelaxed_archive_location,
+            centroid_filepath=str(self.centroid_directory_path)+self.centroid_filename
         )
 
         normalise_bd_values = (
             (
-                self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
-                self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
+                self.config.system.bd_minimum_values,
+                self.config.system.bd_maximum_values,
             )
-            if self.experiment_parameters.cvt_run_parameters["normalise_bd"]
+            if self.config.normalise_bd
             else None
         )
 
         tareget_archive = Archive.from_reference_csv_path(
             target_data_path,
             normalise_bd_values=normalise_bd_values,
-            centroids_path=self.centroid_directory_path,
+            centroids_path=str(self.centroid_directory_path)+self.centroid_filename,
         )
         symmetry_evaluation = SymmetryEvaluation(
             formula=self.formula,
@@ -224,7 +185,7 @@ class ExperimentProcessor:
             archive=archive,
             fitness_range=(9.1, 9.5),
             top_n_individuals_to_save=10,
-            directory_to_save=self.experiment_directory_path,
+            directory_to_save=self.experiment_save_dir,
             save_primitive=False,
             save_visuals=self.save_structure_images,
         )
@@ -232,7 +193,7 @@ class ExperimentProcessor:
         symmetry_indices = symmetry_evaluation.save_best_structures_by_symmetry(
             archive=archive,
             matched_space_group_dict=matched_space_group_dict,
-            directory_to_save=self.experiment_directory_path,
+            directory_to_save=self.experiment_save_dir,
             save_primitive=False,
             save_visuals=self.save_structure_images,
         )
@@ -242,20 +203,20 @@ class ExperimentProcessor:
         df, individuals_with_matches = symmetry_evaluation.executive_summary_csv(
             archive=archive,
             indices_to_compare=list(all_individual_indices_to_check),
-            directory_to_save=self.experiment_directory_path,
+            directory_to_save=self.experiment_save_dir,
         )
 
         symmetry_evaluation.group_structures_by_symmetry(
             archive=archive,
-            experiment_directory_path=self.experiment_directory_path,
-            centroid_full_path=self.centroid_directory_path,
+            experiment_directory_path=self.experiment_save_dir,
+            centroid_full_path=str(self.centroid_directory_path)+self.centroid_filename,
             x_axis_limits=(
-                self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][0],
-                self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][0],
+                self.config.system.bd_minimum_values[0],
+                self.config.system.bd_maximum_values[0],
             ),
             y_axis_limits=(
-                self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][1],
-                self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][1],
+                self.config.system.bd_minimum_values[1],
+                self.config.system.bd_maximum_values[1],
             ),
         )
 
@@ -268,7 +229,7 @@ class ExperimentProcessor:
             report_statistic_summary_dict = (
                 symmetry_evaluation.write_report_summary_json(
                     plotting_from_archive,
-                    directory_string=str(self.experiment_directory_path),
+                    directory_string=str(self.experiment_save_dir),
                 )
             )
 
@@ -279,23 +240,15 @@ class ExperimentProcessor:
                 centroids_from_archive=archive.centroid_ids,
                 minval=[0, 0],
                 maxval=[1, 1],
-                directory_string=str(self.experiment_directory_path),
+                directory_string=str(self.experiment_save_dir),
                 annotate=False,
                 x_axis_limits=(
-                    self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][
-                        0
-                    ],
-                    self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][
-                        0
-                    ],
+                    self.config.system.bd_minimum_values[0],
+                    self.config.system.bd_maximum_values[0],
                 ),
                 y_axis_limits=(
-                    self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][
-                        1
-                    ],
-                    self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][
-                        1
-                    ],
+                    self.config.system.bd_minimum_values[1],
+                    self.config.system.bd_maximum_values[1],
                 ),
             )
 
@@ -304,28 +257,20 @@ class ExperimentProcessor:
                 centroids=self.all_centroids,
                 centroids_from_archive=archive.centroid_ids,
                 minval=[0, 0]
-                if self.experiment_parameters.cvt_run_parameters["normalise_bd"]
-                else self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
+                if self.config.normalise_bd
+                else self.config.system.bd_minimum_values,
                 maxval=[1, 1]
-                if self.experiment_parameters.cvt_run_parameters["normalise_bd"]
-                else self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
-                directory_string=str(self.experiment_directory_path),
+                if self.config.normalise_bd
+                else self.config.system.bd_maximum_values,
+                directory_string=str(self.experiment_save_dir),
                 annotate=annotate,
                 x_axis_limits=(
-                    self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][
-                        0
-                    ],
-                    self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][
-                        0
-                    ],
+                    self.config.system.bd_minimum_values[0],
+                    self.config.system.bd_maximum_values[0],
                 ),
                 y_axis_limits=(
-                    self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][
-                        1
-                    ],
-                    self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][
-                        1
-                    ],
+                    self.config.system.bd_minimum_values[1],
+                    self.config.system.bd_maximum_values[1],
                 ),
             )
 
@@ -334,32 +279,23 @@ class ExperimentProcessor:
                 centroids=self.all_centroids,
                 centroids_from_archive=archive.centroid_ids,
                 minval=[0, 0]
-                if self.experiment_parameters.cvt_run_parameters["normalise_bd"]
-                else self.experiment_parameters.cvt_run_parameters["bd_minimum_values"],
+                if self.config.normalise_bd
+                else self.config.system.bd_minimum_values,
                 maxval=[1, 1]
-                if self.experiment_parameters.cvt_run_parameters["normalise_bd"]
-                else self.experiment_parameters.cvt_run_parameters["bd_maximum_values"],
-                directory_string=str(self.experiment_directory_path),
+                if self.config.normalise_bd
+                else self.config.system.bd_maximum_values,
+                directory_string=str(self.experiment_save_dir),
                 annotate=annotate,
                 x_axis_limits=(
-                    self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][
-                        0
-                    ],
-                    self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][
-                        0
-                    ],
+                    self.config.system.bd_minimum_values[0],
+                    self.config.system.bd_maximum_values[0],
                 ),
                 y_axis_limits=(
-                    self.experiment_parameters.cvt_run_parameters["bd_minimum_values"][
-                        1
-                    ],
-                    self.experiment_parameters.cvt_run_parameters["bd_maximum_values"][
-                        1
-                    ],
+                    self.config.system.bd_minimum_values[1],
+                    self.config.system.bd_maximum_values[1],
                 ),
             )
 
-            print("I was here")
 
 
 if __name__ == "__main__":

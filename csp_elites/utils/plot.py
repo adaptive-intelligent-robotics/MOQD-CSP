@@ -405,6 +405,8 @@ def plot_all_maps_in_archive(
     experiment_parameters: "ExperimentParameters",
     all_centroids,
     target_centroids,
+    bd_minimum_values,
+    bd_maximum_values,
     annotate: bool = True,
     force_replot: bool = False,
 ):
@@ -446,32 +448,28 @@ def plot_all_maps_in_archive(
             )
             if "relaxed" in filename:
                 archive_id += "_relaxed"
-            (
-                bd_minimum_values,
-                bd_maximum_values,
-            ) = experiment_parameters.return_min_max_bd_values()
+
+
             plot_2d_map_elites_repertoire_marta(
                 centroids=all_centroids,
                 repertoire_fitnesses=fitnesses_for_plotting,
                 minval=bd_minimum_values,
                 maxval=bd_maximum_values,
-                # minval=[0, 0] if experiment_parameters.cvt_run_parameters["normalise_bd"] else experiment_parameters.cvt_run_parameters["bd_minimum_values"],
-                # maxval=[1, 1] if experiment_parameters.cvt_run_parameters["normalise_bd"] else experiment_parameters.cvt_run_parameters["bd_maximum_values"],
                 repertoire_descriptors=descriptors_for_plotting,
-                vmin=experiment_parameters.fitness_min_max_values[0],
-                vmax=experiment_parameters.fitness_min_max_values[1],
+                vmin=experiment_parameters.system.fitness_min_max_values[0],
+                vmax=experiment_parameters.system.fitness_min_max_values[1],
                 target_centroids=target_centroids,
                 directory_string=experiment_directory_path,
                 filename=f"cvt_plot_{archive_id}",
                 axis_labels=["Band Gap, eV", "Shear Modulus, GPa"],
                 annotate=annotate,
                 x_axis_limits=(
-                    experiment_parameters.cvt_run_parameters["bd_minimum_values"][0],
-                    experiment_parameters.cvt_run_parameters["bd_maximum_values"][0],
+                    experiment_parameters.system.bd_minimum_values[0],
+                    experiment_parameters.system.bd_maximum_values[0],
                 ),
                 y_axis_limits=(
-                    experiment_parameters.cvt_run_parameters["bd_minimum_values"][1],
-                    experiment_parameters.cvt_run_parameters["bd_maximum_values"][1],
+                    experiment_parameters.system.bd_minimum_values[1],
+                    experiment_parameters.system.bd_maximum_values[1],
                 ),
             )
 
