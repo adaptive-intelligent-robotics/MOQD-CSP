@@ -24,8 +24,9 @@ from csp_elites.map_elites.elites_utils import (
     cvt,
     save_archive,
     add_to_archive,
-    write_centroids,
     make_experiment_folder,
+    map_elites_add_to_niche,
+    write_centroids,
     Species,
 )
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
@@ -88,6 +89,9 @@ class MapElites:
             number_of_niches=number_of_niches,
             run_parameters=run_parameters,
         )
+        
+        # Set up add to niche function
+        self.add_to_niche_function = map_elites_add_to_niche
         
 
     def run(
@@ -170,8 +174,8 @@ class MapElites:
             )
             and (self.generation_counter != 0)
         ):
-            population = [species.x for species in list(self.archive.values())]
-
+            population = [species.x for niche in self.archive.values() for species in niche]
+            
         # Otherwise select indviduals from archive and mutate them
         else:  # variation/selection loop
             mutated_individuals = self.mutate_individuals(
@@ -214,7 +218,8 @@ class MapElites:
             else:
                 s.x["info"]["confid"] = self.configuration_counter
                 self.configuration_counter += 1
-                add_to_archive(s, s.desc, self.archive, self.kdt)
+                self.archive = add_to_archive(s, s.desc, self.archive, self.kdt, self.add_to_niche_function)
+
         if (
             self.b_evals >= self.run_parameters.dump_period
             and self.run_parameters.dump_period != -1
@@ -228,7 +233,7 @@ class MapElites:
             self.b_evals = 0
         # write log
         if self.log_file != None:
-            fit_list = np.array([x.fitness for x in self.archive.values()])
+            fit_list = np.array([s.fitness for niche in self.archive.values() for s in niche])
             qd_score = np.sum(fit_list)
             coverage = 100 * len(fit_list) / self.number_of_niches
 

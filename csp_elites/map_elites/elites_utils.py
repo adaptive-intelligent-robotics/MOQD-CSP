@@ -10,7 +10,7 @@ import pathlib
 import pickle
 from datetime import date, datetime
 from pathlib import Path
-from typing import List, Tuple, Optional, Dict
+from typing import Callable, List, Tuple, Optional, Dict
 
 import numpy as np
 from ase import Atoms
@@ -155,35 +155,48 @@ def parallel_eval_no_multiprocess():
 # fitness, centroid, desc and x are vectors
 def save_archive(archive, gen, directory_path):
     storage = []
-    for k in archive.values():
-        one_individual = [k.fitness, k.centroid, k.desc, k.x]
-        storage.append(one_individual)
+    for niche in archive.values():
+        for s in niche:
+            one_individual = [s.fitness, s.centroid, s.desc, s.x]
+            storage.append(one_individual)
 
     filename_pkl = str(directory_path) + "/archive_" + str(gen) + ".pkl"
     with open(filename_pkl, "wb") as f:
         pickle.dump(storage, f)
 
+def map_elites_add_to_niche(
+    species: Species,
+    niche: int,
+    archive: Dict[str, List[Species]],
+):
+    if niche in archive:
+        if species.fitness > archive[niche][0].fitness: # MAP elites list length in each niche is always 1 so can always index 0
+            archive[niche] = [species]
+    else:
+        archive[niche] = [species]
+    return archive
+
 
 def add_to_archive(
-    s: Species, centroid: np.ndarray, archive: Dict[str, Species], kdt
+    s: Species,
+    centroid: np.ndarray,
+    archive: Dict[str, Species],
+    kdt,
+    add_to_niche_fn: Callable = map_elites_add_to_niche,
 ) -> Tuple[bool, int]:
     niche_index = kdt.query([centroid], k=1)[1][0][0]
     niche = kdt.data[niche_index]
     n = make_hashable(niche)
     s.centroid = n
-    info = s.x.info if isinstance(s.x, Atoms) else s.x["info"]
-    if "data" in info:
-        parent_id = info["data"]["parents"]
-    else:
-        parent_id = [None]
-    if n in archive:
-        if s.fitness > archive[n].fitness:
-            archive[n] = s
-            return True, parent_id
-        return False, parent_id
-    else:
-        archive[n] = s
-        return True, parent_id
+    
+    new_archive = add_to_niche_fn(
+        s,
+        n,
+        archive
+    )
+    
+    return new_archive
+    
 
 
 def evaluate_old(to_evaluate):
