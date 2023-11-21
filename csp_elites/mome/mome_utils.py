@@ -1,6 +1,8 @@
 from typing import List, Dict
 
 import numpy as np
+from pymoo.indicators.hv import HV
+
 from csp_elites.map_elites.elites_utils import Species
 
 
@@ -77,3 +79,30 @@ def mome_uniform_selection_fn(
         parents_y.append(y)
     
     return parents_x, parents_y
+
+def mome_metrics_fn(
+    archive,
+    config,
+    n_evals,
+):
+    hypervolumes = []
+    max_sum_scores = []
+    num_solutions = 0
+    hypervolume_fn = HV(ref_point=config.reference_point)
+    
+    for niche in archive.values():
+        fitnesses = np.array([s.fitness for s in niche])
+        niche_hypervolume = hypervolume_fn(fitnesses * -1)
+        hypervolumes.append(niche_hypervolume)
+        max_sum_scores.append(np.sum(fitnesses, axis=1).max())
+        num_solutions += len(niche)
+        
+    metrics = {
+        "evalutations": n_evals,
+        "num_solutions": num_solutions,
+        "max_sum_scores": np.max(max_sum_scores),
+        "coverage": 100 * len(hypervolumes) / config.number_of_niches,
+        "qd_score": np.sum(hypervolumes),
+    }
+    
+    return metrics
