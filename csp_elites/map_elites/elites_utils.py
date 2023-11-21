@@ -198,7 +198,30 @@ def add_to_archive(
     return new_archive
     
 
+def map_elites_selection_fn(
+    archive: Dict[str, List[Species]],
+    batch_size: int,
+) -> Tuple[List[Species], List[Species]]:
+    
+    keys = list(archive.keys())
+    
+    # we select all the parents at the same time because randint is slow
+    rand1 = np.random.randint(len(keys), size=batch_size)
+    rand2 = np.random.randint(len(keys), size=batch_size)
 
+    parents_x = []
+    parents_y = []
+    
+    for n in range(0, batch_size):
+        # parent selection
+        x = archive[keys[rand1[n]]][0]
+        y = archive[keys[rand2[n]]][0]
+        parents_x.append(x)
+        parents_y.append(y)
+    
+    return parents_x, parents_y
+        
+        
 def evaluate_old(to_evaluate):
     really_relax = True
     z, cellbounds, behavioural_descriptors, n_relaxation_steps, f = to_evaluate

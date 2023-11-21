@@ -26,6 +26,7 @@ from csp_elites.map_elites.elites_utils import (
     add_to_archive,
     make_experiment_folder,
     map_elites_add_to_niche,
+    map_elites_selection_fn,
     write_centroids,
     Species,
 )
@@ -92,6 +93,7 @@ class MapElites:
         
         # Set up add to niche function
         self.add_to_niche_function = map_elites_add_to_niche
+        self.selection_function = map_elites_selection_fn
         
 
     def run(
@@ -179,7 +181,8 @@ class MapElites:
         # Otherwise select indviduals from archive and mutate them
         else:  # variation/selection loop
             mutated_individuals = self.mutate_individuals(
-                run_parameters.system.batch_size
+                run_parameters.system.batch_size,
+                selection_operator=self.selection_function,
             )
             population += mutated_individuals
 
@@ -225,7 +228,7 @@ class MapElites:
             and self.run_parameters.dump_period != -1
         ):
             print(
-                "[{}/{}]".format(self.n_evals, int(self.running_parameters.maximum_evaluations)),
+                "[{}/{}]".format(self.n_evals, int(self.run_parameters.maximum_evaluations)),
                 end=" ",
                 flush=True,
             )
@@ -291,18 +294,21 @@ class MapElites:
         del c
         return kdt
 
-    def mutate_individuals(self, batch_size):
-        keys = list(self.archive.keys())
-        # we select all the parents at the same time because randint is slow
-        rand1 = np.random.randint(len(keys), size=batch_size)
-        rand2 = np.random.randint(len(keys), size=batch_size)
+    def mutate_individuals(
+        self,
+        batch_size,
+        selection_operator,
+    ):
+
+        parents_x, parents_y = self.selection_operator(
+            self.archive,
+            batch_size,
+        )
+        
         mutated_offsprings = []
         for n in range(0, batch_size):
-            # parent selection
-            x = self.archive[keys[rand1[n]]]
-            y = self.archive[keys[rand2[n]]]
             # copy & add variation
-            z = self.crystal_system.mutate([x, y])
+            z = self.crystal_system.mutate([parents_x[n], parents_y[n]])
             if z is None or (
                 self.graph_converter(
                     AseAtomsAdaptor.get_structure(z), on_isolated_atoms="warn"
