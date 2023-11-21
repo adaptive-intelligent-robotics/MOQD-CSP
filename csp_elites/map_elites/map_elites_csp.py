@@ -95,7 +95,7 @@ class MapElites:
         
         # Set up add to niche function
         self.add_to_niche_function = map_elites_add_to_niche
-        self.selection_function = map_elites_selection_fn
+        self.selection_operator = map_elites_selection_fn
         self.metrics_function = map_elites_metrics_fn
         
         # Setup logging
@@ -200,7 +200,7 @@ class MapElites:
         else:  # variation/selection loop
             mutated_individuals = self.mutate_individuals(
                 run_parameters.system.batch_size,
-                selection_operator=self.selection_function,
+                selection_operator=self.selection_operator,
             )
             population += mutated_individuals
 
