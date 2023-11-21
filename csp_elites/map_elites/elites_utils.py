@@ -221,7 +221,32 @@ def map_elites_selection_fn(
     
     return parents_x, parents_y
         
-        
+
+def map_elites_metrics_fn(
+    archive,
+    config,
+    n_evals,
+):
+    fit_list = np.array([s.fitness for niche in archive.values() for s in niche])
+    qd_score = np.sum(fit_list)
+    coverage = 100 * len(fit_list) / config.number_of_niches
+    
+    
+    metrics = {
+        "evalutations": n_evals,
+        "archive_size": len(archive.keys()),
+        "max_fit": np.max(fit_list),
+        "mean_fit": np.mean(fit_list),
+        "median_fit": np.median(fit_list),
+        "5th_percentile_fit": np.percentile(fit_list, 5),
+        "95th_percentile_fit": np.percentile(fit_list, 95),
+        "coverage": coverage,
+        "qd_score": qd_score,
+    }
+    
+    return metrics
+
+
 def evaluate_old(to_evaluate):
     really_relax = True
     z, cellbounds, behavioural_descriptors, n_relaxation_steps, f = to_evaluate

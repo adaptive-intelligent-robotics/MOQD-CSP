@@ -6,6 +6,7 @@ from typing import Optional, Tuple, List, Dict, TYPE_CHECKING, Union
 import imageio
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt, cm
 from matplotlib.axes import Axes
 from matplotlib.colors import Normalize
@@ -311,9 +312,7 @@ def plot_numbered_centroids(
 def plot_all_statistics_from_file(filename: str, save_location: Optional[str]):
     params = {"figure.figsize": [3.5, 2.625]}
     mpl.rcParams.update(params)
-    with open(filename, "r") as file:
-        generation_data = np.loadtxt(file)
-
+    generation_data = pd.read_csv(filename).to_numpy()    
     generation_data = generation_data.T
 
     number_of_metrics = len(generation_data)

@@ -7,13 +7,15 @@
 
 import gc
 import os
+import pandas as pd
 import pickle
+import wandb
 
 import numpy as np
 import psutil
 from ase import Atoms
 from chgnet.graph import CrystalGraphConverter
-from matplotlib import pyplot as plt
+from omegaconf import OmegaConf
 from pymatgen.io.ase import AseAtomsAdaptor
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
@@ -26,6 +28,7 @@ from csp_elites.map_elites.elites_utils import (
     add_to_archive,
     make_experiment_folder,
     map_elites_add_to_niche,
+    map_elites_metrics_fn,
     map_elites_selection_fn,
     write_centroids,
     Species,
@@ -49,10 +52,9 @@ class MapElites:
         self.crystal_evaluator = crystal_evaluator
         self.graph_converter = CrystalGraphConverter()
         
-        # Set up lodding
+        # Set up directories
         self.experiment_save_dir = make_experiment_folder(experiment_save_dir)
         self.centroids_load_dir = make_experiment_folder(centroids_load_dir)
-        self.log_file = open(f"{self.experiment_save_dir}/main_log.dat", "w")
 
         # Store parameters
         self.n_relaxation_steps = run_parameters.number_of_relaxation_steps
@@ -94,7 +96,17 @@ class MapElites:
         # Set up add to niche function
         self.add_to_niche_function = map_elites_add_to_niche
         self.selection_function = map_elites_selection_fn
+        self.metrics_function = map_elites_metrics_fn
         
+        # Setup logging
+        wandb.init(
+            # set the wandb project where this run will be logged
+            project=f"MOQD-CSP",
+            name=f"{run_parameters.algo.algo_name}",
+            # track hyperparameters and run metadata
+            config=OmegaConf.to_container(run_parameters, resolve=True),
+        )
+        self.metrics_history = None
 
     def run(
         self,
@@ -140,8 +152,14 @@ class MapElites:
             del fitness_scores
             del descriptors
             del kill_list
-
+        
+        
+        # Save final archive
         save_archive(self.archive, self.n_evals, self.experiment_save_dir)
+        
+        # Save final metrics
+        metrics_history_df = pd.DataFrame.from_dict(self.metrics_history,orient='index').transpose()
+        metrics_history_df.to_csv(os.path.join(self.experiment_save_dir, "metrics_history.csv"), index=False)
 
         return self.archive
 
@@ -233,27 +251,29 @@ class MapElites:
                 flush=True,
             )
             save_archive(self.archive, self.n_evals, self.experiment_save_dir)
-            self.b_evals = 0
-        # write log
-        if self.log_file != None:
-            fit_list = np.array([s.fitness for niche in self.archive.values() for s in niche])
-            qd_score = np.sum(fit_list)
-            coverage = 100 * len(fit_list) / self.number_of_niches
+            
+            metrics_history_df = pd.DataFrame.from_dict(self.metrics_history,orient='index').transpose()
+            metrics_history_df.to_csv(os.path.join(self.experiment_save_dir, "metrics_history.csv"), index=False)
 
-            self.log_file.write(
-                "{} {} {} {} {} {} {} {} {}\n".format(
-                    self.n_evals,
-                    len(self.archive.keys()),
-                    np.max(fit_list),
-                    np.mean(fit_list),
-                    np.median(fit_list),
-                    np.percentile(fit_list, 5),
-                    np.percentile(fit_list, 95),
-                    coverage,
-                    qd_score,
-                )
+            self.b_evals = 0
+            
+            
+        # Calculate metrics and log
+        metrics = self.metrics_function(
+                self.archive,
+                self.run_parameters,
+                self.n_evals,
             )
-            self.log_file.flush()
+        
+        wandb.log(metrics)
+
+        if self.metrics_history == None:
+            self.metrics_history = {key: np.array(metrics[key]) for key in metrics}
+            # for k, v in self.metrics_history.items():
+            #     self.metrics_history[k] = np.expand_dims(v, axis=0)
+
+        else:
+            self.metrics_history = {key: np.append(self.metrics_history[key], metrics[key]) for key in metrics}
             
         gc.collect()
 

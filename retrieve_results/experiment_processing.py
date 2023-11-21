@@ -75,7 +75,7 @@ class ExperimentProcessor:
         )
         plot_gif(experiment_directory_path=str(self.experiment_save_dir))
         plot_all_statistics_from_file(
-            filename=f"{self.experiment_save_dir}/main_log.dat",
+            filename=f"{self.experiment_save_dir}/metrics_history.csv",
             save_location=f"{self.experiment_save_dir}/",
         )
 
