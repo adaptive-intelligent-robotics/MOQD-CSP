@@ -49,3 +49,31 @@ def mome_add_to_niche(species: Species,
     else:
         archive[niche] = [species]
     return archive
+
+
+def mome_uniform_selection_fn(
+    archive: Dict[str, List[Species]],
+    batch_size: int,
+) -> Tuple[List[Species], List[Species]]:
+    
+    # Find which niches have been filled
+    keys = list(archive.keys())
+    
+    # we select all the parents at the same time because randint is slow
+    rand1 = np.random.randint(len(keys), size=batch_size)
+    rand2 = np.random.randint(len(keys), size=batch_size)
+
+    parents_x = []
+    parents_y = []
+    
+    for n in range(0, batch_size):
+        # niche selection
+        x_niche = archive[keys[rand1[n]]]
+        y_niche = archive[keys[rand2[n]]]
+        # parent selection
+        x = np.random.choice(x_niche)
+        y = np.random.choice(y_niche)
+        parents_x.append(x)
+        parents_y.append(y)
+    
+    return parents_x, parents_y
