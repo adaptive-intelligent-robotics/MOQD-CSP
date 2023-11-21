@@ -52,7 +52,6 @@ if __name__ == "__main__":
             "profiling": False,
             "force_threshold": True,
             "force_threshold_exp_fmax": 2.0,
-            "constrained_qd": False,
             "relax_every_n_generations": 0,
             "alternative_operators": [("rattle", 10)],
             "relax_archive_every_n_generations": 0,

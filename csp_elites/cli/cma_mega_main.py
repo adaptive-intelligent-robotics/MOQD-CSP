@@ -24,7 +24,6 @@ def main_cma(experiment_parameters: ExperimentParameters):
 
     crystal_evaluator = CrystalEvaluator(
         with_force_threshold=False,
-        constrained_qd=False,
         fmax_relaxation_convergence=0.2,
         force_threshold_fmax=False,
         compute_gradients=True,

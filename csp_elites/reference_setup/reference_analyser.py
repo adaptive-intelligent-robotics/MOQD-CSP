@@ -71,7 +71,6 @@ class ReferenceAnalyser:
         )
         self.crystal_evaluator = CrystalEvaluator(
             with_force_threshold=False,
-            constrained_qd=False,
             relax_every_n_generations=0,
             fmax_relaxation_convergence=0.2,
             force_threshold_fmax=1.0,

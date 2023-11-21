@@ -59,7 +59,6 @@ class CMAMEGA:
         )
         self.crystal_evaluator = CrystalEvaluator(
             compute_gradients=True,
-            constrained_qd=False,
             force_threshold_fmax=1,
             with_force_threshold=False,
             relax_every_n_generations=False,

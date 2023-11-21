@@ -103,8 +103,6 @@ class ExperimentParameters:
             "force_threshold": True,
             # value of force threshold
             "force_threshold_exp_fmax": 2.0,
-            # whether to use constrained QD - currently deprecated
-            "constrained_qd": False,
             # relax generated individuals by 100 steps every n generations - not reported
             "relax_every_n_generations": 0,
             # list of operators implemented in this work and their probabilities, for list of operators consult CrystalSystem

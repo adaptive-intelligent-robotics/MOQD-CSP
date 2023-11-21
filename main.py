@@ -44,7 +44,6 @@ class ExperimentConfig:
     force_threshold: bool
     force_threshold_exp_fmax: float
     fmax_threshold: float
-    constrained_qd: bool
     normalise_bd: bool
     
     alternative_operators: Tuple[float,...]
@@ -93,7 +92,6 @@ def main(config:ExperimentConfig) -> None:
 
     crystal_evaluator = CrystalEvaluator(
         with_force_threshold=config.force_threshold,
-        constrained_qd=config.constrained_qd,
         fmax_relaxation_convergence=config.fmax_threshold,
         force_threshold_fmax=config.force_threshold_exp_fmax,
         compute_gradients=config.compute_gradients,

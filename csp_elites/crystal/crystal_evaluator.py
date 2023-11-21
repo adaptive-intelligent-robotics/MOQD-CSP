@@ -23,7 +23,6 @@ class CrystalEvaluator:
     def __init__(
         self,
         with_force_threshold=True,
-        constrained_qd=False,
         relax_every_n_generations=0,
         fmax_relaxation_convergence: float = 0.2,
         force_threshold_fmax: float = 1.0,
@@ -53,7 +52,6 @@ class CrystalEvaluator:
         self.fmax_relaxation_convergence = fmax_relaxation_convergence
         self.with_force_threshold = with_force_threshold
         self.force_threshold_fmax = force_threshold_fmax
-        self.constrained_qd = constrained_qd
         self.relax_every_n_generations = relax_every_n_generations
         self.ground_state_data = {
             "energy": 9.407774,
@@ -124,27 +122,7 @@ class CrystalEvaluator:
         for i in range(len(list_of_atoms)):
             new_atoms_dict[i]["info"] = list_of_atoms[i].info
 
-        if self.constrained_qd:
-            distance_to_bg = self.ground_state_data["band_gap"] - np.array(band_gaps)
-            distance_to_shear = self.ground_state_data["shear_modulus"] - np.array(
-                shear_moduli
-            )
-            forces = np.array(
-                [
-                    relaxation_results[i]["trajectory"]["forces"]
-                    for i in range(len(relaxation_results))
-                ]
-            )
-            distance_to_0_force_normalised_to_100 = (
-                self.compute_fmax(forces) * 100
-            )  # TODO: change this normalisation
-            descriptors = (
-                distance_to_bg,
-                distance_to_shear,
-                distance_to_0_force_normalised_to_100,
-            )
-        else:
-            descriptors = (band_gaps, shear_moduli)
+        descriptors = (band_gaps, shear_moduli)
 
         del relaxation_results
         del structures
