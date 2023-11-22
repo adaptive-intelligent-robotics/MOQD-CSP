@@ -85,6 +85,18 @@ def mome_uniform_selection_fn(
     
     return parents_x, parents_y
 
+def calculate_crowding_distances(
+    niche: List[Species],
+)-> Tuple[float,...]:
+    
+    fitnesses = np.array([s.fitness for s in niche])
+    distances = np.sum(np.abs(fitnesses[1:] - fitnesses[:-1]), axis=1)
+    distances = np.insert(distances, 0, distances[0])
+    distances = np.append(distances, distances[-1])    
+    crowding_distances = [np.mean([distances[i], distances[i+1]]) for i in range(len(niche))]
+    
+    return crowding_distances
+
 def mome_metrics_fn(
     archive,
     config,
