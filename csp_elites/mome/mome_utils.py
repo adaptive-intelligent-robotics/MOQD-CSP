@@ -97,6 +97,42 @@ def calculate_crowding_distances(
     
     return crowding_distances
 
+def mome_crowding_selection_fn(
+    archive: Dict[str, List[Species]],
+    batch_size: int,
+) -> Tuple[List[Species], List[Species]]:
+    
+    # Find which niches have been filled
+    keys = list(archive.keys())
+    
+    # we select all the parents at the same time because randint is slow
+    rand1 = np.random.randint(len(keys), size=batch_size)
+    rand2 = np.random.randint(len(keys), size=batch_size)
+
+    parents_x = []
+    parents_y = []
+    
+    for n in range(0, batch_size):
+        # niche selection
+        x_niche = archive[keys[rand1[n]]]
+        y_niche = archive[keys[rand2[n]]]
+        
+        # crowding distance calculation
+        x_crowding_distances = calculate_crowding_distances(x_niche)
+        y_crowding_distances = calculate_crowding_distances(y_niche)
+        
+        x_probs = x_crowding_distances / np.sum(x_crowding_distances)
+        y_probs = y_crowding_distances / np.sum(y_crowding_distances)
+        
+        # parent selection
+        x = np.random.choice(x_niche, p=x_probs)
+        y = np.random.choice(y_niche, p=y_probs)
+        parents_x.append(x)
+        parents_y.append(y)
+    
+    return parents_x, parents_y
+
+
 def mome_metrics_fn(
     archive,
     config,
