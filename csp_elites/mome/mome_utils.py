@@ -21,7 +21,6 @@ def calculate_front(
 def add_to_front(
     species,
     niche,
-    max_front_size: int=10,
 ):
     """ Given a new species and list of species on current front return new front"""
     
@@ -34,10 +33,6 @@ def add_to_front(
     )
     new_front = [s for i, s in enumerate(front_candidates) if front_bool[i]]
 
-    if len(new_front) > max_front_size:
-        remove_idx = np.random.randint(0, len(new_front))
-        new_front = np.delete(new_front, remove_idx)    
-        
     return new_front
     
     
@@ -50,8 +45,10 @@ def mome_add_to_niche(species: Species,
         new_niche = add_to_front(
             species,
             archive[niche],
-            max_front_size=max_front_size,
         )
+        if len(new_niche) > max_front_size:
+            remove_idx = np.random.randint(0, len(new_niche))
+            new_niche = np.delete(new_niche, remove_idx) 
         archive[niche] = new_niche
     else:
         archive[niche] = [species]
@@ -135,6 +132,23 @@ def mome_crowding_selection_fn(
         parents_y.append(y)
     
     return parents_x, parents_y
+
+def mome_crowding_add_to_niche(species: Species,
+    niche: int,
+    archive: Dict[str, List[Species]],
+    max_front_size: int=4,
+):
+    if niche in archive:
+        new_niche = add_to_front(species, archive[niche])
+        if len(new_niche) > max_front_size:
+            crowding_distances, boundary_indices = calculate_crowding_distances(new_niche)
+            crowding_distances[np.array(boundary_indices)] = np.inf
+            remove_idx = np.argmin(crowding_distances)
+            new_niche = np.delete(new_niche, remove_idx) 
+        archive[niche] = new_niche
+    else:
+        archive[niche] = [species]
+    return archive
 
 def mome_metrics_fn(
     archive,
