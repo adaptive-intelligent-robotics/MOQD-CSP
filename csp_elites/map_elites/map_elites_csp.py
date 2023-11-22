@@ -97,7 +97,7 @@ class MapElites:
         # Set up map-elites specific functions
         self.add_to_niche_function = map_elites_add_to_niche
         self.selection_operator = partial(map_elites_selection_fn,
-            batch_size=run_parameters.system.batch_size
+            batch_size=run_parameters.batch_size
         )
         self.metrics_function = map_elites_metrics_fn
         
@@ -202,7 +202,7 @@ class MapElites:
         # Otherwise select indviduals from archive and mutate them
         else:  # variation/selection loop
             mutated_individuals = self.mutate_individuals(
-                run_parameters.system.batch_size,
+                run_parameters.batch_size,
                 selection_operator=self.selection_operator,
             )
             population += mutated_individuals

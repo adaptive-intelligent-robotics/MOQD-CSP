@@ -82,7 +82,7 @@ class MOME(MapElites):
             max_front_size=run_parameters.max_front_size
         )
         self.selection_operator = partial(mome_uniform_selection_fn,
-            batch_size=run_parameters.system.batch_size
+            batch_size=run_parameters.batch_size
         )
 
         self.metrics_function = mome_metrics_fn

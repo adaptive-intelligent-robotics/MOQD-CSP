@@ -10,7 +10,6 @@ start_generator: "pyxtal"
 
 # Variation operator params
 operator_probabilities: [0.0, 0, 10.0, 0.0]
-batch_size: 100
 
 # BD params
 n_behavioural_descriptor_dimensions: 2
