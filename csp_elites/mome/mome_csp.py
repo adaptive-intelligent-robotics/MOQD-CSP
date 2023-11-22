@@ -60,7 +60,6 @@ class MOME(MapElites):
         self.archive = {}  # init archive (empty)
         self.n_evals = 0  # number of evaluations since the beginning
         self.b_evals = 0  # number evaluation since the last dump
-        self.configuration_counter = 0
         self.generation_counter = 0
         self.number_of_bd_dimensions = number_of_bd_dimensions
 

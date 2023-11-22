@@ -77,7 +77,6 @@ class MapElites:
         self.archive = {}  # init archive (empty)
         self.n_evals = 0  # number of evaluations since the beginning
         self.b_evals = 0  # number evaluation since the last dump
-        self.configuration_counter = 0
         self.generation_counter = 0
         self.number_of_bd_dimensions = number_of_bd_dimensions
 
@@ -240,8 +239,6 @@ class MapElites:
             if s is None:
                 continue
             else:
-                s.x["info"]["confid"] = self.configuration_counter
-                self.configuration_counter += 1
                 self.archive = add_to_archive(s, s.desc, self.archive, self.kdt, self.add_to_niche_function)
 
         if (
