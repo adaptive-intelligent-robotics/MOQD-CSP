@@ -90,6 +90,8 @@ def mome_metrics_fn(
     config,
     n_evals,
 ):
+    
+    all_fitnesses = []
     hypervolumes = []
     max_sum_scores = []
     num_solutions = 0
@@ -97,17 +99,28 @@ def mome_metrics_fn(
     
     for niche in archive.values():
         fitnesses = np.array([s.fitness for s in niche])
+        all_fitnesses.append(fitnesses)
         niche_hypervolume = hypervolume_fn(fitnesses * -1)
         hypervolumes.append(niche_hypervolume)
         max_sum_scores.append(np.sum(fitnesses, axis=1).max())
         num_solutions += len(niche)
-        
+
+    global_front_bool = calculate_front(
+        np.concatenate(all_fitnesses),
+        config.system.reference_point
+    )
+    
+    global_front = np.array([s for i, s in enumerate(np.concatenate(all_fitnesses)) if global_front_bool[i]])
+    
+    global_hypervolume = hypervolume_fn(global_front * -1)
     metrics = {
         "evalutations": n_evals,
         "num_solutions": num_solutions,
         "max_sum_scores": np.max(max_sum_scores),
         "coverage": 100 * len(hypervolumes) / config.number_of_niches,
         "moqd_score": np.sum(hypervolumes),
+        "global_hypervolume": global_hypervolume,
+
     }
     
     return metrics
