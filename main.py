@@ -4,7 +4,9 @@ from ase.ga.utilities import CellBounds
 from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
 from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
+from csp_elites.crystal.mo_crystal_evaluator import MOCrystalEvaluator
 from csp_elites.map_elites.map_elites_csp import MapElites
+from csp_elites.mome.mome_csp import MOME
 from csp_elites.map_elites.elites_utils import __centroids_filename
 from retrieve_results.experiment_processing import ExperimentProcessor
 
@@ -55,18 +57,6 @@ def main(config:ExperimentConfig) -> None:
     
     experiment_save_dir = f"output/{config.system.system_name}/{config.algo.algo_name}/{config.experiment_tag}"
 
-    cellbounds = (
-        CellBounds(
-            bounds={
-                "phi": [20, 160],
-                "chi": [20, 160],
-                "psi": [20, 160],
-                "a": [2, 40],
-                "b": [2, 40],
-                "c": [2, 40],
-            }
-        ),
-    )
     splits = {(2,): 1, (4,): 1}
     
     config.behavioural_descriptors = [
@@ -89,31 +79,54 @@ def main(config:ExperimentConfig) -> None:
             learning_rate=config.dqd_learning_rate,
     )
 
-    crystal_evaluator = CrystalEvaluator(
-        with_force_threshold=config.force_threshold,
-        fmax_relaxation_convergence=config.fmax_threshold,
-        force_threshold_fmax=config.force_threshold_exp_fmax,
-        compute_gradients=config.compute_gradients,
-        bd_normalisation=(
-            config.system.bd_minimum_values,
-            config.system.bd_maximum_values,
+    if config.algo.algo_name == "mome":
+        crystal_evaluator = MOCrystalEvaluator(
+            with_force_threshold=config.force_threshold,
+            fmax_relaxation_convergence=config.fmax_threshold,
+            force_threshold_fmax=config.force_threshold_exp_fmax,
+            compute_gradients=config.compute_gradients,
+            bd_normalisation=(
+                config.system.bd_minimum_values,
+                config.system.bd_maximum_values,
+            )
+            if config.normalise_bd
+            else None,
         )
-        if config.normalise_bd
-        else None,
-    )
-
-    map_elites = MapElites(
-        crystal_system=crystal_system,
-        crystal_evaluator=crystal_evaluator,
-        number_of_niches=config.number_of_niches,
-        number_of_bd_dimensions=config.system.n_behavioural_descriptor_dimensions,
-        run_parameters=config,
-        experiment_save_dir=experiment_save_dir,
-    )
+        main = MOME(
+            crystal_system=crystal_system,
+            crystal_evaluator=crystal_evaluator,
+            number_of_niches=config.number_of_niches,
+            number_of_bd_dimensions=config.system.n_behavioural_descriptor_dimensions,
+            run_parameters=config,
+            experiment_save_dir=experiment_save_dir,
+        )
     
+    elif config.algo.algo_name == "map_elites":
+        crystal_evaluator = CrystalEvaluator(
+            with_force_threshold=config.force_threshold,
+            fmax_relaxation_convergence=config.fmax_threshold,
+            force_threshold_fmax=config.force_threshold_exp_fmax,
+            compute_gradients=config.compute_gradients,
+            bd_normalisation=(
+                config.system.bd_minimum_values,
+                config.system.bd_maximum_values,
+            )
+            if config.normalise_bd
+            else None,
+        )
+
+        main = MapElites(
+            crystal_system=crystal_system,
+            crystal_evaluator=crystal_evaluator,
+            number_of_niches=config.number_of_niches,
+            number_of_bd_dimensions=config.system.n_behavioural_descriptor_dimensions,
+            run_parameters=config,
+            experiment_save_dir=experiment_save_dir,
+        )
+        
     tic = time.time()
 
-    archive = map_elites.run(
+    archive = main.run(
         number_of_niches=config.number_of_niches,
         maximum_evaluations=config.maximum_evaluations,
         run_parameters=config,
@@ -145,8 +158,8 @@ def main(config:ExperimentConfig) -> None:
         save_structure_images=False,
         filter_for_experimental_structures=False,
         centroid_filename=centroid_filename,
-        centroids_load_dir=map_elites.centroids_load_dir,
-        experiment_save_dir=map_elites.experiment_save_dir,
+        centroids_load_dir=main.centroids_load_dir,
+        experiment_save_dir=main.experiment_save_dir,
     )
 
     experiment_processor.plot()
