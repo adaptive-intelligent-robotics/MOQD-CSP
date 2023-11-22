@@ -90,12 +90,16 @@ def calculate_crowding_distances(
 )-> Tuple[float,...]:
     
     fitnesses = np.array([s.fitness for s in niche])
-    distances = np.sum(np.abs(fitnesses[1:] - fitnesses[:-1]), axis=1)
-    distances = np.insert(distances, 0, distances[0])
-    distances = np.append(distances, distances[-1])    
-    crowding_distances = [np.mean([distances[i], distances[i+1]]) for i in range(len(niche))]
+    sorted_args = np.argsort(fitnesses, axis=0)[:, 0]
+    sorted_fitnesses = fitnesses[sorted_args]
+    sorted_distances = np.sum(np.abs(sorted_fitnesses[1:] - sorted_fitnesses[:-1]), axis=1)
+    sorted_distances = np.insert(sorted_distances, 0, sorted_distances[0])
+    sorted_distances = np.append(sorted_distances, sorted_distances[-1])    
+    crowding_distances = [np.mean([sorted_distances[i], sorted_distances[i+1]]) for i in range(len(niche))]
     
-    return crowding_distances
+    boundary_indices = sorted_args[0], sorted_args[-1]
+
+    return np.take(crowding_distances, sorted_args), boundary_indices
 
 def mome_crowding_selection_fn(
     archive: Dict[str, List[Species]],
@@ -118,8 +122,8 @@ def mome_crowding_selection_fn(
         y_niche = archive[keys[rand2[n]]]
         
         # crowding distance calculation
-        x_crowding_distances = calculate_crowding_distances(x_niche)
-        y_crowding_distances = calculate_crowding_distances(y_niche)
+        x_crowding_distances, _ = calculate_crowding_distances(x_niche)
+        y_crowding_distances, _ = calculate_crowding_distances(y_niche)
         
         x_probs = x_crowding_distances / np.sum(x_crowding_distances)
         y_probs = y_crowding_distances / np.sum(y_crowding_distances)
@@ -131,7 +135,6 @@ def mome_crowding_selection_fn(
         parents_y.append(y)
     
     return parents_x, parents_y
-
 
 def mome_metrics_fn(
     archive,
