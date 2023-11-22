@@ -107,7 +107,7 @@ def mome_metrics_fn(
         "num_solutions": num_solutions,
         "max_sum_scores": np.max(max_sum_scores),
         "coverage": 100 * len(hypervolumes) / config.number_of_niches,
-        "qd_score": np.sum(hypervolumes),
+        "moqd_score": np.sum(hypervolumes),
     }
     
     return metrics
