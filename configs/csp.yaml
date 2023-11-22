@@ -13,6 +13,8 @@ number_of_niches: 200
 maximum_evaluations: 5000
 cvt_samples: 25000
 
+# MOME parameters 
+max_front_size: 10
 
 # Initialisation parameters
 random_init: 0.1

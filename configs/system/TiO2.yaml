@@ -18,6 +18,7 @@ bd_minimum_values: [0,0]
 bd_maximum_values: [4,120]
 
 # Fitness params
+reference_point: [0, 0]
 fitness_min_max_values: [8,10]
 
 
