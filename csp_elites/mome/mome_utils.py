@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import numpy as np
 from pymoo.indicators.hv import HV
@@ -44,9 +44,14 @@ def add_to_front(
 def mome_add_to_niche(species: Species,
     niche: int,
     archive: Dict[str, List[Species]],
+    max_front_size: int=10,
 ):
     if niche in archive:
-        new_niche = add_to_front(species, archive[niche])
+        new_niche = add_to_front(
+            species,
+            archive[niche],
+            max_front_size=max_front_size,
+        )
         archive[niche] = new_niche
     else:
         archive[niche] = [species]

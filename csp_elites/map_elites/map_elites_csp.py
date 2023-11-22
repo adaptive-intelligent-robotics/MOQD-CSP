@@ -15,6 +15,7 @@ import numpy as np
 import psutil
 from ase import Atoms
 from chgnet.graph import CrystalGraphConverter
+from functools import partial
 from omegaconf import OmegaConf
 from pymatgen.io.ase import AseAtomsAdaptor
 from sklearn.neighbors import KDTree
@@ -93,9 +94,11 @@ class MapElites:
             run_parameters=run_parameters,
         )
         
-        # Set up add to niche function
+        # Set up map-elites specific functions
         self.add_to_niche_function = map_elites_add_to_niche
-        self.selection_operator = map_elites_selection_fn
+        self.selection_operator = partial(map_elites_selection_fn,
+            batch_size=run_parameters.system.batch_size
+        )
         self.metrics_function = map_elites_metrics_fn
         
         # Setup logging
@@ -322,7 +325,6 @@ class MapElites:
 
         parents_x, parents_y = self.selection_operator(
             self.archive,
-            batch_size,
         )
         
         mutated_offsprings = []

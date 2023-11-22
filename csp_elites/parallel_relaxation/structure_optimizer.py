@@ -49,7 +49,7 @@ class BatchedStructureOptimizer:
         original_cells = np.array([atoms.cell.array for atoms in list_of_atoms])
 
         while not all_relaxed:
-            forces, energies, stresses = self._evaluate_list_of_atoms(list_of_atoms)
+            forces, energies, stresses, magmoms = self._evaluate_list_of_atoms(list_of_atoms)
 
             forces, _ = self.atoms_filter.get_forces_exp_cell_filter(
                 forces_from_chgnet=forces,
@@ -162,7 +162,7 @@ class BatchedStructureOptimizer:
             AseAtomsAdaptor.get_structure(atoms) for atoms in list_of_atoms
         ]
         if n_relaxation_steps != 0:
-            forces, energies, stresses = self._evaluate_list_of_atoms(list_of_atoms)
+            forces, energies, stresses, magmoms = self._evaluate_list_of_atoms(list_of_atoms)
         reformated_output = []
         for i in range(len(final_structures)):
             reformated_output.append(
@@ -172,6 +172,7 @@ class BatchedStructureOptimizer:
                         "energies": energies[i],
                         "forces": forces[i],
                         "stresses": stresses[i],
+                        "magmoms": magmoms[i],
                     },
                 }
             )
@@ -220,7 +221,7 @@ class BatchedStructureOptimizer:
 
         predictions = self.model.predict_graph(
             graphs,
-            task="efs",
+            task="efsm",
             return_atom_feas=False,
             return_crystal_feas=False,
             batch_size=self.batch_size,
@@ -231,6 +232,7 @@ class BatchedStructureOptimizer:
         forces = np.array([pred["f"] for pred in predictions])
         energies = np.array([pred["e"] for pred in predictions])
         stresses = np.array([pred["s"] for pred in predictions])
+        magmoms = np.array([np.sum(pred["m"]) for pred in predictions])
 
         if hotfix_graphs:
             print("hotfix graph")
@@ -238,24 +240,25 @@ class BatchedStructureOptimizer:
                 forces = np.insert(forces, i, np.full((24, 3), 100), axis=0)
                 energies = np.insert(energies, i, 10000)
                 stresses = np.insert(stresses, i, np.full((3, 3), 100), axis=0)
+                magmoms = np.insert(magmoms, i, 10000)
 
-        return forces, energies, stresses
+        return forces, energies, stresses, magmoms
 
-    def _update_trajectories(
-        self, trajectories: List[TrajectoryObserver], forces, energies, stresses
-    ) -> List[TrajectoryObserver]:
-        for i in range(len(trajectories)):
-            trajectories[i].energies.append(energies[i])
-            trajectories[i].forces.append(forces)
-            trajectories[i].stresses.append(stresses)
-        return trajectories
+    # def _update_trajectories(
+    #     self, trajectories: List[TrajectoryObserver], forces, energies, stresses
+    # ) -> List[TrajectoryObserver]:
+    #     for i in range(len(trajectories)):
+    #         trajectories[i].energies.append(energies[i])
+    #         trajectories[i].forces.append(forces)
+    #         trajectories[i].stresses.append(stresses)
+    #     return trajectories
 
     def _end_relaxation(self, nsteps: int, max_steps: int, forces_mask: np.ndarray):
         return (nsteps > max_steps) or forces_mask.all()
 
     def compute(self, structure, compute_gradients: bool = False):
         """This is a utility method for testing of gradients and should not be used beyond this."""
-        forces, energies, stresses = self._evaluate_list_of_atoms([structure])
+        forces, energies, stresses, magmoms = self._evaluate_list_of_atoms([structure])
         if not compute_gradients:
             forces = [None for el in forces]
 
