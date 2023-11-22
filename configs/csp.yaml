@@ -33,7 +33,6 @@ profiling: False
 force_threshold: True
 
 ## Other algorithm params
-curiosity_weights: true
 force_threshold_exp_fmax: 1.0
 fmax_threshold: 0.2
 normalise_bd: true

@@ -46,7 +46,6 @@ if __name__ == "__main__":
                 MaterialProperties.SHEAR_MODULUS,
             ],
             "number_of_relaxation_steps": 0,
-            "curiosity_weights": True,
             "filter_starting_Structures": 24,
             "seed": False,
             "profiling": False,

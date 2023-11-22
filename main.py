@@ -34,7 +34,6 @@ class ExperimentConfig:
     relaxation_probability: float
     behavioural_descriptors: Tuple[str, ...]
     number_of_relaxation_steps: int
-    curiosity_weights: bool
     filter_starting_Structures: int
 
 
