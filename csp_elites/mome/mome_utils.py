@@ -88,7 +88,7 @@ def mome_metrics_fn(
     hypervolumes = []
     max_sum_scores = []
     num_solutions = 0
-    hypervolume_fn = HV(ref_point=config.reference_point)
+    hypervolume_fn = HV(ref_point=config.system.reference_point)
     
     for niche in archive.values():
         fitnesses = np.array([s.fitness for s in niche])
