@@ -1,5 +1,4 @@
 from typing import List, Dict, Tuple
-
 import numpy as np
 from pymoo.indicators.hv import HV
 
@@ -159,6 +158,8 @@ def mome_metrics_fn(
     all_fitnesses = []
     hypervolumes = []
     max_sum_scores = []
+    max_energy_fitness = []
+    max_magnetism_fitness = []
     num_solutions = 0
     hypervolume_fn = HV(ref_point=config.system.reference_point)
     
@@ -168,6 +169,8 @@ def mome_metrics_fn(
         niche_hypervolume = hypervolume_fn(fitnesses * -1)
         hypervolumes.append(niche_hypervolume)
         max_sum_scores.append(np.sum(fitnesses, axis=1).max())
+        max_energy_fitness.append(fitnesses[:,0].max())
+        max_magnetism_fitness.append(fitnesses[:,1].max())
         num_solutions += len(niche)
 
     global_front_bool = calculate_front(
@@ -182,6 +185,8 @@ def mome_metrics_fn(
         "evalutations": n_evals,
         "num_solutions": num_solutions,
         "max_sum_scores": np.max(max_sum_scores),
+        "max_energy_fitness": np.max(max_energy_fitness),
+        "max_magnetism_fitness": np.max(max_magnetism_fitness),
         "coverage": 100 * len(hypervolumes) / config.number_of_niches,
         "moqd_score": np.sum(hypervolumes),
         "global_hypervolume": global_hypervolume,
