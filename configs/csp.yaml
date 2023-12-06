@@ -4,7 +4,7 @@ hydra:
 
 # Defaults
 defaults:
-    - algo: mapelites
+    - algo: mome
     - system: TiO2
 experiment_tag: ${now:%Y-%m-%d_%H%M%S}
 

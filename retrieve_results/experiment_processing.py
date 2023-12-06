@@ -53,7 +53,6 @@ class ExperimentProcessor:
         
         # Load archive
         self.all_centroids = load_centroids(str(self.centroid_directory_path)+centroid_filename)
-        self.fitness_limits = config.system.fitness_min_max_values
         
         
     def plot(self, annotate: bool = True, force_replot: bool = False):

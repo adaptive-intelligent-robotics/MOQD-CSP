@@ -1,5 +1,7 @@
 # System params
 system_name: "TiO2"
+elements: ["Ti", "O"]
+atom_counts: [8, 16]
 blocks: [22,22,22,22,22,22,22,22,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8]
 volume: 450
 ratio_of_covalent_radii: 0.4
@@ -18,6 +20,6 @@ bd_maximum_values: [4,120]
 
 # Fitness params
 reference_point: [0, 0]
-fitness_min_max_values: [8,10]
-
+fitness_min_values: [8, 0]
+fitness_max_values: [10, 10]
 

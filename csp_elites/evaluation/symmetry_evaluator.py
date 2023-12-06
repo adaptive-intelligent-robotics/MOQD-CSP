@@ -83,6 +83,7 @@ class SymmetryEvaluation:
         filter_for_experimental_structures: bool = True,
         reference_data_archive: Optional[Archive] = None,
     ):
+        # Load in reference structures for formula
         self.known_structures_docs = self.initialise_reference_structures(
             formula,
             maximum_number_of_atoms_in_reference,
@@ -92,6 +93,8 @@ class SymmetryEvaluation:
             self.known_structures_docs[i].material_id
             for i in range(len(self.known_structures_docs))
         ]
+        
+        # Space groups provide information about the symmetry of a structure
         (
             self.known_space_groups_pymatgen,
             self.known_space_group_spglib,
@@ -127,7 +130,7 @@ class SymmetryEvaluation:
         max_number_of_atoms: int = 12,
         experimental: bool = True,
     ):
-        docs, atom_objects = get_all_materials_with_formula(formula)
+        docs, _ = get_all_materials_with_formula(formula)
         if experimental:
             experimentally_observed = [
                 docs[i]

@@ -1,5 +1,7 @@
 # System params
 system_name: "SiO2"
+elements: ["Si", "O"]
+atom_counts: [8, 16]
 blocks: [8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 14, 14, 14, 14, 14, 14, 14, 14]
 volume: 450
 ratio_of_covalent_radii: 0.4
@@ -18,4 +20,5 @@ bd_maximum_values: [6.8, 222]
 
 # Fitness params
 reference_point: [0, 0]
-fitness_min_max_values: [6.3, 8.3]
+fitness_min_values: [6.3, 0]
+fitness_max_values: [8.3, 8.3]

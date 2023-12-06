@@ -16,7 +16,7 @@ from pyxtal import pyxtal
 from pyxtal.msg import Comp_CompatibilityError
 from sklearn.neighbors import KDTree
 
-from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
+from csp_elites.crystal.mo_crystal_evaluator import MOCrystalEvaluator
 from csp_elites.crystal.materials_data_model import MaterialProperties
 from csp_elites.evaluation.symmetry_evaluator import SymmetryEvaluation
 from csp_elites.map_elites.archive import Archive
@@ -28,7 +28,6 @@ from csp_elites.reference_setup.reference_plotter import ReferencePlotter
 from csp_elites.utils.asign_target_values_to_centroids import (
     reassign_data_from_pkl_to_new_centroids,
 )
-from csp_elites.utils.experiment_parameters import ExperimentParameters
 from csp_elites.utils.plot import load_centroids, plot_2d_map_elites_repertoire_marta
 
 
@@ -42,7 +41,7 @@ class ReferenceAnalyser:
         max_n_atoms_in_cell: int,
         experimental_references_only: bool,
         save_plots: bool = True,
-        normalise: bool = True,
+        normalise_bd: bool = True,
     ):
         self.formula = formula
         self.max_n_atoms_in_cell = max_n_atoms_in_cell
@@ -65,11 +64,11 @@ class ReferenceAnalyser:
             number_of_atoms_in_system=max_n_atoms_in_cell,
             filter_for_experimental_structures=experimental_references_only,
         )
-        self.structures_to_consider = sorted(
+        self.reference_structures = sorted(
             self.symmetry_evaluator.known_structures_docs,
             key=lambda x: (x.theoretical, len(x.structure)),
         )
-        self.crystal_evaluator = CrystalEvaluator(
+        self.crystal_evaluator = MOCrystalEvaluator(
             with_force_threshold=False,
             relax_every_n_generations=0,
             fmax_relaxation_convergence=0.2,
@@ -77,8 +76,9 @@ class ReferenceAnalyser:
             compute_gradients=True,
             bd_normalisation=None,
         )
+                    
         self.reference_ids = [
-            str(structure.material_id) for structure in self.structures_to_consider
+            str(structure.material_id) for structure in self.reference_structures
         ]
         self.behavioural_descriptors = [
             MaterialProperties.BAND_GAP,
@@ -87,6 +87,7 @@ class ReferenceAnalyser:
 
         (
             self.energies,
+            self.magmoms,
             self.fmax_list,
             self.band_gaps,
             self.shear_moduli,
@@ -103,18 +104,19 @@ class ReferenceAnalyser:
             / f"{formula}_{max_n_atoms_in_cell}"
         )
         self.save_path.mkdir(parents=True, exist_ok=True)
-        self.normalise_bd = normalise
+        self.normalise_bd = normalise_bd
 
     def compute_target_values(self):
         list_of_atoms_as_dict = [
             AseAtomsAdaptor.get_atoms(el.structure).todict()
-            for el in self.structures_to_consider
+            for el in self.reference_structures
         ]
         atom_counts_per_structure = np.array(
-            [len(el.structure.atomic_numbers) for el in self.structures_to_consider]
+            [len(el.structure.atomic_numbers) for el in self.reference_structures]
         )
         unique_lengths = np.unique(atom_counts_per_structure)
-        energies, band_gaps, shear_moduli, forces, reference_ids_tracking = (
+        energies, magmoms, band_gaps, shear_moduli, forces, reference_ids_tracking = (
+            [],
             [],
             [],
             [],
@@ -135,7 +137,8 @@ class ReferenceAnalyser:
             ) = self.crystal_evaluator.batch_compute_fitness_and_bd(
                 structures_to_check, n_relaxation_steps=0
             )
-            energies += fitness_scores.tolist()
+            energies += list(np.array(fitness_scores)[:, 0])
+            magmoms += list(np.array(fitness_scores)[:, 1])
             band_gaps += descriptors[0]
             shear_moduli += descriptors[1]
             forces += (el[0] for el in gradients)
@@ -148,11 +151,13 @@ class ReferenceAnalyser:
 
         fmax_list = np.take(fmax_list, indices_to_sort, axis=0)
         energies = np.take(energies, indices_to_sort, axis=0)
+        magmoms = np.take(magmoms, indices_to_sort, axis=0)
         shear_moduli = np.take(shear_moduli, indices_to_sort, axis=0)
         band_gaps = np.take(band_gaps, indices_to_sort, axis=0)
 
         return (
             np.array(energies),
+            np.array(magmoms),
             fmax_list,
             np.array(band_gaps),
             np.array(shear_moduli),
@@ -160,18 +165,21 @@ class ReferenceAnalyser:
 
     def set_bd_limits(self, band_gaps: np.ndarray, shear_moduli: np.ndarray):
         band_gap_limits = np.array([band_gaps.min(), band_gaps.max()], dtype=float)
-        shear_moduli_limits = np.array(
-            [shear_moduli.min(), shear_moduli.max()], dtype=float
-        )
+        shear_moduli_limits = np.array([shear_moduli.min(), shear_moduli.max()], dtype=float)
 
         band_gap_min_max_diff = band_gap_limits[1] - band_gap_limits[0]
         shear_moduli_min_max_diff = shear_moduli_limits[1] - shear_moduli_limits[0]
         if not np.abs(shear_moduli_min_max_diff - band_gap_min_max_diff) < 0.2 * max(
             [shear_moduli_min_max_diff, band_gap_min_max_diff]
         ):
+            print("\n")
             print(
                 f"Recommend setting band gaps manually, bg limits: {band_gap_limits}, shear moduli limits {shear_moduli_limits}"
             )
+        
+        else:
+            print("\n")
+            print(f"Band gap limits: {band_gap_limits}, shear moduli limits {shear_moduli_limits}")
 
         self.bd_minimum_values = (band_gap_limits[0], shear_moduli_limits[0])
         self.bd_maximum_values = (band_gap_limits[1], shear_moduli_limits[1])
@@ -179,10 +187,18 @@ class ReferenceAnalyser:
 
     def propose_fitness_limits(self):
         energies = np.array(self.energies)
-        limits = np.array(
-            [np.floor(energies.min() - 0.5), np.ceil(energies.max()) + 0.5]
+        magmoms = np.array(self.magmoms)
+        lower_limits = np.array(
+            [np.floor(energies.min() * 0.9),
+             np.floor(magmoms.min() * 0.9),]
         )
-        return limits.tolist()
+        upper_limits = np.array(
+            [np.ceil(energies.max() * 1.1),
+             np.ceil(magmoms.max() * 1.1)]
+        )
+        print("\n")
+        print(f"lower fitness limits: {lower_limits}, upper fitness limits: {upper_limits}")
+        return lower_limits.tolist(), upper_limits.tolist()
 
     def initialise_kdt_and_centroids(
         self,
@@ -246,7 +262,7 @@ class ReferenceAnalyser:
         )
         individuals = [
             AseAtomsAdaptor.get_atoms(el.structure)
-            for el in self.structures_to_consider
+            for el in self.reference_structures
         ]
 
         normalise_bd_values = (
@@ -393,11 +409,11 @@ class ReferenceAnalyser:
         mpl.rcParams.update(params)
         fig, ax = plt.subplots()
 
-        experimental = [el for el in self.structures_to_consider if not el.theoretical]
+        experimental = [el for el in self.reference_structures if not el.theoretical]
         labels = ["Theoretical", "Experimental"]
 
         all_group_information = []
-        for structure_group in [self.structures_to_consider, experimental]:
+        for structure_group in [self.reference_structures, experimental]:
             symmetries = defaultdict(list)
             for el in structure_group:
                 symmetry = get_spacegroup(
@@ -419,7 +435,7 @@ class ReferenceAnalyser:
         plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
         ax.legend(prop={"size": 6})
         # ax.legend(loc="lower center", bbox_to_anchor=(-0.02, 0.5), ncols=2)
-        # if len(self.structures_to_consider) == 2:
+        # if len(self.reference_structures) == 2:
         #     fig.legend(loc="center right")
         plt.tight_layout()
         if self.save_plot:
@@ -457,7 +473,7 @@ class ReferenceAnalyser:
         plt.clf()
 
     def heatmap_structure_matcher_distances(self, annotate: bool = True):
-        if len(self.structures_to_consider) >= 15:
+        if len(self.reference_structures) >= 15:
             params = {"figure.figsize": [5, 5], "font.size": 4}
         else:
             params = {"figure.figsize": [3.5, 3.5], "font.size": 8}
@@ -465,10 +481,10 @@ class ReferenceAnalyser:
         all_structure_matcher_matches = []
         distances = []
 
-        for strucutre_1 in self.structures_to_consider:
+        for strucutre_1 in self.reference_structures:
             matches_for_structure_1 = []
             distances_for_structure_1 = []
-            for structure_2 in self.structures_to_consider:
+            for structure_2 in self.reference_structures:
                 matches_for_structure_1.append(
                     self.symmetry_evaluator.structure_matcher.fit(
                         strucutre_1.structure, structure_2.structure
@@ -544,14 +560,14 @@ class ReferenceAnalyser:
 
         all_possible_sg = []
         if self.experimental_references_only:
-            structures_to_consider = (
+            reference_structures = (
                 self.symmetry_evaluator.initialise_reference_structures(
                     self.formula, self.max_n_atoms_in_cell, False
                 )
             )
         else:
-            structures_to_consider = self.structures_to_consider
-        for el in structures_to_consider:
+            reference_structures = self.reference_structures
+        for el in reference_structures:
             all_possible_sg.append(el.structure.get_space_group_info()[1])
 
         valid_spacegroups_for_combination = []
@@ -571,25 +587,6 @@ class ReferenceAnalyser:
             json.dump(valid_spacegroups_for_combination, file)
         return valid_spacegroups_for_combination
 
-    def write_base_config(
-        self,
-        bd_minimum_values: np.ndarray,
-        bd_maximum_values: np.ndarray,
-        fitness_limits: np.ndarray,
-    ):
-        blocks = self.return_blocks_list()
-
-        experiment_parameters = ExperimentParameters.generate_default_to_populate()
-        experiment_parameters.system_name = self.formula
-        experiment_parameters.blocks = list(blocks)
-        experiment_parameters.cvt_run_parameters["bd_minimum_values"] = list(
-            bd_minimum_values
-        )
-        experiment_parameters.cvt_run_parameters["bd_maximum_values"] = list(
-            bd_maximum_values
-        )
-        experiment_parameters.fitness_min_max_values = list(fitness_limits)
-        experiment_parameters.save_as_json(self.save_path)
 
     def return_blocks_list(self):
         temp_atoms = Atoms(self.formula)
@@ -654,11 +651,8 @@ if __name__ == "__main__":
                 fitness_limits = reference_analyser.propose_fitness_limits()
             bd_minimum_values = np.array([band_gap_limits[0], shear_moduli_limits[0]])
             bd_maximum_values = np.array([band_gap_limits[1], shear_moduli_limits[1]])
-            # reference_analyser.write_base_config(
-            #     bd_minimum_values=bd_minimum_values.tolist(),
-            #     bd_maximum_values=bd_maximum_values.tolist(),
-            #     fitness_limits=fitness_limits,
-            # )
+
+
             target_archive = reference_analyser.create_model_archive(
                 bd_minimum_values=bd_minimum_values,
                 bd_maximum_values=bd_maximum_values,
@@ -681,7 +675,7 @@ if __name__ == "__main__":
             reference_analyser.heatmap_structure_matcher_distances(annotate=False)
             reference_analyser.plot_symmetries()
             reference_analyser.plot_fmax()
-            # dict_summary[f"{formula}_{filter_experiment}"] = len(reference_analyser.structures_to_consider)
+            # dict_summary[f"{formula}_{filter_experiment}"] = len(reference_analyser.reference_structures)
             # print(dict_summary)
 
             # filter_experiment_dump.append()

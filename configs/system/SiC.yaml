@@ -1,5 +1,7 @@
 # System params
 system_name: "SiC"
+elements: ["Si", "C"]
+atom_counts: [12, 12]
 blocks: [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14]
 volume: 450
 ratio_of_covalent_radii: 0.4
@@ -18,4 +20,5 @@ bd_maximum_values: [0.9, 185]
 
 # Fitness params
 reference_point: [0, 0]
-fitness_min_max_values: [5.8, 7.8]
+fitness_min_valies: [5.8, 0]
+fitness_max_values: [7.8, 7.8]
