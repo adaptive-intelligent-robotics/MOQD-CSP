@@ -78,7 +78,7 @@ class Archive:
         centroids_in_archive: np.ndarray, centroid_filepath: pathlib.Path
     ):
         """Update centroid_id attribute"""
-        centroids = load_centroids(centroid_filepath)
+        centroids = np.loadtxt(centroid_filepath)
         centroid_ids = []
         for el in centroids_in_archive:
             centroid_id = np.argwhere(centroids == el)[0][0]

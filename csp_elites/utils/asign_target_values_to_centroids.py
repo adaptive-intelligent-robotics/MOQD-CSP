@@ -52,8 +52,7 @@ def reassign_data_from_pkl_to_new_centroids(
     filter_for_number_of_atoms: Optional[int],
     normalise_bd_values: Optional[Tuple[List[float], List[float]]],
 ):
-    with open(centroids_file, "r") as f:
-        c = np.loadtxt(f)
+    c = np.loadtxt(centroids_file)
     kdt = KDTree(c, leaf_size=30, metric="euclidean")
 
     fitnesses, _, descriptors, individuals = target_data

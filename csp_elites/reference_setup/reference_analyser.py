@@ -24,6 +24,7 @@ from csp_elites.map_elites.elites_utils import (
     __centroids_filename as get_centroids_filename,
 )
 from csp_elites.map_elites.elites_utils import cvt, write_centroids
+from csp_elites.mome.mome_archive import MOArchive
 from csp_elites.reference_setup.reference_plotter import ReferencePlotter
 from csp_elites.utils.asign_target_values_to_centroids import (
     reassign_data_from_pkl_to_new_centroids,
@@ -52,10 +53,14 @@ class ReferenceAnalyser:
 
         self.main_experiments_directory = (
             pathlib.Path(__file__).parent.parent.parent
-            / ".experiment.nosync"
             / "reference_data"
         )
-        self.centroid_folder_path = self.main_experiments_directory / "centroids"
+
+        centroid_folder_path = self.main_experiments_directory / "centroids"
+        centroid_folder_path.mkdir(exist_ok=True)
+        self.centroid_folder_path = centroid_folder_path
+        
+        print("Centroid folder path: ", self.centroid_folder_path)
 
         self.symmetry_evaluator = SymmetryEvaluation(
             formula=formula,
@@ -224,10 +229,12 @@ class ReferenceAnalyser:
             bd_minimum_values,
             bd_maximum_values,
             self.centroid_folder_path,
-            self.behavioural_descriptors,
-            True,
+            bd_names=self.behavioural_descriptors,
+            cvt_use_cache=True,
             formula=self.formula,
-        )
+            centroids_load_dir=self.centroid_folder_path,
+            centroids_save_dir=self.centroid_folder_path,
+        )    
         kdt = KDTree(c, leaf_size=30, metric="euclidean")
         write_centroids(
             c,
@@ -269,23 +276,26 @@ class ReferenceAnalyser:
             (bd_minimum_values, bd_maximum_values) if self.normalise_bd else None
         )
 
+        # Find which centroid each reference structure belongs to
         centroids = reassign_data_from_pkl_to_new_centroids(
-            centroids_file=self.centroid_folder_path.parent
-            / self.centroid_filename[1:],
+            centroids_file=f"{self.centroid_folder_path}{self.centroid_filename}",
             target_data=[self.energies, None, copy.deepcopy(descriptors), individuals],
             filter_for_number_of_atoms=None,
             normalise_bd_values=normalise_bd_values,
         )
-        target_archive = Archive(
-            fitnesses=np.array(self.energies),
+        target_archive = MOArchive(
+            energies=np.array(self.energies),
+            magmoms=np.array(self.magmoms),
             centroids=centroids,
             descriptors=np.array(descriptors),
             individuals=individuals,
             centroid_ids=None,
             labels=self.reference_ids,
         )
+        
+        # Find centroid ids for each reference structure
         target_archive.centroid_ids = Archive.assign_centroid_ids(
-            centroids, self.centroid_folder_path.parent / self.centroid_filename[1:]
+            centroids, f"{self.centroid_folder_path}{self.centroid_filename}"
         )
 
         if save_reference:
@@ -293,6 +303,7 @@ class ReferenceAnalyser:
             for i in range(len(self.energies)):
                 one_data_point = []
                 one_data_point.append(self.energies[i])
+                one_data_point.append(self.magmoms[i])
                 one_data_point.append(centroids[i])
                 one_data_point.append(
                     np.array([self.band_gaps[i], self.shear_moduli[i]])
@@ -306,12 +317,13 @@ class ReferenceAnalyser:
             ) as file:
                 pickle.dump(all_data, file)
 
-            centroid_tag = str(self.centroid_filename[1:].split("/")[1].rstrip(".dat"))
+            centroid_tag = str(self.centroid_filename.split("/")[1].rstrip(".dat"))
             filename = f"{self.formula}_target_data_{centroid_tag}.csv"
             df = pd.DataFrame(
                 [
                     self.reference_ids,
                     self.energies,
+                    self.magmoms,
                     descriptors[:, 0],
                     descriptors[:, 1],
                     self.fmax_list,
@@ -321,7 +333,7 @@ class ReferenceAnalyser:
             df.columns = df.iloc[0]
             df = df[1:]
             df = df.reset_index(drop=True)
-            df.index = ["energy", "band_gap", "shear_modulus", "fmax", "centroid_id"]
+            df.index = ["energy", "magmom", "band_gap", "shear_modulus", "fmax", "centroid_id"]
             df.to_csv(self.save_path / filename)
 
         return target_archive
@@ -336,7 +348,7 @@ class ReferenceAnalyser:
         y_axis_limits=None,
     ):
         plotting_centroids = load_centroids(
-            self.centroid_folder_path.parent / self.centroid_filename[1:]
+            self.centroid_folder_path / self.centroid_filename
         )
         (
             fitness_for_plotting,
@@ -602,7 +614,7 @@ class ReferenceAnalyser:
         self.symmetry_evaluator.group_structures_by_symmetry(
             archive=target_archive,
             experiment_directory_path=self.save_path,
-            centroid_full_path=self.centroid_folder_path.parent
+            centroid_full_path=self.centroid_folder_path
             / self.centroid_filename[1:],
             filename_tag="experimental"
             if self.experimental_references_only
