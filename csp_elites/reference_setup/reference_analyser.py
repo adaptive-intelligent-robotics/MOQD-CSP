@@ -53,7 +53,7 @@ class ReferenceAnalyser:
         self.main_experiments_directory = (
             pathlib.Path(__file__).parent.parent.parent
             / ".experiment.nosync"
-            / "experiments"
+            / "reference_data"
         )
         self.centroid_folder_path = self.main_experiments_directory / "centroids"
 

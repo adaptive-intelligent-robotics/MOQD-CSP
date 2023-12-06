@@ -71,7 +71,7 @@ class CrystalSystem:
         )
         self.compound_formula = compound_formula
         self.main_experiment_directory = (
-            pathlib.Path(__file__).parent.parent.parent / "experiments"
+            pathlib.Path(__file__).parent.parent.parent / "reference_data"
         )
         self._possible_pyxtal_modes = self.load_possible_pyxtal_spacegroups()
 

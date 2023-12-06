@@ -29,7 +29,7 @@ class MOME(MapElites):
         number_of_bd_dimensions: int,
         run_parameters: dict,
         experiment_save_dir: str,
-        centroids_load_dir: str="./experiments/centroids/"
+        centroids_load_dir: str="./reference_data/centroids/"
     ):
         # Initialise Crystal functions
         self.crystal_system = crystal_system

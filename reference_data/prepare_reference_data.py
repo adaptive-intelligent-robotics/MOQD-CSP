@@ -45,13 +45,14 @@ def prepare_reference_datasets(system_formula):
             config.system.blocks = blocks
 
         
-        # 
-        # kdt = reference_analyser.initialise_kdt_and_centroids(
-        #     number_of_niches=config.number_of_niches,
-        #     band_gap_limits=band_gap_limits,
-        #     shear_moduli_limits=shear_moduli_limits,
-        # )
+        # Create centroids for system
+        kdt = reference_analyser.initialise_kdt_and_centroids(
+            number_of_niches=config.number_of_niches,
+            band_gap_limits=band_gap_limits,
+            shear_moduli_limits=shear_moduli_limits,
+        )
 
+        # Create target archive
         target_archive = reference_analyser.create_model_archive(
             bd_minimum_values=bd_minimum_values,
             bd_maximum_values=bd_maximum_values,
