@@ -59,18 +59,19 @@ def prepare_reference_datasets(system_formula):
             save_reference=not filter_experiment,
         )
 
-        # reference_analyser.plot_cvt_plot(
-        #     target_archive=target_archive,
-        #     bd_minimum_values=np.array([0, 0])
-        #     if reference_analyser.normalise_bd
-        #     else bd_minimum_values,
-        #     bd_maximum_values=np.array([1, 1])
-        #     if reference_analyser.normalise_bd
-        #     else bd_maximum_values,
-        #     fitness_limits=fitness_limits,
-        #     x_axis_limits=bd_minimum_values,
-        #     y_axis_limits=bd_maximum_values,
-        # )
+        reference_analyser.plot_cvt_plot(
+            target_archive=target_archive,
+            bd_minimum_values=np.array([0, 0])
+            if reference_analyser.normalise_bd
+            else bd_minimum_values,
+            bd_maximum_values=np.array([1, 1])
+            if reference_analyser.normalise_bd
+            else bd_maximum_values,
+            fitness_min_values=fitness_min_values,
+            fitness_max_values=fitness_max_values,
+            x_axis_limits=bd_minimum_values,
+            y_axis_limits=bd_maximum_values,
+        )
         # reference_analyser.plot_references_as_groups(target_archive)
         # reference_analyser.heatmap_structure_matcher_distances(annotate=False)
         # reference_analyser.plot_symmetries()

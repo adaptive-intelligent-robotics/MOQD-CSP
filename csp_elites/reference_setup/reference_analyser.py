@@ -343,15 +343,17 @@ class ReferenceAnalyser:
         target_archive: Archive,
         bd_minimum_values: np.ndarray,
         bd_maximum_values: np.ndarray,
-        fitness_limits: np.ndarray,
+        fitness_min_values: np.ndarray,
+        fitness_max_values: np.ndarray,
         x_axis_limits=None,
         y_axis_limits=None,
     ):
         plotting_centroids = load_centroids(
-            self.centroid_folder_path / self.centroid_filename
+            f"{self.centroid_folder_path}{self.centroid_filename}"
         )
         (
-            fitness_for_plotting,
+            energies_for_plotting,
+            magmoms_for_plotting,
             descriptors_for_plotting,
             labels_for_plotting,
         ) = target_archive.convert_fitness_and_descriptors_to_plotting_format(
@@ -363,37 +365,70 @@ class ReferenceAnalyser:
         else:
             directory_string = None
 
+        # Plot repertoires with energies as fitness
         plot_2d_map_elites_repertoire_marta(
             centroids=plotting_centroids,
-            repertoire_fitnesses=fitness_for_plotting,
+            repertoire_fitnesses=energies_for_plotting,
             minval=bd_minimum_values,
             maxval=bd_maximum_values,
             repertoire_descriptors=descriptors_for_plotting,
-            vmin=fitness_limits[0],
-            vmax=fitness_limits[1],
+            vmin=fitness_min_values[0],
+            vmax=fitness_max_values[0],
             annotations=labels_for_plotting,
             directory_string=directory_string,
-            filename=f"{self.formula}_cvt_plot_{self.experimental_string}_no_annotate",
+            filename=f"{self.formula}_energy_cvt_plot_{self.experimental_string}_no_annotate",
             annotate=False,
             x_axis_limits=x_axis_limits,
             y_axis_limits=y_axis_limits,
         )
         plot_2d_map_elites_repertoire_marta(
             centroids=plotting_centroids,
-            repertoire_fitnesses=fitness_for_plotting,
+            repertoire_fitnesses=energies_for_plotting,
             minval=bd_minimum_values,
             maxval=bd_maximum_values,
             repertoire_descriptors=descriptors_for_plotting,
-            vmin=fitness_limits[0],
-            vmax=fitness_limits[1],
+            vmin=fitness_min_values[0],
+            vmax=fitness_max_values[0],
             annotations=labels_for_plotting,
             directory_string=directory_string,
-            filename=f"{self.formula}_cvt_plot_{self.experimental_string}_annotate",
+            filename=f"{self.formula}_energy_cvt_plot_{self.experimental_string}_annotate",
             annotate=True,
             x_axis_limits=x_axis_limits,
             y_axis_limits=y_axis_limits,
         )
-
+        
+        # plot repertoires with magmoms as fitness
+        plot_2d_map_elites_repertoire_marta(
+            centroids=plotting_centroids,
+            repertoire_fitnesses=magmoms_for_plotting,
+            minval=bd_minimum_values,
+            maxval=bd_maximum_values,
+            repertoire_descriptors=descriptors_for_plotting,
+            vmin=fitness_min_values[1],
+            vmax=fitness_max_values[1],
+            annotations=labels_for_plotting,
+            directory_string=directory_string,
+            filename=f"{self.formula}_magmom_cvt_plot_{self.experimental_string}_no_annotate",
+            annotate=False,
+            x_axis_limits=x_axis_limits,
+            y_axis_limits=y_axis_limits,
+        )
+        plot_2d_map_elites_repertoire_marta(
+            centroids=plotting_centroids,
+            repertoire_fitnesses=magmoms_for_plotting,
+            minval=bd_minimum_values,
+            maxval=bd_maximum_values,
+            repertoire_descriptors=descriptors_for_plotting,
+            vmin=fitness_min_values[1],
+            vmax=fitness_max_values[1],
+            annotations=labels_for_plotting,
+            directory_string=directory_string,
+            filename=f"{self.formula}_magmom_cvt_plot_{self.experimental_string}_annotate",
+            annotate=True,
+            x_axis_limits=x_axis_limits,
+            y_axis_limits=y_axis_limits,
+        )
+        
         plt.clf()
 
     def plot_fmax(self, histogram_range: Optional[Tuple[int, int]] = None):

@@ -77,24 +77,26 @@ class MOArchive(Archive):
     #     )
 
 
-    # def convert_fitness_and_descriptors_to_plotting_format(
-    #     self, all_centroids: np.ndarray
-    # ):
-    #     fitness_for_plotting = np.full((len(all_centroids)), -np.inf)
-    #     descriptors_for_plotting = np.full(
-    #         (len(all_centroids), len(self.descriptors[0])), -np.inf
-    #     )
-    #     labels_for_plotting = np.full((len(all_centroids)), -np.inf)
-    #     labels_for_plotting = labels_for_plotting.astype(str)
+    def convert_fitness_and_descriptors_to_plotting_format(
+        self, all_centroids: np.ndarray
+    ):
+        energies_for_plotting = np.full((len(all_centroids)), -np.inf)
+        magmoms_for_plotting = np.full((len(all_centroids)), -np.inf)
+        descriptors_for_plotting = np.full(
+            (len(all_centroids), len(self.descriptors[0])), -np.inf
+        )
+        labels_for_plotting = np.full((len(all_centroids)), -np.inf)
+        labels_for_plotting = labels_for_plotting.astype(str)
 
-    #     for i in range(len(self.centroids)):
-    #         present_centroid = np.argwhere(all_centroids == self.centroids[i])
-    #         fitness_for_plotting[present_centroid[0][0]] = self.fitnesses[i]
-    #         descriptors_for_plotting[present_centroid[0][0]] = self.descriptors[i]
-    #         if self.labels is not None:
-    #             labels_for_plotting[present_centroid[0][0]] = str(self.labels[i])
+        for i in range(len(self.centroids)):
+            present_centroid = np.argwhere(all_centroids == self.centroids[i])
+            energies_for_plotting[present_centroid[0][0]] = self.energies[i]
+            magmoms_for_plotting[present_centroid[0][0]] = self.magmoms[i]
+            descriptors_for_plotting[present_centroid[0][0]] = self.descriptors[i]
+            if self.labels is not None:
+                labels_for_plotting[present_centroid[0][0]] = str(self.labels[i])
 
-    #     return fitness_for_plotting, descriptors_for_plotting, labels_for_plotting
+        return energies_for_plotting, magmoms_for_plotting, descriptors_for_plotting, labels_for_plotting
 
     # def compute_chgnet_metrics_on_archive(self):
     #     model = CHGNet.load()
