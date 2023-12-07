@@ -16,9 +16,9 @@ operator_probabilities: [0.0, 0, 10.0, 0.0]
 # BD params
 n_behavioural_descriptor_dimensions: 2
 bd_minimum_values: [0, 25]
-bd_maximum_values: [7, 220]
+bd_maximum_values: [4, 70]
 
 # Fitness params
 reference_point: [0, 0]
 fitness_min_values: [3, 0]
-fitness_max_values: [5.5, 5.5]
+fitness_max_values: [7, 1.2]

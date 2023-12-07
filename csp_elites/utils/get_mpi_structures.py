@@ -9,7 +9,6 @@ def get_all_materials_with_formula(formula: str):
     https://docs.materialsproject.org/downloading-data/using-the-api/querying-data
     """
     with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
-        print("LOADING DATA")
         docs = mpr.summary.search(
             formula=formula,
             # band_gap=(0.5, 1.0),

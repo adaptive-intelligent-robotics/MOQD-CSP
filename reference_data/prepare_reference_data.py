@@ -72,18 +72,23 @@ def prepare_reference_datasets(system_formula):
             x_axis_limits=bd_minimum_values,
             y_axis_limits=bd_maximum_values,
         )
-        # reference_analyser.plot_references_as_groups(target_archive)
-        # reference_analyser.heatmap_structure_matcher_distances(annotate=False)
-        # reference_analyser.plot_symmetries()
-        # reference_analyser.plot_fmax()
+        reference_analyser.plot_references_as_groups(
+            target_archive,
+            x_axis_limits=bd_minimum_values,
+            y_axis_limits=bd_maximum_values,
+        )
+        reference_analyser.heatmap_structure_matcher_distances(annotate=False)
+        reference_analyser.plot_symmetries()
+        reference_analyser.plot_fmax()
 
     
 
 if __name__ == "__main__":
-    # formulas = ["C", "SiO2", "Si", "SiC", "TiO2"]
-    formulas = ["SiO2"]
+    formulas = ["C", "SiO2", "Si", "SiC", "TiO2"]
     
     for formula in formulas:
+        print("Preparing reference data for", formula, "system")
+        print("=========================================")
         prepare_reference_datasets(formula)
 
    

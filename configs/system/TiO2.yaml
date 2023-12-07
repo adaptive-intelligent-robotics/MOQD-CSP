@@ -20,6 +20,6 @@ bd_maximum_values: [4,120]
 
 # Fitness params
 reference_point: [0, 0]
-fitness_min_values: [8, 0]
-fitness_max_values: [10, 10]
+fitness_min_values: [6, 0]
+fitness_max_values: [12, 2.5]
 

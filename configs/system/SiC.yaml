@@ -20,5 +20,5 @@ bd_maximum_values: [0.9, 185]
 
 # Fitness params
 reference_point: [0, 0]
-fitness_min_valies: [5.8, 0]
-fitness_max_values: [7.8, 7.8]
+fitness_min_values: [5.8, 0]
+fitness_max_values: [10, 1.2]

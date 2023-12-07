@@ -528,21 +528,21 @@ class ReferenceAnalyser:
         all_structure_matcher_matches = []
         distances = []
 
-        for strucutre_1 in self.reference_structures:
+        for structure_1 in self.reference_structures:
             matches_for_structure_1 = []
             distances_for_structure_1 = []
             for structure_2 in self.reference_structures:
                 matches_for_structure_1.append(
                     self.symmetry_evaluator.structure_matcher.fit(
-                        strucutre_1.structure, structure_2.structure
+                        structure_1.structure, structure_2.structure
                     )
                 )
-                if len(strucutre_1.structure) == len(structure_2.structure):
-                    strucutre_1.structure.sort()
+                if len(structure_1.structure) == len(structure_2.structure):
+                    structure_1.structure.sort()
                     structure_2.structure.sort()
                     distance_to_known_structure = float(
                         self.symmetry_evaluator.comparator._compare_structure(
-                            AseAtomsAdaptor.get_atoms(strucutre_1.structure),
+                            AseAtomsAdaptor.get_atoms(structure_1.structure),
                             AseAtomsAdaptor.get_atoms(structure_2.structure),
                         )
                     )
@@ -649,8 +649,7 @@ class ReferenceAnalyser:
         self.symmetry_evaluator.group_structures_by_symmetry(
             archive=target_archive,
             experiment_directory_path=self.save_path,
-            centroid_full_path=self.centroid_folder_path
-            / self.centroid_filename[1:],
+            centroid_full_path=f"{self.centroid_folder_path}{self.centroid_filename}",
             filename_tag="experimental"
             if self.experimental_references_only
             else "exp_and_theory",
