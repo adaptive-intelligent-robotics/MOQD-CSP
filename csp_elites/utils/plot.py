@@ -21,9 +21,11 @@ from csp_elites.map_elites.elites_utils import make_hashable
 from csp_elites.utils.asign_target_values_to_centroids import (
     reassign_data_from_pkl_to_new_centroids,
 )
+from pymoo.indicators.hv import HV
 
 if TYPE_CHECKING:
     from csp_elites.utils.experiment_parameters import ExperimentParameters
+
 
 
 plt.rcParams["savefig.dpi"] = 300
@@ -381,6 +383,29 @@ def load_archive_from_pickle(filename: str):
     return fitnesses, centroids, descriptors, individuals
 
 
+def load_mo_archive_from_pickle(filename: str):
+    with open(filename, "rb") as file:
+        archive = pickle.load(file)
+        
+    energies = []
+    magmoms = []
+    centroids = []
+    descriptors = []
+    individuals = []
+    for el in archive:
+        energies.append(el[0])
+        magmoms.append(el[1])
+        centroids.append(list(el[2]))
+        descriptors.append(list(el[3]))
+        individuals.append(el[4])
+
+    energies = np.array(energies)
+    magmoms = np.array(magmoms)
+    centroids = np.array(centroids)
+    descriptors = np.array(descriptors)
+    
+    return energies, magmoms, centroids, descriptors, individuals
+
 def convert_fitness_and_descriptors_to_plotting_format(
     all_centroids: np.ndarray,
     centroids_from_archive: np.ndarray,
@@ -399,6 +424,52 @@ def convert_fitness_and_descriptors_to_plotting_format(
     return fitness_for_plotting, descriptors_for_plotting
 
 
+def convert_to_hypervolume_format(
+    all_centroids: np.ndarray,
+    centroids_from_archive: np.ndarray,
+    fitnesses_from_archive: np.ndarray,
+    descriptors_from_archive: np.ndarray,
+    reference_point: np.ndarray,
+):
+    hypervolumes_for_plotting = np.full((len(all_centroids)), -np.inf)
+    descriptors_for_plotting = np.full(
+        (len(all_centroids), len(descriptors_from_archive[0])), -np.inf
+    )
+    hypervolume_fn = HV(ref_point=reference_point)
+    unique_centroids = np.unique(centroids_from_archive, axis=0)
+    
+    for centroid in unique_centroids:
+        present_centroid_idx = np.argwhere(all_centroids == centroid)[0][0]
+        fitnesses_for_this_centroid = []
+        for i in range(len(centroids_from_archive)):
+            if np.array_equal(centroids_from_archive[i], centroid):
+                fitnesses_for_this_centroid.append(fitnesses_from_archive[i])
+        hypervolume = hypervolume_fn(np.array(fitnesses_for_this_centroid) * -1)
+        hypervolumes_for_plotting[present_centroid_idx] = hypervolume
+        descriptors_for_plotting[present_centroid_idx] = descriptors_from_archive[i]
+            
+    return hypervolumes_for_plotting, descriptors_for_plotting
+
+
+def convert_mo_fitness_and_descriptors_to_plotting_format(
+    all_centroids: np.ndarray,
+    centroids_from_archive: np.ndarray,
+    fitnesses_from_archive: np.ndarray,
+    descriptors_from_archive: np.ndarray,
+    objective_index: int,
+):
+    
+    fitness_for_plotting = np.full((len(all_centroids)), -np.inf)
+    descriptors_for_plotting = np.full(
+        (len(all_centroids), len(descriptors_from_archive[0])), -np.inf
+    )
+    for i in range(len(centroids_from_archive)):
+        present_centroid = np.argwhere(all_centroids == centroids_from_archive[i])
+        fitness_for_plotting[present_centroid[0][0]] = fitnesses_from_archive[i][objective_index]
+        descriptors_for_plotting[present_centroid[0][0]] = descriptors_from_archive[i]
+    
+    return fitness_for_plotting, descriptors_for_plotting
+
 def plot_all_maps_in_archive(
     experiment_directory_path: str,
     experiment_parameters: "ExperimentParameters",
@@ -406,6 +477,87 @@ def plot_all_maps_in_archive(
     target_centroids,
     bd_minimum_values,
     bd_maximum_values,
+    objective,
+    annotate: bool = True,
+    force_replot: bool = False,
+):
+    list_of_files = [
+        name
+        for name in os.listdir(f"{experiment_directory_path}")
+        if not os.path.isdir(name)
+    ]
+    list_of_archives = [
+        filename
+        for filename in list_of_files
+        if ("archive_" in filename) and (".pkl" in filename)
+    ]
+    list_of_plots = [
+        filename
+        for filename in list_of_files
+        if ("cvt_plot" in filename) and (".png" in filename)
+    ]
+    list_of_plot_ids = [
+        filename.lstrip("cvt_plot_").rstrip(".png") for filename in list_of_plots
+    ]
+    
+    if objective == "energy":
+        objective_idx = 0
+    
+    else:
+        objective_idx = 1
+
+    for filename in tqdm(list_of_archives):
+        if "relaxed_archive" in filename:
+            continue
+        archive_id = filename.lstrip("relaxed_archive_").rstrip(".pkl")
+        if force_replot or (archive_id not in list_of_plot_ids):
+            fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
+                f"{experiment_directory_path}/{filename}"
+            )
+            (
+                fitnesses_for_plotting,
+                descriptors_for_plotting,
+            ) = convert_fitness_and_descriptors_to_plotting_format(
+                all_centroids=all_centroids,
+                centroids_from_archive=centroids,
+                fitnesses_from_archive=fitnesses,
+                descriptors_from_archive=descriptors,
+            )
+            if "relaxed" in filename:
+                archive_id += "_relaxed"
+
+
+            plot_2d_map_elites_repertoire_marta(
+                centroids=all_centroids,
+                repertoire_fitnesses=fitnesses_for_plotting,
+                minval=bd_minimum_values,
+                maxval=bd_maximum_values,
+                repertoire_descriptors=descriptors_for_plotting,
+                vmin=experiment_parameters.system.fitness_min_values[objective_idx],
+                vmax=experiment_parameters.system.fitness_max_values[objective_idx],
+                target_centroids=target_centroids,
+                directory_string=experiment_directory_path,
+                filename=f"cvt_plot_{archive_id}_{objective}",
+                axis_labels=["Band Gap, eV", "Shear Modulus, GPa"],
+                annotate=annotate,
+                x_axis_limits=(
+                    experiment_parameters.system.bd_minimum_values[0],
+                    experiment_parameters.system.bd_maximum_values[0],
+                ),
+                y_axis_limits=(
+                    experiment_parameters.system.bd_minimum_values[1],
+                    experiment_parameters.system.bd_maximum_values[1],
+                ),
+            )
+
+def plot_all_mome_maps_in_archive(
+    experiment_directory_path: str,
+    experiment_parameters: "ExperimentParameters",
+    all_centroids,
+    target_centroids,
+    bd_minimum_values,
+    bd_maximum_values,
+    reference_point,
     annotate: bool = True,
     force_replot: bool = False,
 ):
@@ -436,14 +588,17 @@ def plot_all_maps_in_archive(
             fitnesses, centroids, descriptors, individuals = load_archive_from_pickle(
                 f"{experiment_directory_path}/{filename}"
             )
+            
+            # Plot Hypervolume
             (
-                fitnesses_for_plotting,
+                hypervolumes_for_plotting,
                 descriptors_for_plotting,
-            ) = convert_fitness_and_descriptors_to_plotting_format(
+            ) = convert_to_hypervolume_format(
                 all_centroids=all_centroids,
                 centroids_from_archive=centroids,
                 fitnesses_from_archive=fitnesses,
                 descriptors_from_archive=descriptors,
+                reference_point=reference_point,
             )
             if "relaxed" in filename:
                 archive_id += "_relaxed"
@@ -451,12 +606,10 @@ def plot_all_maps_in_archive(
 
             plot_2d_map_elites_repertoire_marta(
                 centroids=all_centroids,
-                repertoire_fitnesses=fitnesses_for_plotting,
+                repertoire_fitnesses=hypervolumes_for_plotting,
                 minval=bd_minimum_values,
                 maxval=bd_maximum_values,
                 repertoire_descriptors=descriptors_for_plotting,
-                vmin=experiment_parameters.system.fitness_min_max_values[0],
-                vmax=experiment_parameters.system.fitness_min_max_values[1],
                 target_centroids=target_centroids,
                 directory_string=experiment_directory_path,
                 filename=f"cvt_plot_{archive_id}",
@@ -471,8 +624,78 @@ def plot_all_maps_in_archive(
                     experiment_parameters.system.bd_maximum_values[1],
                 ),
             )
-
-
+            
+            # Plot Energy
+            (
+                energy_for_plotting,
+                descriptors_for_plotting,
+            ) = convert_mo_fitness_and_descriptors_to_plotting_format(
+                all_centroids=all_centroids,
+                centroids_from_archive=centroids,
+                fitnesses_from_archive=fitnesses,
+                descriptors_from_archive=descriptors,
+                objective_index=0,
+            )
+            
+            plot_2d_map_elites_repertoire_marta(
+                centroids=all_centroids,
+                repertoire_fitnesses=energy_for_plotting,
+                minval=bd_minimum_values,
+                maxval=bd_maximum_values,
+                repertoire_descriptors=descriptors_for_plotting,
+                vmin=experiment_parameters.system.fitness_min_values[0],
+                vmax=experiment_parameters.system.fitness_max_values[0],
+                target_centroids=target_centroids,
+                directory_string=experiment_directory_path,
+                filename=f"cvt_plot_{archive_id}_energy",
+                axis_labels=["Band Gap, eV", "Shear Modulus, GPa"],
+                annotate=annotate,
+                x_axis_limits=(
+                    experiment_parameters.system.bd_minimum_values[0],
+                    experiment_parameters.system.bd_maximum_values[0],
+                ),
+                y_axis_limits=(
+                    experiment_parameters.system.bd_minimum_values[1],
+                    experiment_parameters.system.bd_maximum_values[1],
+                ),
+            )
+            
+            # Plot Magmom
+            (
+                magmom_for_plotting,
+                descriptors_for_plotting,
+            ) = convert_mo_fitness_and_descriptors_to_plotting_format(
+                all_centroids=all_centroids,
+                centroids_from_archive=centroids,
+                fitnesses_from_archive=fitnesses,
+                descriptors_from_archive=descriptors,
+                objective_index=1,
+            )
+            
+            plot_2d_map_elites_repertoire_marta(
+                centroids=all_centroids,
+                repertoire_fitnesses=magmom_for_plotting,
+                minval=bd_minimum_values,
+                maxval=bd_maximum_values,
+                repertoire_descriptors=descriptors_for_plotting,
+                vmin=experiment_parameters.system.fitness_min_values[1],
+                vmax=experiment_parameters.system.fitness_max_values[1],
+                target_centroids=target_centroids,
+                directory_string=experiment_directory_path,
+                filename=f"cvt_plot_{archive_id}_magmom",
+                axis_labels=["Band Gap, eV", "Shear Modulus, GPa"],
+                annotate=annotate,
+                x_axis_limits=(
+                    experiment_parameters.system.bd_minimum_values[0],
+                    experiment_parameters.system.bd_maximum_values[0],
+                ),
+                y_axis_limits=(
+                    experiment_parameters.system.bd_minimum_values[1],
+                    experiment_parameters.system.bd_maximum_values[1],
+                ),
+            )
+                     
+            
 def plot_gif(experiment_directory_path: str):
     plot_list = [
         name

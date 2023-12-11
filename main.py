@@ -153,14 +153,6 @@ def main(config:ExperimentConfig) -> None:
         formula=config.system.system_name,
     )
 
-    experiment_processor = ExperimentProcessor(
-        config=config,
-        save_structure_images=False,
-        filter_for_experimental_structures=False,
-        centroid_filename=centroid_filename,
-        centroids_load_dir=main.centroids_load_dir,
-        experiment_save_dir=main.experiment_save_dir,
-    )
 
     experiment_processor.plot()
     experiment_processor.process_symmetry()

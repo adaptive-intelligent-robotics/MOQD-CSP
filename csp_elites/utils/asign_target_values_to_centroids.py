@@ -90,3 +90,49 @@ def reassign_data_from_pkl_to_new_centroids(
         new_centroids.append(n)
 
     return new_centroids
+
+
+def reassign_mo_data_from_pkl_to_new_centroids(
+    centroids_file: str,
+    target_data,
+    filter_for_number_of_atoms: Optional[int],
+    normalise_bd_values: Optional[Tuple[List[float], List[float]]],
+):
+    c = np.loadtxt(centroids_file)
+    kdt = KDTree(c, leaf_size=30, metric="euclidean")
+
+    energies, _, _, descriptors, individuals = target_data
+    if normalise_bd_values is not None:
+        descriptors[:, 0] = normalise_between_0_and_1(
+            descriptors[:, 0], (normalise_bd_values[0][0], normalise_bd_values[1][0])
+        )
+        descriptors[:, 1] = normalise_between_0_and_1(
+            descriptors[:, 1], (normalise_bd_values[0][1], normalise_bd_values[1][1])
+        )
+
+    energies_to_enumerate = []
+    band_gaps = []
+    shear_moduli = []
+
+    if filter_for_number_of_atoms is not None:
+        for i, atoms in enumerate(individuals):
+            atom_positions = (
+                atoms["positions"] if isinstance(atoms, dict) else atoms.get_positions()
+            )
+            if len(atom_positions) <= filter_for_number_of_atoms:
+                energies_to_enumerate.append(energies[i])
+                band_gaps.append(descriptors[i][0])
+                shear_moduli.append(descriptors[i][1])
+    else:
+        for i, atoms in enumerate(energies):
+            energies_to_enumerate.append(energies[i])
+            band_gaps.append(descriptors[i][0])
+            shear_moduli.append(descriptors[i][1])
+    new_centroids = []
+    for i in range(len(energies_to_enumerate)):
+        niche_index = kdt.query([(band_gaps[i], shear_moduli[i])], k=1)[1][0][0]
+        niche = kdt.data[niche_index]
+        n = make_hashable(niche)
+        new_centroids.append(n)
+
+    return new_centroids
