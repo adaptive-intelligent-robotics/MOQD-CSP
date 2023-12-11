@@ -168,9 +168,10 @@ def map_elites_add_to_niche(
     species: Species,
     niche: int,
     archive: Dict[str, List[Species]],
+    objective_index: int = 0,
 ):
     if niche in archive:
-        if species.fitness > archive[niche][0].fitness: # MAP elites list length in each niche is always 1 so can always index 0
+        if species.fitness[objective_index] > archive[niche][0].fitness[objective_index]:
             archive[niche] = [species]
     else:
         archive[niche] = [species]

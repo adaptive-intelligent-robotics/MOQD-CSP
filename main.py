@@ -78,20 +78,21 @@ def main(config:ExperimentConfig) -> None:
             alternative_operators=config.alternative_operators,
             learning_rate=config.dqd_learning_rate,
     )
-
-    if config.algo.algo_name == "mome":
-        crystal_evaluator = MOCrystalEvaluator(
-            with_force_threshold=config.force_threshold,
-            fmax_relaxation_convergence=config.fmax_threshold,
-            force_threshold_fmax=config.force_threshold_exp_fmax,
-            compute_gradients=config.compute_gradients,
-            bd_normalisation=(
-                config.system.bd_minimum_values,
-                config.system.bd_maximum_values,
-            )
-            if config.normalise_bd
-            else None,
+    
+    crystal_evaluator = MOCrystalEvaluator(
+        with_force_threshold=config.force_threshold,
+        fmax_relaxation_convergence=config.fmax_threshold,
+        force_threshold_fmax=config.force_threshold_exp_fmax,
+        compute_gradients=config.compute_gradients,
+        bd_normalisation=(
+            config.system.bd_minimum_values,
+            config.system.bd_maximum_values,
         )
+        if config.normalise_bd
+        else None,
+    )
+        
+    if config.algo.algo_name == "mome":
         main = MOME(
             crystal_system=crystal_system,
             crystal_evaluator=crystal_evaluator,
@@ -102,19 +103,6 @@ def main(config:ExperimentConfig) -> None:
         )
     
     elif config.algo.algo_name == "map_elites":
-        crystal_evaluator = CrystalEvaluator(
-            with_force_threshold=config.force_threshold,
-            fmax_relaxation_convergence=config.fmax_threshold,
-            force_threshold_fmax=config.force_threshold_exp_fmax,
-            compute_gradients=config.compute_gradients,
-            bd_normalisation=(
-                config.system.bd_minimum_values,
-                config.system.bd_maximum_values,
-            )
-            if config.normalise_bd
-            else None,
-        )
-
         main = MapElites(
             crystal_system=crystal_system,
             crystal_evaluator=crystal_evaluator,
@@ -122,6 +110,7 @@ def main(config:ExperimentConfig) -> None:
             number_of_bd_dimensions=config.system.n_behavioural_descriptor_dimensions,
             run_parameters=config,
             experiment_save_dir=experiment_save_dir,
+            objective=config.algo.objective,
         )
         
     tic = time.time()
@@ -153,9 +142,16 @@ def main(config:ExperimentConfig) -> None:
         formula=config.system.system_name,
     )
 
-
-    experiment_processor.plot()
-    experiment_processor.process_symmetry()
+    experiment_processor = ExperimentProcessor(
+        config=config,
+        save_structure_images=False,
+        filter_for_experimental_structures=False,
+        centroid_filename=centroid_filename,
+        centroids_load_dir=main.centroids_load_dir,
+        experiment_save_dir=main.experiment_save_dir,
+    )
+    
+    experiment_processor.plot_mome()
 
 
 

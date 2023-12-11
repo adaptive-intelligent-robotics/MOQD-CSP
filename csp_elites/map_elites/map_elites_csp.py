@@ -29,11 +29,11 @@ from csp_elites.map_elites.elites_utils import (
     add_to_archive,
     make_experiment_folder,
     map_elites_add_to_niche,
-    map_elites_metrics_fn,
     map_elites_selection_fn,
     write_centroids,
     Species,
 )
+from csp_elites.mome.mome_utils import mome_metrics_fn
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 
 
@@ -46,6 +46,7 @@ class MapElites:
         number_of_bd_dimensions: int,
         run_parameters: dict,
         experiment_save_dir: str,
+        objective: str,
         centroids_load_dir: str="./reference_data/centroids/"
     ):
         # Initialise Crystal functions
@@ -94,11 +95,17 @@ class MapElites:
         )
         
         # Set up map-elites specific functions
-        self.add_to_niche_function = map_elites_add_to_niche
+        if objective == "energy":
+            objective_idx = 0
+        elif objective == "magmom":
+            objective_idx = 1
+        self.add_to_niche_function = partial(map_elites_add_to_niche,
+            objective_index=objective_idx
+        )
         self.selection_operator = partial(map_elites_selection_fn,
             batch_size=run_parameters.batch_size
         )
-        self.metrics_function = map_elites_metrics_fn
+        self.metrics_function = mome_metrics_fn
         
         # Setup logging
         wandb.init(
