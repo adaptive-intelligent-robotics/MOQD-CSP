@@ -262,7 +262,10 @@ def plot_2d_map_elites_repertoire_marta(
     if directory_string is None:
         plt.show()
     else:
-        plt.savefig(f"{directory_string}/{filename}.png", format="png")
+        if annotate:
+            plt.savefig(f"{directory_string}/{filename}_annotated.png", format="png")
+        else:
+            plt.savefig(f"{directory_string}/{filename}.png", format="png")
     return fig, ax
 
 

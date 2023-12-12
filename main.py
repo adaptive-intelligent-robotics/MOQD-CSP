@@ -153,6 +153,7 @@ def main(config:ExperimentConfig) -> None:
     )
     
     experiment_processor.plot_mome()
+    experiment_processor.plot_mome(annotate=False)
     experiment_processor.process_symmetry()
 
 
