@@ -86,16 +86,21 @@ def calculate_crowding_distances(
 )-> Tuple[float,...]:
     
     fitnesses = np.array([s.fitness for s in niche])
-    sorted_args = np.argsort(fitnesses, axis=0)[:, 0]
-    sorted_fitnesses = fitnesses[sorted_args]
-    sorted_distances = np.sum(np.abs(sorted_fitnesses[1:] - sorted_fitnesses[:-1]), axis=1)
-    sorted_distances = np.insert(sorted_distances, 0, sorted_distances[0])
-    sorted_distances = np.append(sorted_distances, sorted_distances[-1])    
-    crowding_distances = [np.mean([sorted_distances[i], sorted_distances[i+1]]) for i in range(len(niche))]
     
-    boundary_indices = sorted_args[0], sorted_args[-1]
+    if len(fitnesses) == 1:
+        return [1], [0, 0]
+    
+    else:
+        sorted_args = np.argsort(fitnesses, axis=0)[:, 0]
+        sorted_fitnesses = fitnesses[sorted_args]
+        sorted_distances = np.sum(np.abs(sorted_fitnesses[1:] - sorted_fitnesses[:-1]), axis=1)
+        sorted_distances = np.insert(sorted_distances, 0, sorted_distances[0])
+        sorted_distances = np.append(sorted_distances, sorted_distances[-1])    
+        crowding_distances = [np.mean([sorted_distances[i], sorted_distances[i+1]]) for i in range(len(niche))]
+        
+        boundary_indices = sorted_args[0], sorted_args[-1]
 
-    return np.take(crowding_distances, sorted_args), boundary_indices
+        return np.take(crowding_distances, sorted_args), boundary_indices
 
 def mome_crowding_selection_fn(
     archive: Dict[str, List[Species]],

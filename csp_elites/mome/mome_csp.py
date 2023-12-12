@@ -13,6 +13,8 @@ from csp_elites.map_elites.elites_utils import (
 from csp_elites.mome.mome_utils import (
     mome_add_to_niche,
     mome_uniform_selection_fn,
+    mome_crowding_add_to_niche,
+    mome_crowding_selection_fn,
     mome_metrics_fn,
 )
 
@@ -29,6 +31,7 @@ class MOME(MapElites):
         number_of_bd_dimensions: int,
         run_parameters: dict,
         experiment_save_dir: str,
+        selection: str,
         centroids_load_dir: str="./reference_data/centroids/"
     ):
         # Initialise Crystal functions
@@ -77,12 +80,20 @@ class MOME(MapElites):
         )
     
         # Set up mome-specific functions
-        self.add_to_niche_function = partial(mome_add_to_niche,
-            max_front_size=run_parameters.max_front_size
-        )
-        self.selection_operator = partial(mome_uniform_selection_fn,
-            batch_size=run_parameters.batch_size
-        )
+        if selection == "uniform":
+            self.add_to_niche_function = partial(mome_add_to_niche,
+                max_front_size=run_parameters.max_front_size
+            )
+            self.selection_operator = partial(mome_uniform_selection_fn,
+                batch_size=run_parameters.batch_size
+            )
+        elif selection == "biased":
+            self.add_to_niche_function = partial(mome_crowding_add_to_niche,
+                max_front_size=run_parameters.max_front_size
+            )
+            self.selection_operator = partial(mome_crowding_selection_fn,
+                batch_size=run_parameters.batch_size
+            )
 
         self.metrics_function = mome_metrics_fn
 

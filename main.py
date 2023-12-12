@@ -92,7 +92,7 @@ def main(config:ExperimentConfig) -> None:
         else None,
     )
         
-    if config.algo.algo_name == "mome":
+    if config.algo.algo_name == "mome" or config.algo.algo_name == "biased_mome":
         main = MOME(
             crystal_system=crystal_system,
             crystal_evaluator=crystal_evaluator,
@@ -100,6 +100,7 @@ def main(config:ExperimentConfig) -> None:
             number_of_bd_dimensions=config.system.n_behavioural_descriptor_dimensions,
             run_parameters=config,
             experiment_save_dir=experiment_save_dir,
+            selection=config.algo.selection,
         )
     
     elif config.algo.algo_name == "map_elites":
@@ -151,7 +152,7 @@ def main(config:ExperimentConfig) -> None:
         experiment_save_dir=main.experiment_save_dir,
     )
     
-    # experiment_processor.plot_mome()
+    experiment_processor.plot_mome()
     experiment_processor.process_symmetry()
 
 
