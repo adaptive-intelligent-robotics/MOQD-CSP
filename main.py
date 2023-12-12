@@ -1,7 +1,3 @@
-import pathlib
-
-from ase.ga.utilities import CellBounds
-from csp_elites.crystal.crystal_evaluator import CrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
 from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
 from csp_elites.crystal.mo_crystal_evaluator import MOCrystalEvaluator
@@ -16,6 +12,9 @@ from hydra.core.config_store import ConfigStore
 import time
 from typing import Tuple
 
+import torch
+import random
+import numpy as np
 
 @dataclass
 class ExperimentConfig:
@@ -55,6 +54,10 @@ class ExperimentConfig:
 @hydra.main(config_path="configs/", config_name="csp")
 def main(config:ExperimentConfig) -> None:
     
+    torch.manual_seed(config.random_seed)
+    np.random.seed(config.random_seed)
+    random.seed(config.random_seed)
+        
     experiment_save_dir = f"output/{config.system.system_name}/{config.algo.algo_name}/{config.experiment_tag}"
 
     splits = {(2,): 1, (4,): 1}

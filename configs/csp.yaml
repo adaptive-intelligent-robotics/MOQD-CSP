@@ -7,6 +7,7 @@ defaults:
     - algo: mome
     - system: TiO2
 experiment_tag: ${now:%Y-%m-%d_%H%M%S}
+random_seed: 42
 
 # CVT params
 number_of_niches: 200
