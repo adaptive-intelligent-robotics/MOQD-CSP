@@ -382,7 +382,6 @@ def load_archive_from_pickle(filename: str):
 
     return fitnesses, centroids, descriptors, individuals
 
-
 def load_mo_archive_from_pickle(filename: str):
     with open(filename, "rb") as file:
         archive = pickle.load(file)
@@ -398,6 +397,29 @@ def load_mo_archive_from_pickle(filename: str):
         centroids.append(list(el[1]))
         descriptors.append(list(el[2]))
         individuals.append(el[3])
+
+    energies = np.array(energies)
+    magmoms = np.array(magmoms)
+    centroids = np.array(centroids)
+    descriptors = np.array(descriptors)
+    
+    return energies, magmoms, centroids, descriptors, individuals
+
+def load_mo_reference_archive_from_pickle(filename: str):
+    with open(filename, "rb") as file:
+        archive = pickle.load(file)
+        
+    energies = []
+    magmoms = []
+    centroids = []
+    descriptors = []
+    individuals = []
+    for el in archive:
+        energies.append(el[0])
+        magmoms.append(el[1])
+        centroids.append(list(el[2]))
+        descriptors.append(list(el[3]))
+        individuals.append(el[4])
 
     energies = np.array(energies)
     magmoms = np.array(magmoms)

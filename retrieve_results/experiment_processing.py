@@ -17,7 +17,7 @@ from csp_elites.utils.asign_target_values_to_centroids import (
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 from csp_elites.utils.plot import (
     load_centroids,
-    load_mo_archive_from_pickle,
+    load_mo_reference_archive_from_pickle,
     plot_all_maps_in_archive,
     plot_all_mome_maps_in_archive,
     plot_all_statistics_from_file,
@@ -125,7 +125,7 @@ class ExperimentProcessor:
             tag += f"{el}_"
             
         comparison_data_location = f"/mp_reference_analysis/{self.formula}_{number_of_atoms}/{self.formula}_{tag[:-1]}.pkl"
-        comparison_data_packed = load_mo_archive_from_pickle(str(self.experiment_location) + comparison_data_location)
+        comparison_data_packed = load_mo_reference_archive_from_pickle(str(self.experiment_location) + comparison_data_location)
 
         normalise_bd_values = (
             (
