@@ -488,10 +488,17 @@ def convert_mo_fitness_and_descriptors_to_plotting_format(
     descriptors_for_plotting = np.full(
         (len(all_centroids), len(descriptors_from_archive[0])), -np.inf
     )
-    for i in range(len(centroids_from_archive)):
-        present_centroid = np.argwhere(all_centroids == centroids_from_archive[i])
-        fitness_for_plotting[present_centroid[0][0]] = fitnesses_from_archive[i][objective_index]
-        descriptors_for_plotting[present_centroid[0][0]] = descriptors_from_archive[i]
+    unique_centroids = np.unique(centroids_from_archive, axis=0)
+    
+    for centroid in unique_centroids:
+        present_centroid_idx = np.argwhere(all_centroids == centroid)[0][0]
+        fitnesses_for_this_centroid = []
+        for i in range(len(centroids_from_archive)):
+            if np.array_equal(centroids_from_archive[i], centroid):
+                fitnesses_for_this_centroid.append(fitnesses_from_archive[i][objective_index])
+        max_fitness = np.max(fitnesses_for_this_centroid)
+        fitness_for_plotting[present_centroid_idx] = max_fitness
+        descriptors_for_plotting[present_centroid_idx] = descriptors_from_archive[i]
     
     return fitness_for_plotting, descriptors_for_plotting
 

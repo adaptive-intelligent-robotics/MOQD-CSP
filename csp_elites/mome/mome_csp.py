@@ -7,6 +7,7 @@ import numpy as np
 from chgnet.graph import CrystalGraphConverter
 from functools import partial
 from omegaconf import OmegaConf
+from tqdm import tqdm
 
 from csp_elites.crystal.mo_crystal_evaluator import MOCrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
