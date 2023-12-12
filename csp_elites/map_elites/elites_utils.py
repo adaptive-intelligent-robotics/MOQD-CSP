@@ -153,14 +153,14 @@ def parallel_eval_no_multiprocess():
 
 # format: fitness, centroid, desc, genome \n
 # fitness, centroid, desc and x are vectors
-def save_archive(archive, gen, directory_path):
+def save_archive(archive, gen, directory_path, name=""):
     storage = []
     for niche in archive.values():
         for s in niche:
             one_individual = [s.fitness, s.centroid, s.desc, s.x]
             storage.append(one_individual)
 
-    filename_pkl = str(directory_path) + "/archive_" + str(gen) + ".pkl"
+    filename_pkl = str(directory_path) + f"/{name}archive_" + str(gen) + ".pkl"
     with open(filename_pkl, "wb") as f:
         pickle.dump(storage, f)
 

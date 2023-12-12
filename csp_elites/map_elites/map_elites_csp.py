@@ -33,7 +33,7 @@ from csp_elites.map_elites.elites_utils import (
     write_centroids,
     Species,
 )
-from csp_elites.mome.mome_utils import mome_metrics_fn
+from csp_elites.mome.mome_utils import mome_metrics_fn, mome_add_to_niche
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 
 
@@ -60,7 +60,7 @@ class MapElites:
 
         # Store parameters
         self.n_relaxation_steps = run_parameters.number_of_relaxation_steps
-        self.number_of_niches = number_of_niches
+        self.number_of_niches = number_of_niches * run_parameters.max_front_size 
         self.run_parameters = run_parameters
 
         self.relax_every_n_generations = (
@@ -90,8 +90,18 @@ class MapElites:
         # Initialise centroids
         self.kdt = self._initialise_kdt_and_centroids(
             experiment_directory_path=self.centroids_load_dir,
+            number_of_niches=self.number_of_niches,
+            run_parameters=run_parameters,
+        )
+        
+        self.mome_passive_archive_kdt = self._initialise_kdt_and_centroids(
+            experiment_directory_path=self.centroids_load_dir,
             number_of_niches=number_of_niches,
             run_parameters=run_parameters,
+        )
+        
+        self.mome_passive_add_to_niche_function = partial(mome_add_to_niche,
+            max_front_size=run_parameters.max_front_size
         )
         
         # Set up map-elites specific functions
@@ -162,10 +172,10 @@ class MapElites:
             del descriptors
             del kill_list
         
-        
-        # Save final archive
-        save_archive(self.archive, self.n_evals, self.experiment_save_dir)
-        
+        passive_archive = self.generate_passive_archive()
+        save_archive(passive_archive, self.n_evals, self.experiment_save_dir)
+        save_archive(self.archive, self.n_evals, self.experiment_save_dir, name="me_")
+                
         # Save final metrics
         metrics_history_df = pd.DataFrame.from_dict(self.metrics_history,orient='index').transpose()
         metrics_history_df.to_csv(os.path.join(self.experiment_save_dir, "metrics_history.csv"), index=False)
@@ -215,7 +225,25 @@ class MapElites:
 
         return population
     
-    
+    def generate_passive_archive(self):
+        
+        passive_archive = {}
+        species_list = [species for niche in self.archive.values() for species in niche]
+        print("NUMBER OF SPECIES:", len(species_list))
+        
+        for s in species_list:
+            if s is None:
+                continue
+            else:
+                passive_archive = add_to_archive(s,
+                    s.desc,
+                    passive_archive,
+                    self.mome_passive_archive_kdt,
+                    self.mome_passive_add_to_niche_function
+                )
+        
+        return passive_archive
+        
     def initialise_known_atoms(self):
         _, known_atoms = get_all_materials_with_formula(
             self.crystal_system.compound_formula
@@ -257,7 +285,9 @@ class MapElites:
                 end=" ",
                 flush=True,
             )
-            save_archive(self.archive, self.n_evals, self.experiment_save_dir)
+            passive_archive = self.generate_passive_archive()
+            save_archive(self.archive, self.n_evals, self.experiment_save_dir, name="me_")
+            save_archive(passive_archive, self.n_evals, self.experiment_save_dir)
             
             metrics_history_df = pd.DataFrame.from_dict(self.metrics_history,orient='index').transpose()
             metrics_history_df.to_csv(os.path.join(self.experiment_save_dir, "metrics_history.csv"), index=False)
@@ -266,8 +296,9 @@ class MapElites:
             
             
         # Calculate metrics and log
+        passive_archive = self.generate_passive_archive()
         metrics = self.metrics_function(
-                self.archive,
+                passive_archive,
                 self.run_parameters,
                 self.n_evals,
             )

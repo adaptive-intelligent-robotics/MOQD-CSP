@@ -1,5 +1,9 @@
+import gc
+import os
+import pandas as pd
 import wandb
 
+import numpy as np
 from chgnet.graph import CrystalGraphConverter
 from functools import partial
 from omegaconf import OmegaConf
@@ -7,9 +11,10 @@ from omegaconf import OmegaConf
 from csp_elites.crystal.mo_crystal_evaluator import MOCrystalEvaluator
 from csp_elites.crystal.crystal_system import CrystalSystem
 from csp_elites.map_elites.elites_utils import (
+    save_archive,
+    add_to_archive,
     make_experiment_folder,
 )
-
 from csp_elites.mome.mome_utils import (
     mome_add_to_niche,
     mome_uniform_selection_fn,
@@ -19,7 +24,6 @@ from csp_elites.mome.mome_utils import (
 )
 
 from csp_elites.map_elites.map_elites_csp import MapElites
-
 
 class MOME(MapElites):
     
@@ -106,3 +110,107 @@ class MOME(MapElites):
             config=OmegaConf.to_container(run_parameters, resolve=True),
         )
         self.metrics_history = None
+
+    def run(
+        self,
+        number_of_niches,
+        maximum_evaluations,
+        run_parameters,
+    ):
+
+        pbar = tqdm(desc="Number of evaluations", total=maximum_evaluations, position=2)
+        while self.n_evals < maximum_evaluations:  ### NUMBER OF GENERATIONS
+            self.generation_counter += 1
+            
+            population = self.get_population(
+                run_parameters=run_parameters,
+                number_of_niches=number_of_niches,    
+            )
+            
+            n_relaxation_steps = self.set_number_of_relaxation_steps()
+
+            (
+                population_as_atoms,
+                population,
+                fitness_scores,
+                descriptors,
+                kill_list,
+                gradients,
+            ) = self.crystal_evaluator.batch_compute_fitness_and_bd(
+                list_of_atoms=population,
+                n_relaxation_steps=n_relaxation_steps
+            )
+
+            if population is not None:
+                self.crystal_system.update_operator_scaling_volumes(
+                    population=population_as_atoms
+                )
+                del population_as_atoms
+
+            self.update_archive(
+                population, fitness_scores, descriptors, kill_list, gradients
+            )
+            pbar.update(len(population))
+            del population
+            del fitness_scores
+            del descriptors
+            del kill_list
+        
+        save_archive(self.archive, self.n_evals, self.experiment_save_dir)
+        
+        # Save final metrics
+        metrics_history_df = pd.DataFrame.from_dict(self.metrics_history,orient='index').transpose()
+        metrics_history_df.to_csv(os.path.join(self.experiment_save_dir, "metrics_history.csv"), index=False)
+
+        return self.archive
+    
+    def update_archive(
+        self, population, fitness_scores, descriptors, kill_list, gradients
+    ):
+        s_list = self.crystal_evaluator.batch_create_species(
+            population, fitness_scores, descriptors, kill_list, gradients
+        )
+        evaluations_performed = len(population)
+        self.n_evals += evaluations_performed
+        self.b_evals += evaluations_performed
+        for s in s_list:
+            if s is None:
+                continue
+            else:
+                self.archive = add_to_archive(s, s.desc, self.archive, self.kdt, self.add_to_niche_function)
+
+        if (
+            self.b_evals >= self.run_parameters.dump_period
+            and self.run_parameters.dump_period != -1
+        ):
+            print(
+                "[{}/{}]".format(self.n_evals, int(self.run_parameters.maximum_evaluations)),
+                end=" ",
+                flush=True,
+            )
+            save_archive(self.archive, self.n_evals, self.experiment_save_dir)
+            
+            metrics_history_df = pd.DataFrame.from_dict(self.metrics_history,orient='index').transpose()
+            metrics_history_df.to_csv(os.path.join(self.experiment_save_dir, "metrics_history.csv"), index=False)
+
+            self.b_evals = 0
+            
+            
+        # Calculate metrics and log
+        metrics = self.metrics_function(
+                self.archive,
+                self.run_parameters,
+                self.n_evals,
+            )
+        
+        wandb.log(metrics)
+
+        if self.metrics_history == None:
+            self.metrics_history = {key: np.array(metrics[key]) for key in metrics}
+            # for k, v in self.metrics_history.items():
+            #     self.metrics_history[k] = np.expand_dims(v, axis=0)
+
+        else:
+            self.metrics_history = {key: np.append(self.metrics_history[key], metrics[key]) for key in metrics}
+            
+        gc.collect()

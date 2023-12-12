@@ -109,6 +109,7 @@ class ExperimentProcessor:
                     (not os.path.isdir(name))
                     and ("archive_" in name)
                     and (".pkl" in name)
+                    and (not "me_" in name)
                 )
             ]
         )
