@@ -10,14 +10,16 @@ from csp_elites.crystal.materials_data_model import MaterialProperties, StartGen
 from csp_elites.evaluation.symmetry_evaluator import SymmetryEvaluation
 
 from csp_elites.map_elites.archive import Archive
+from csp_elites.mome.mome_archive import MOArchive
 from csp_elites.utils.asign_target_values_to_centroids import (
-    reassign_data_from_pkl_to_new_centroids,
+    reassign_mo_data_from_pkl_to_new_centroids,
 )
 from csp_elites.utils.get_mpi_structures import get_all_materials_with_formula
 from csp_elites.utils.plot import (
     load_centroids,
-    load_archive_from_pickle,
+    load_mo_archive_from_pickle,
     plot_all_maps_in_archive,
+    plot_all_mome_maps_in_archive,
     plot_all_statistics_from_file,
     plot_gif,
 )
@@ -69,6 +71,7 @@ class ExperimentProcessor:
             target_centroids=self.compute_target_centroids(),
             bd_minimum_values=min_bds,
             bd_maximum_values=max_bds,
+            objective=self.config.algo.objective,
             annotate=annotate,
             force_replot=force_replot,
         )
@@ -76,6 +79,25 @@ class ExperimentProcessor:
         plot_all_statistics_from_file(
             filename=f"{self.experiment_save_dir}/metrics_history.csv",
             save_location=f"{self.experiment_save_dir}/",
+        )
+        
+    
+    def plot_mome(self, annotate: bool = True, force_replot: bool = False):
+        if self.config.normalise_bd:
+            min_bds, max_bds = [0, 0], [1, 1]
+        else:
+            min_bds, max_bds = self.config.bd_minimum_values, self.config.bd_maximum_values
+        
+        plot_all_mome_maps_in_archive(
+            experiment_directory_path=str(self.experiment_save_dir),
+            experiment_parameters=self.config,
+            all_centroids=self.all_centroids,
+            target_centroids=self.compute_target_centroids(),
+            bd_minimum_values=min_bds,
+            bd_maximum_values=max_bds,
+            reference_point=self.config.system.reference_point,
+            annotate=annotate,
+            force_replot=force_replot,
         )
 
     def _get_last_archive_number(self):
@@ -103,7 +125,7 @@ class ExperimentProcessor:
             tag += f"{el}_"
             
         comparison_data_location = f"/mp_reference_analysis/{self.formula}_{number_of_atoms}/{self.formula}_{tag[:-1]}.pkl"
-        comparison_data_packed = load_archive_from_pickle(str(self.experiment_location) + comparison_data_location)
+        comparison_data_packed = load_mo_archive_from_pickle(str(self.experiment_location) + comparison_data_location)
 
         normalise_bd_values = (
             (
@@ -114,7 +136,7 @@ class ExperimentProcessor:
             else None
         )
 
-        target_centroids = reassign_data_from_pkl_to_new_centroids(
+        target_centroids = reassign_mo_data_from_pkl_to_new_centroids(
             centroids_file=str(self.centroid_directory_path) + self.centroid_filename,
             target_data=comparison_data_packed,
             filter_for_number_of_atoms=self.config.system.fitler_comparison_data_for_n_atoms,
@@ -148,7 +170,7 @@ class ExperimentProcessor:
         if not os.path.isfile(target_data_path):
             target_data_path = None
 
-        archive = Archive.from_archive(
+        archive = MOArchive.from_archive(
             unrelaxed_archive_location,
             centroid_filepath=str(self.centroid_directory_path)+self.centroid_filename
         )
@@ -162,15 +184,16 @@ class ExperimentProcessor:
             else None
         )
 
-        tareget_archive = Archive.from_reference_csv_path(
+        mo_target_archive = MOArchive.from_reference_csv_path(
             target_data_path,
             normalise_bd_values=normalise_bd_values,
             centroids_path=str(self.centroid_directory_path)+self.centroid_filename,
         )
+
         symmetry_evaluation = SymmetryEvaluation(
             formula=self.formula,
             filter_for_experimental_structures=self.filter_for_experimental_structures,
-            reference_data_archive=tareget_archive,
+            reference_data_archive=mo_target_archive,
         )
 
         (
@@ -186,7 +209,7 @@ class ExperimentProcessor:
             top_n_individuals_to_save=10,
             directory_to_save=self.experiment_save_dir,
             save_primitive=False,
-            save_visuals=self.save_structure_images,
+            save_visuals=True,
         )
 
         symmetry_indices = symmetry_evaluation.save_best_structures_by_symmetry(
@@ -204,7 +227,7 @@ class ExperimentProcessor:
             indices_to_compare=list(all_individual_indices_to_check),
             directory_to_save=self.experiment_save_dir,
         )
-
+        
         symmetry_evaluation.group_structures_by_symmetry(
             archive=archive,
             experiment_directory_path=self.experiment_save_dir,
@@ -231,9 +254,19 @@ class ExperimentProcessor:
                     directory_string=str(self.experiment_save_dir),
                 )
             )
-
-            symmetry_evaluation.plot_matches_energy_difference(
-                archive=archive,
+            
+            energy_archive = Archive(
+                fitnesses=archive.energies,
+                centroids=archive.centroids,
+                descriptors=archive.descriptors,
+                individuals=archive.individuals,
+                centroid_ids=archive.centroid_ids,
+                labels=archive.labels,
+            )
+            
+            symmetry_evaluation.plot_matches_difference(
+                archive=energy_archive,
+                objective="energy",
                 plotting_matches=plotting_from_archive,
                 centroids=self.all_centroids,
                 centroids_from_archive=archive.centroid_ids,
@@ -250,6 +283,36 @@ class ExperimentProcessor:
                     self.config.system.bd_maximum_values[1],
                 ),
             )
+            
+            magmom_archive = Archive(
+                    fitnesses=archive.magmoms,
+                    centroids=archive.centroids,
+                    descriptors=archive.descriptors,
+                    individuals=archive.individuals,
+                    centroid_ids=archive.centroid_ids,
+                    labels=archive.labels,
+                )
+                
+            symmetry_evaluation.plot_matches_difference(
+                archive=magmom_archive,
+                objective="magmom",
+                plotting_matches=plotting_from_archive,
+                centroids=self.all_centroids,
+                centroids_from_archive=archive.centroid_ids,
+                minval=[0, 0],
+                maxval=[1, 1],
+                directory_string=str(self.experiment_save_dir),
+                annotate=False,
+                x_axis_limits=(
+                    self.config.system.bd_minimum_values[0],
+                    self.config.system.bd_maximum_values[0],
+                ),
+                y_axis_limits=(
+                    self.config.system.bd_minimum_values[1],
+                    self.config.system.bd_maximum_values[1],
+                ),
+            )
+            
 
             symmetry_evaluation.plot_matches_mapped_to_references(
                 plotting_matches=plotting_from_mp,
@@ -294,8 +357,6 @@ class ExperimentProcessor:
                     self.config.system.bd_maximum_values[1],
                 ),
             )
-
-
 
 if __name__ == "__main__":
     experiment_date = "0822"

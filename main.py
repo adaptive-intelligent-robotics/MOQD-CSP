@@ -151,7 +151,8 @@ def main(config:ExperimentConfig) -> None:
         experiment_save_dir=main.experiment_save_dir,
     )
     
-    experiment_processor.plot_mome()
+    # experiment_processor.plot_mome()
+    experiment_processor.process_symmetry()
 
 
 

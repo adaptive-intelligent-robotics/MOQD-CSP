@@ -393,11 +393,11 @@ def load_mo_archive_from_pickle(filename: str):
     descriptors = []
     individuals = []
     for el in archive:
-        energies.append(el[0])
-        magmoms.append(el[1])
-        centroids.append(list(el[2]))
-        descriptors.append(list(el[3]))
-        individuals.append(el[4])
+        energies.append(el[0][0])
+        magmoms.append(el[0][1])
+        centroids.append(list(el[1]))
+        descriptors.append(list(el[2]))
+        individuals.append(el[3])
 
     energies = np.array(energies)
     magmoms = np.array(magmoms)

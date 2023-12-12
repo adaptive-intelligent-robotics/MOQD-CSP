@@ -282,13 +282,13 @@ class SymmetryEvaluation:
         save_primitive: bool = False,
         save_visuals: bool = True,
     ) -> List[int]:
-        sorting_indices = np.argsort(archive.fitnesses)
+        sorting_indices = np.argsort(archive.energies)
         sorting_indices = np.flipud(sorting_indices)
 
         top_n_individuals = sorting_indices[:top_n_individuals_to_save]
         individuals_in_fitness_range = np.argwhere(
-            (archive.fitnesses >= fitness_range[0])
-            * (archive.fitnesses <= fitness_range[1])
+            (archive.energies >= fitness_range[0])
+            * (archive.energies <= fitness_range[1])
         ).reshape(-1)
 
         indices_to_check = np.unique(
@@ -388,7 +388,8 @@ class SymmetryEvaluation:
                     "confid"
                 ],
                 "centroid_index": archive.centroid_ids[structure_index],
-                "fitness": archive.fitnesses[structure_index],
+                "energy": archive.energies[structure_index],
+                "magmom": archive.magmoms[structure_index],
                 "descriptors": archive.descriptors[structure_index],
                 "symmetry": spacegroup,
                 "number_of_cells_in_primitive_cell": len(primitive_structure),
@@ -417,6 +418,7 @@ class SymmetryEvaluation:
                             "shear_modulus"
                         ]
                         ref_energy = self.reference_data[reference_id]["energy"]
+                        ref_magmom = self.reference_data[reference_id]["magmom"]
                         ref_centroid = self.reference_data[reference_id]["centroid_id"]
                         error_to_bg = (
                             (ref_band_gap - archive.descriptors[structure_index][0])
@@ -432,10 +434,17 @@ class SymmetryEvaluation:
                             * 100
                         )
                         error_to_energy = (
-                            (ref_energy - archive.fitnesses[structure_index])
+                            (ref_energy - archive.energies[structure_index])
                             / ref_energy
                             * 100
                         )
+                        
+                        error_to_magmom = (
+                            (ref_magmom - archive.magmoms[structure_index])
+                            / ref_magmom
+                            * 100
+                        )
+                        
                         distance_in_bd_space = np.sqrt(
                             (ref_band_gap - archive.descriptors[structure_index][0])
                             ** 2
@@ -448,11 +457,12 @@ class SymmetryEvaluation:
                     else:
                         (
                             error_to_energy,
+                            error_to_magmom,
                             error_to_bg,
                             error_to_shear,
                             ref_centroid,
                             distance_in_bd_space,
-                        ) = (None, None, None, None, None)
+                        ) = (None, None, None, None, None, None)
                     summary_row["matches"].append(
                         {
                             reference_id: {
@@ -461,6 +471,7 @@ class SymmetryEvaluation:
                                 "distance": distance_to_known_structure,
                                 "centroid": ref_centroid,
                                 "reference_energy_perc_difference": error_to_energy,
+                                "reference_magmom_perc_difference": error_to_magmom,
                                 "reference_band_gap_perc_difference": error_to_bg,
                                 "reference_shear_modulus_perc_difference": error_to_shear,
                                 "euclidian_distance_in_bd_space": distance_in_bd_space,
@@ -1091,9 +1102,10 @@ class SymmetryEvaluation:
         plt.clf()
         return fig, ax
 
-    def plot_matches_energy_difference(
+    def plot_matches_difference(
         self,
         archive: Archive,
+        objective: str,
         plotting_matches: PlottingMatches,
         centroids: np.ndarray,
         minval: np.ndarray,
@@ -1124,7 +1136,7 @@ class SymmetryEvaluation:
         regions, vertices = get_voronoi_finite_polygons_2d(centroids)
         # fill the plot with contours
         target_centroid_ids = np.array(self.reference_data.loc["centroid_id"].array)
-        target_centroid_energies = np.array(self.reference_data.loc["energy"].array)
+        target_centroid_fitnesses = np.array(self.reference_data.loc[objective].array)
         duplicate_centroid_indices = []
         if len(np.unique(np.array(plotting_matches.centroid_indices))) != len(
             plotting_matches.centroid_indices
@@ -1138,15 +1150,15 @@ class SymmetryEvaluation:
 
         colour_dict = {
             "no_match": mcolors.CSS4_COLORS["silver"],
-            "energy_above_reference": mcolors.CSS4_COLORS["rosybrown"],
-            "energy_below_reference": mcolors.CSS4_COLORS["mediumaquamarine"],
+            f"{objective}_above_reference": mcolors.CSS4_COLORS["rosybrown"],
+            f"{objective}_below_reference": mcolors.CSS4_COLORS["mediumaquamarine"],
             ConfidenceLevels.GOLD.value: mcolors.CSS4_COLORS["mediumpurple"],
         }
 
         label_dict = {
             ConfidenceLevels.GOLD.value: "Gold Standard",
-            "energy_below_reference": "Energy Below Reference",
-            "energy_above_reference": "Energy Above Reference",
+            f"{objective}_below_reference": f"{objective} Below Reference".capitalize(),
+            f"{objective}_above_reference": f"{objective} Above Reference".capitalize(),
             "no_match": "Not Accessed",
         }
 
@@ -1157,27 +1169,27 @@ class SymmetryEvaluation:
             )
             if i in target_centroid_ids:
                 ax.fill(*zip(*polygon), edgecolor="gray", facecolor="none", lw=2)
-                target_centroid_energy = target_centroid_energies[
+                target_centroid_fitness = target_centroid_fitnesses[
                     np.argwhere(target_centroid_ids == i)
                 ].reshape(-1)[0]
                 if i in archive.centroid_ids:
-                    centroid_energy = archive.fitnesses[
+                    centroid_fitness = archive.fitnesses[
                         np.argwhere(np.array(archive.centroid_ids) == i)
                     ].reshape(-1)[0]
-                    if centroid_energy < target_centroid_energy:
+                    if centroid_fitness < target_centroid_fitness:
                         ax.fill(
                             *zip(*polygon),
-                            facecolor=colour_dict["energy_below_reference"],
-                            label=label_dict["energy_below_reference"],
+                            facecolor=colour_dict[f"{objective}_below_reference"],
+                            label=label_dict[f"{objective}_below_reference"],
                         )
                     elif (
                         i in archive.centroid_ids
-                        and centroid_energy >= target_centroid_energy
+                        and centroid_fitness >= target_centroid_fitness
                     ):
                         ax.fill(
                             *zip(*polygon),
-                            facecolor=colour_dict["energy_above_reference"],
-                            label=label_dict["energy_above_reference"],
+                            facecolor=colour_dict[f"{objective}_above_reference"],
+                            label=label_dict[f"{objective}_above_reference"],
                         )
                 else:
                     # continue
@@ -1226,7 +1238,7 @@ class SymmetryEvaluation:
         ax.set_xlabel(f"{axis_labels[0]}")
         ax.set_ylabel(f"{axis_labels[1]}")
 
-        title = "Energy Comparison"
+        title = f"{objective} Comparison".capitalize()
         ax.set_title(title)
         ax.set_aspect("equal")
 
@@ -1240,13 +1252,13 @@ class SymmetryEvaluation:
             fig.show()
         else:
             fig.savefig(
-                f"{directory_string}/{filename}_{plotting_matches.plotting_mode.value}.png",
+                f"{directory_string}/{filename}_{plotting_matches.plotting_mode.value}_{objective}.png",
                 format="png",
                 bbox_inches="tight",
             )
         plt.clf()
         return fig, ax
-
+    
     def legend_without_duplicate_labels(
         self, fig, ax, sorting_match_list: Optional[List[str]] = None
     ):
