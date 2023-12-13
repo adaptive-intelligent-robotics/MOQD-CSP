@@ -236,14 +236,6 @@ class ReferenceAnalyser:
             centroids_save_dir=self.centroid_folder_path,
         )    
         kdt = KDTree(c, leaf_size=30, metric="euclidean")
-        write_centroids(
-            c,
-            experiment_folder=self.centroid_folder_path,
-            bd_names=self.behavioural_descriptors,
-            bd_minimum_values=bd_minimum_values,
-            bd_maximum_values=bd_maximum_values,
-            formula=self.formula,
-        )
         del c
         self.centroid_filename = get_centroids_filename(
             k=number_of_niches,

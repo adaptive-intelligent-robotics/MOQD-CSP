@@ -341,14 +341,7 @@ class MapElites:
             centroids_save_dir=self.centroids_save_dir,
         )
         kdt = KDTree(c, leaf_size=30, metric="euclidean")
-        write_centroids(
-            c,
-            experiment_folder=self.centroids_save_dir,
-            bd_names=run_parameters.behavioural_descriptors,
-            bd_minimum_values=run_parameters.system.bd_minimum_values,
-            bd_maximum_values=run_parameters.system.bd_maximum_values,
-            formula=self.crystal_system.compound_formula,
-        )
+
         del c
         return kdt
 
