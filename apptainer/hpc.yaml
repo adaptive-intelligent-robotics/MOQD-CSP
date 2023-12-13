@@ -1,0 +1,28 @@
+job_name: pc-mome-pgx
+
+walltime: 12:00:00
+
+nnodes: 1
+ncpus: 4
+mem: 24gb
+ngpus: 1
+gpu_type: RTX6000
+
+queue: null  
+njobs: 10
+args:
+  - algo=map_elites algo.objective=energy
+  - algo=map_elites algo.objective=magmom
+  - algo=mome
+  - algo=biased_mome
+
+  - algo=map_elites algo.objective=energy system=C
+  - algo=map_elites algo.objective=magmom system=C
+  - algo=mome system=C
+  - algo=biased_mome system=C
+
+
+  - algo=map_elites algo.objective=energy system=SiO2
+  - algo=map_elites algo.objective=magmom system=SiO2
+  - algo=mome system=SiO2
+  - algo=biased_mome system=SiO2
