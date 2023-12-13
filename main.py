@@ -57,6 +57,8 @@ def main(config:ExperimentConfig) -> None:
     torch.manual_seed(config.random_seed)
     np.random.seed(config.random_seed)
     random.seed(config.random_seed)
+    
+    torch.set_num_threads(config.number_of_threads)
         
     experiment_save_dir = f"output/{config.system.system_name}/{config.algo.algo_name}/{config.experiment_tag}"
 
