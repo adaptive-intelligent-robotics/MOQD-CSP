@@ -21,3 +21,5 @@ apptainer/container.sif
 apptainer/tmp/
 apptainer/var_tmp/
 output/
+results/
+mome_test_file.py
