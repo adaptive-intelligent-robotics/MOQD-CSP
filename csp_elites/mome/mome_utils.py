@@ -186,6 +186,7 @@ def mome_metrics_fn(
         "evalutations": n_evals,
         "num_solutions": num_solutions,
         "max_sum_scores": np.max(np.sum(all_fitnesses, axis=1)),
+        "max_hypervolume": np.max(hypervolumes),
         "max_energy_fitness": np.max(all_fitnesses[:,0]),
         "min_energy_fitness": np.min(all_fitnesses[:,0]),
         "energy_qd_score": np.sum(all_fitnesses[:,0]),
