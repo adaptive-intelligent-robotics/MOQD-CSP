@@ -162,36 +162,36 @@ def mome_metrics_fn(
     
     all_fitnesses = []
     hypervolumes = []
-    max_sum_scores = []
-    max_energy_fitness = []
-    max_magnetism_fitness = []
     num_solutions = 0
     hypervolume_fn = HV(ref_point=config.system.reference_point)
     
     for niche in archive.values():
-        fitnesses = np.array([s.fitness for s in niche])
+        fitnesses = np.array([s.fitness for s in niche if np.all(s.fitness != -10000)])
         all_fitnesses.append(fitnesses)
         niche_hypervolume = hypervolume_fn(fitnesses * -1)
         hypervolumes.append(niche_hypervolume)
-        max_sum_scores.append(np.sum(fitnesses, axis=1).max())
-        max_energy_fitness.append(fitnesses[:,0].max())
-        max_magnetism_fitness.append(fitnesses[:,1].max())
         num_solutions += len(niche)
+        
+    all_fitnesses = np.concatenate(all_fitnesses)
 
     global_front_bool = calculate_front(
-        np.concatenate(all_fitnesses),
+        all_fitnesses,
         config.system.reference_point
     )
     
-    global_front = np.array([s for i, s in enumerate(np.concatenate(all_fitnesses)) if global_front_bool[i]])
+    global_front = np.array([s for i, s in enumerate(all_fitnesses) if global_front_bool[i]])
     
     global_hypervolume = hypervolume_fn(global_front * -1)
     metrics = {
         "evalutations": n_evals,
         "num_solutions": num_solutions,
-        "max_sum_scores": np.max(max_sum_scores),
-        "max_energy_fitness": np.max(max_energy_fitness),
-        "max_magnetism_fitness": np.max(max_magnetism_fitness),
+        "max_sum_scores": np.max(np.sum(all_fitnesses, axis=1)),
+        "max_energy_fitness": np.max(all_fitnesses[:,0]),
+        "min_energy_fitness": np.min(all_fitnesses[:,0]),
+        "energy_qd_score": np.sum(all_fitnesses[:,0]),
+        "max_magmom_fitness": np.max(all_fitnesses[:,1]),
+        "min_magmom_fitness": np.min(all_fitnesses[:,1]),
+        "magmom_qd_score": np.sum(all_fitnesses[:,1]),
         "coverage": 100 * len(hypervolumes) / config.number_of_niches,
         "moqd_score": np.sum(hypervolumes),
         "global_hypervolume": global_hypervolume,
