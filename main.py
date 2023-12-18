@@ -4,7 +4,7 @@ from csp_elites.crystal.mo_crystal_evaluator import MOCrystalEvaluator
 from csp_elites.map_elites.map_elites_csp import MapElites
 from csp_elites.mome.mome_csp import MOME
 from csp_elites.map_elites.elites_utils import __centroids_filename
-from retrieve_results.experiment_processing import ExperimentProcessor
+from analysis_functions.experiment_processing import ExperimentProcessor
 
 from dataclasses import dataclass
 import hydra

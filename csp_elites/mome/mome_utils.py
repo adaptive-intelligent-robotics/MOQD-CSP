@@ -183,7 +183,7 @@ def mome_metrics_fn(
     
     global_hypervolume = hypervolume_fn(global_front * -1)
     metrics = {
-        "evalutations": n_evals,
+        "evaluations": n_evals,
         "num_solutions": num_solutions,
         "max_sum_scores": np.max(np.sum(all_fitnesses, axis=1)),
         "max_hypervolume": np.max(hypervolumes),

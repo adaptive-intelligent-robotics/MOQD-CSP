@@ -234,7 +234,7 @@ def map_elites_metrics_fn(
     
     
     metrics = {
-        "evalutations": n_evals,
+        "evaluations": n_evals,
         "archive_size": len(archive.keys()),
         "max_fit": np.max(fit_list),
         "mean_fit": np.mean(fit_list),
