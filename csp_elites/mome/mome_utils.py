@@ -193,6 +193,8 @@ def mome_metrics_fn(
         "max_magmom_fitness": np.max(all_fitnesses[:,1]),
         "min_magmom_fitness": np.min(all_fitnesses[:,1]),
         "magmom_qd_score": np.sum(all_fitnesses[:,1]),
+        "min_scores": np.min(all_fitnesses, axis=1),
+        "max_scores": np.max(all_fitnesses, axis=1),
         "coverage": 100 * len(hypervolumes) / config.number_of_niches,
         "moqd_score": np.sum(hypervolumes),
         "global_hypervolume": global_hypervolume,
