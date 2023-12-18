@@ -1,12 +1,9 @@
-import json
 import os
 import pathlib
-from typing import Union, Optional
+from typing import Optional
 
 import numpy as np
-from ase.ga.utilities import CellBounds
 
-from csp_elites.crystal.materials_data_model import MaterialProperties, StartGenerators
 from csp_elites.evaluation.symmetry_evaluator import SymmetryEvaluation
 
 from csp_elites.map_elites.archive import Archive
@@ -23,7 +20,6 @@ from csp_elites.utils.plot import (
     plot_all_statistics_from_file,
     plot_gif,
 )
-from retrieve_results.experiment_organiser import ExperimentOrganiser
 
 
 class ExperimentProcessor:
@@ -358,19 +354,3 @@ class ExperimentProcessor:
                     self.config.system.bd_maximum_values[1],
                 ),
             )
-
-if __name__ == "__main__":
-    experiment_date = "0822"
-    save_structure_images = True
-    filter_for_experimental_structures = False
-
-    experiment_organiser = ExperimentOrganiser()
-    folder_list = experiment_organiser.get_all_folders_with_date(experiment_date)
-    config_mapping, config_dict_csv = experiment_organiser.get_config_data(
-        experiment_date
-    )
-    config_names = list(config_mapping.keys())
-    experiment_tags_list = list(config_mapping.values())
-    experiment_organiser.map_config_data_to_experiment(
-        folder_list, config_dict_csv, experiment_date
-    )
