@@ -19,8 +19,8 @@ cvt_samples: 25000
 max_front_size: 10
 
 # Initialisation parameters
-random_init: 0.1
-random_init_batch: 20
+random_init: 0.005
+random_init_batch: 100
 
 # Algorithm running parameters
 batch_size: 100
