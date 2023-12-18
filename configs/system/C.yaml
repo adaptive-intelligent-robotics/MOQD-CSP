@@ -15,7 +15,7 @@ fitler_comparison_data_for_n_atoms: 24
 start_generator: "pyxtal"
 
 # Variation operator params
-operator_probabilities: null
+operator_probabilities: [0.0, 0, 5.0, 5.0]
 
 # BD params
 n_behavioural_descriptor_dimensions: 2
