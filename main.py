@@ -108,7 +108,7 @@ def main(config:ExperimentConfig) -> None:
             selection=config.algo.selection,
         )
     
-    elif config.algo.algo_name == "map_elites":
+    elif config.algo.algo_name == "map_elites_energy" or config.algo.algo_name == "map_elites_magmom":
         main = MapElites(
             crystal_system=crystal_system,
             crystal_evaluator=crystal_evaluator,
