@@ -1,0 +1,3 @@
+algo_name: "map_elites_sum"
+base_algo: "map_elites"
+objective: "sum"

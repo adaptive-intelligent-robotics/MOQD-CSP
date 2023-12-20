@@ -170,11 +170,20 @@ def map_elites_add_to_niche(
     archive: Dict[str, List[Species]],
     objective_index: int = 0,
 ):
-    if niche in archive:
-        if species.fitness[objective_index] > archive[niche][0].fitness[objective_index]:
-            archive[niche] = [species]
+    if objective_index == -1:
+        if niche in archive:
+            if np.sum(species.fitness) > np.sum(archive[niche][0].fitness):
+                    archive[niche] = [species]
+            else:
+                archive[niche] = [species]
+    
     else:
-        archive[niche] = [species]
+        if niche in archive:
+            if species.fitness[objective_index] > archive[niche][0].fitness[objective_index]:
+                archive[niche] = [species]
+        else:
+            archive[niche] = [species]
+            
     return archive
 
 

@@ -1,2 +1,3 @@
 algo_name: "map_elites_energy"
+base_algo: "map_elites"
 objective: "energy"

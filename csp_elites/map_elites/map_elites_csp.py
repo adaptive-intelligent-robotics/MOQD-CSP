@@ -109,6 +109,9 @@ class MapElites:
             objective_idx = 0
         elif objective == "magmom":
             objective_idx = 1
+        elif objective == "sum":
+            objective_idx = -1
+        
         self.add_to_niche_function = partial(map_elites_add_to_niche,
             objective_index=objective_idx
         )

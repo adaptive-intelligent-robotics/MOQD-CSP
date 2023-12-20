@@ -1,2 +1,3 @@
 algo_name: "map_elites_magmom"
+base_algo: "map_elites"
 objective: "energy"

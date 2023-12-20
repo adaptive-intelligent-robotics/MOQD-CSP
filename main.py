@@ -97,7 +97,7 @@ def main(config:ExperimentConfig) -> None:
         else None,
     )
         
-    if config.algo.algo_name == "mome" or config.algo.algo_name == "biased_mome":
+    if config.algo.base_algo == "mome":
         main = MOME(
             crystal_system=crystal_system,
             crystal_evaluator=crystal_evaluator,
@@ -108,7 +108,7 @@ def main(config:ExperimentConfig) -> None:
             selection=config.algo.selection,
         )
     
-    elif config.algo.algo_name == "map_elites_energy" or config.algo.algo_name == "map_elites_magmom":
+    elif config.algo.base_algo == "map_elites":
         main = MapElites(
             crystal_system=crystal_system,
             crystal_evaluator=crystal_evaluator,
