@@ -171,9 +171,8 @@ class MOME(MapElites):
         s_list = self.crystal_evaluator.batch_create_species(
             population, fitness_scores, descriptors, kill_list, gradients
         )
-        evaluations_performed = len(population)
-        self.n_evals += evaluations_performed
-        self.b_evals += evaluations_performed
+        self.n_evals += self.batch_size
+        self.b_evals += self.batch_size
         for s in s_list:
             if s is None:
                 continue
