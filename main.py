@@ -106,6 +106,7 @@ def main(config:ExperimentConfig) -> None:
             run_parameters=config,
             experiment_save_dir=experiment_save_dir,
             selection=config.algo.selection,
+            addition=config.algo.addition,
         )
     
     elif config.algo.base_algo == "map_elites":

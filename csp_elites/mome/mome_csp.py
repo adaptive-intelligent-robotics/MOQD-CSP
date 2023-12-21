@@ -37,6 +37,7 @@ class MOME(MapElites):
         run_parameters: dict,
         experiment_save_dir: str,
         selection: str,
+        addition: str,
         centroids_load_dir: str="./reference_data/centroids/"
     ):
         # Initialise Crystal functions
@@ -86,18 +87,21 @@ class MOME(MapElites):
     
         # Set up mome-specific functions
         if selection == "uniform":
-            self.add_to_niche_function = partial(mome_add_to_niche,
-                max_front_size=run_parameters.max_front_size
-            )
             self.selection_operator = partial(mome_uniform_selection_fn,
                 batch_size=run_parameters.batch_size
             )
         elif selection == "biased":
-            self.add_to_niche_function = partial(mome_crowding_add_to_niche,
-                max_front_size=run_parameters.max_front_size
-            )
             self.selection_operator = partial(mome_crowding_selection_fn,
                 batch_size=run_parameters.batch_size
+            )
+        
+        if addition == "uniform":
+            self.add_to_niche_function = partial(mome_add_to_niche,
+                max_front_size=run_parameters.max_front_size
+            )
+        elif addition == "biased":
+            self.add_to_niche_function = partial(mome_crowding_add_to_niche,
+                max_front_size=run_parameters.max_front_size
             )
 
         self.metrics_function = mome_metrics_fn
@@ -171,8 +175,8 @@ class MOME(MapElites):
         s_list = self.crystal_evaluator.batch_create_species(
             population, fitness_scores, descriptors, kill_list, gradients
         )
-        self.n_evals += self.batch_size
-        self.b_evals += self.batch_size
+        self.n_evals += self.run_parameters.batch_size
+        self.b_evals += self.run_parameters.batch_size
         for s in s_list:
             if s is None:
                 continue

@@ -270,8 +270,8 @@ class MapElites:
         s_list = self.crystal_evaluator.batch_create_species(
             population, fitness_scores, descriptors, kill_list, gradients
         )
-        self.n_evals += self.batch_size
-        self.b_evals += self.batch_size
+        self.n_evals += self.run_parameters.batch_size
+        self.b_evals += self.run_parameters.batch_size
         for s in s_list:
             if s is None:
                 continue

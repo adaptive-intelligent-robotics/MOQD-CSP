@@ -1,3 +1,0 @@
-algo_name: "biased_mome"
-base_algo: "mome"
-selection: "biased"

@@ -1,0 +1,4 @@
+algo_name: "mome_biased_selection"
+base_algo: "mome"
+selection: "uniform"
+addition: "biased"
