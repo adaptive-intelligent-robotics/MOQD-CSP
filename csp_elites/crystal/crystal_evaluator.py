@@ -158,14 +158,15 @@ class CrystalEvaluator:
             else:
                 fitness_gradient, descriptor_gradients = None, None
 
-            new_specie = Species(
-                x=list_of_atoms[i],
-                fitness=fitness_scores[i],
-                desc=tuple([descriptors[j][i] for j in range(len(descriptors))]),
-                fitness_gradient=fitness_gradient,
-                descriptor_gradients=descriptor_gradients,
-            )
-            species_list.append(new_specie)
+            if np.all(fitness_scores[i] > 0):
+                new_specie = Species(
+                    x=list_of_atoms[i],
+                    fitness=fitness_scores[i],
+                    desc=tuple([descriptors[j][i] for j in range(len(descriptors))]),
+                    fitness_gradient=fitness_gradient,
+                    descriptor_gradients=descriptor_gradients,
+                )
+                species_list.append(new_specie)
 
         return species_list
 
