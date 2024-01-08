@@ -173,9 +173,9 @@ def map_elites_add_to_niche(
     if objective_index == -1:
         if niche in archive:
             if np.sum(species.fitness) > np.sum(archive[niche][0].fitness):
-                    archive[niche] = [species]
-            else:
                 archive[niche] = [species]
+        else:
+            archive[niche] = [species]
     
     else:
         if niche in archive:
