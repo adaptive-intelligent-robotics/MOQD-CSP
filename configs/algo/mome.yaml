@@ -2,4 +2,3 @@ algo_name: "mome"
 base_algo: "mome"
 selection: "uniform"
 addition: "uniform"
-```
