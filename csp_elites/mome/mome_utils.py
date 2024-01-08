@@ -182,9 +182,6 @@ def mome_metrics_fn(
     
     global_front = np.array([s for i, s in enumerate(all_fitnesses) if global_front_bool[i]])
     
-    print("Min energy fitness: ", np.min(all_fitnesses[:,0]))
-    print("Min scores: ", np.min(all_fitnesses, axis=0))
-    
     global_hypervolume = hypervolume_fn(global_front * -1)
     metrics = {
         "evaluations": n_evals,
@@ -197,8 +194,6 @@ def mome_metrics_fn(
         "max_magmom_fitness": np.max(all_fitnesses[:,1]),
         "min_magmom_fitness": np.min(all_fitnesses[:,1]),
         "magmom_qd_score": np.sum(all_fitnesses[:,1]),
-        # "min_scores": np.min(all_fitnesses, axis=1),
-        # "max_scores": np.max(all_fitnesses, axis=1),
         "coverage": 100 * len(hypervolumes) / config.number_of_niches,
         "moqd_score": np.sum(hypervolumes),
         "global_hypervolume": global_hypervolume,
