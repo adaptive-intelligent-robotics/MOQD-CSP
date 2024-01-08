@@ -100,7 +100,7 @@ def get_final_metrics(dirname: str,
     experiment_final_scores = []
 
     for experiment_replication in os.scandir(os.path.join(dirname, experiment_name)):
-        metrics_df = pd.read_csv(os.path.join(experiment_replication, "metrics/metrics_history.csv"))
+        metrics_df = pd.read_csv(os.path.join(experiment_replication, "metrics_history.csv"), nrows=50)
         final_score = np.array(metrics_df[metric])[-1]
         experiment_final_scores.append(final_score)
 

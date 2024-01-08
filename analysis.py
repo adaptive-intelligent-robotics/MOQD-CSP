@@ -12,11 +12,11 @@ experiment_names = [
     # "mome_biased",
     "mome_biased",
     "mome_biased_addition",
-    "mome_biased_selection",
+    # "mome_biased_selection",
 
     # baselines
     "map_elites_energy",
-    "map_elites_magmom",
+    # "map_elites_magmom",
     # "map_elites_sum",
 
 ]
@@ -28,11 +28,11 @@ env_names=[
     # "SiC",
     # "SiO2",
     # "TiO2",
-    "Si",
-    "Si",
-    "Si",
-    "Si",
-    "Si",
+    "SiC",
+    "SiC",
+    "SiC",
+    "SiC",
+    "SiC",
 ]
 
 
@@ -204,9 +204,9 @@ if __name__ == "__main__":
         x_axis_evaluations=True
     )
 
-    # analysis_helper.calculate_wilcoxon(
-    #     p_value_metrics_list
-    # )
+    analysis_helper.calculate_wilcoxon(
+        p_value_metrics_list
+    )
     
     # analysis_helper.sparsity_analysis()
 
