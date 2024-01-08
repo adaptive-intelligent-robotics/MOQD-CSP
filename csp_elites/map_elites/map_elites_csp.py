@@ -232,7 +232,6 @@ class MapElites:
         
         passive_archive = {}
         species_list = [species for niche in self.archive.values() for species in niche]
-        print("NUMBER OF SPECIES:", len(species_list))
         
         for s in species_list:
             if s is None:
