@@ -1,4 +1,4 @@
-algo_name: "mome_biased_selection"
+algo_name: "mome_biased_addition"
 base_algo: "mome"
 selection: "uniform"
 addition: "biased"
