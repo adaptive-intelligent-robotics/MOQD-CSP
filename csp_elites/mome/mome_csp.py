@@ -182,23 +182,6 @@ class MOME(MapElites):
                 continue
             else:
                 self.archive = add_to_archive(s, s.desc, self.archive, self.kdt, self.add_to_niche_function)
-
-        if (
-            self.b_evals >= self.run_parameters.dump_period
-            and self.run_parameters.dump_period != -1
-        ):
-            print(
-                "[{}/{}]".format(self.n_evals, int(self.run_parameters.maximum_evaluations)),
-                end=" ",
-                flush=True,
-            )
-            save_archive(self.archive, self.n_evals, self.experiment_save_dir)
-            
-            metrics_history_df = pd.DataFrame.from_dict(self.metrics_history,orient='index').transpose()
-            metrics_history_df.to_csv(os.path.join(self.experiment_save_dir, "metrics_history.csv"), index=False)
-
-            self.b_evals = 0
-            
             
         # Calculate metrics and log
         metrics = self.metrics_function(
@@ -216,5 +199,22 @@ class MOME(MapElites):
 
         else:
             self.metrics_history = {key: np.append(self.metrics_history[key], metrics[key]) for key in metrics}
+
+
+        if (
+            self.b_evals >= self.run_parameters.dump_period
+            and self.run_parameters.dump_period != -1
+        ):
+            print(
+                "[{}/{}]".format(self.n_evals, int(self.run_parameters.maximum_evaluations)),
+                end=" ",
+                flush=True,
+            )
+            save_archive(self.archive, self.n_evals, self.experiment_save_dir)
+            
+            metrics_history_df = pd.DataFrame.from_dict(self.metrics_history,orient='index').transpose()
+            metrics_history_df.to_csv(os.path.join(self.experiment_save_dir, "metrics_history.csv"), index=False)
+
+            self.b_evals = 0
             
         gc.collect()
