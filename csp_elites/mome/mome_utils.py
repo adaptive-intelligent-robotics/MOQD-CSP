@@ -99,8 +99,9 @@ def calculate_crowding_distances(
         crowding_distances = [np.mean([sorted_distances[i], sorted_distances[i+1]]) for i in range(len(niche))]
         
         boundary_indices = sorted_args[0], sorted_args[-1]
+        resorted_args = np.argsort(sorted_args)
 
-        return np.take(crowding_distances, sorted_args), boundary_indices
+        return np.take(crowding_distances, resorted_args), boundary_indices
 
 def mome_crowding_selection_fn(
     archive: Dict[str, List[Species]],
@@ -180,6 +181,9 @@ def mome_metrics_fn(
     )
     
     global_front = np.array([s for i, s in enumerate(all_fitnesses) if global_front_bool[i]])
+    
+    print("Min energy fitness: ", np.min(all_fitnesses[:,0]))
+    print("Min scores: ", np.min(all_fitnesses, axis=0))
     
     global_hypervolume = hypervolume_fn(global_front * -1)
     metrics = {
