@@ -7,15 +7,16 @@ from typing import List, Any, Dict
 
 
 # CHANGE THESE TO ADJUST APPEARANCE OF PLOT
-FIG_WIDTH = 20
-FIG_HEIGHT = 8
+FIG_WIDTH = 24
+FIG_HEIGHT = 4
 FIGURE_DPI = 200
 
 # ---- font sizes and weights ------
 BIG_GRID_FONT_SIZE  = 14
 SMALL_GRID_FONT_SIZE = 14
-TITLE_FONT_WEIGHT = 'bold' # Can be: ['normal' | 'bold' | 'heavy' | 'light' | 'ultrabold' | 'ultralight']
+TITLE_FONT_WEIGHT = 'heavy' # Can be: ['normal' | 'bold' | 'heavy' | 'light' | 'ultrabold' | 'ultralight']
 LEGEND_FONT_SIZE = 'x-large'
+LEGEND_FONT_WEIGHT = 'normal'
 
 # ----- colour palettes ------
 COLOUR_PALETTE = "colorblind"
@@ -23,7 +24,7 @@ COLOUR_PALETTE = "colorblind"
 # ----  spacing -----
 LEFTSPACING = 0.13   # the left side of the subplots of the figure
 RIGHTSPACING = 0.9   # the right side of the subplots of the figure
-BOTTOMSPACING = 0.1  # the bottom of the subplots of the figure
+BOTTOMSPACING = 0.25  # the bottom of the subplots of the figure
 TOPSPACING = 0.87   # the top of the subplots of the figure
 WIDTHSPACING = 0.1  # the proportion of width reserved for blank space between subplots
 HEIGHTSPACING = 0.1  # the proportion of height reserved for blank space between subplots
@@ -101,9 +102,7 @@ def plot_experiments_grid(parent_dirname: str,
     plt.rcParams.update(params)
     
     if x_axis_evaluations:
-        x_range = np.arange(num_iterations + 1)  * batch_size
-        print("x_range: ", x_range)
-        print("len x_range: ", len(x_range))
+        x_range = np.arange(num_iterations)  * batch_size
         x_label = "Number of evaluations"
 
     else:
@@ -160,7 +159,7 @@ def plot_experiments_grid(parent_dirname: str,
     plt.figlegend(experiment_labels, 
         loc = 'lower center',
         ncol=int(len(experiment_labels)), 
-        fontsize=LEGEND_FONT_SIZE,
+        prop={'weight':LEGEND_FONT_WEIGHT, "size": LEGEND_FONT_SIZE},
     )
     
     plt.subplots_adjust(

@@ -8,12 +8,16 @@ parent_dirname = "results/"
 # Directory names of experiments
 experiment_names = [
     # main
-    "biased_mome",
+    # "mome"
+    # "mome_biased",
+    "mome_biased",
+    "mome_biased_addition",
+    "mome_biased_selection",
 
     # baselines
-    # "map_elites_energy",
-    # "map_elites_magmom",
-    "mome",
+    "map_elites_energy",
+    "map_elites_magmom",
+    # "map_elites_sum",
 
 ]
 
@@ -21,9 +25,14 @@ experiment_names = [
 env_names=[
     # "C",
     # "S",
-    "SiC",
-    "SiO2",
+    # "SiC",
+    # "SiO2",
     # "TiO2",
+    "Si",
+    "Si",
+    "Si",
+    "Si",
+    "Si",
 ]
 
 
@@ -31,8 +40,22 @@ experiment_dicts = {
     
     ## MAIN
     
-    "biased_mome": {
+    "mome_biased": {
         "label": "MOME-Crowding",
+        "emitter_names": [],
+        "emitter_labels": [],
+        "grid_plot_linestyle": "solid",
+    },
+
+    "mome_biased_selection": {
+        "label": "MOME-Crowding-Selection",
+        "emitter_names": [],
+        "emitter_labels": [],
+        "grid_plot_linestyle": "solid",
+    },
+
+    "mome_biased_addition": {
+        "label": "MOME-Crowding-Addition",
         "emitter_names": [],
         "emitter_labels": [],
         "grid_plot_linestyle": "solid",
@@ -41,7 +64,7 @@ experiment_dicts = {
     ## BASELINES
     
     "mome": {
-        "label": "MOME-PGX",
+        "label": "MOME",
         "emitter_names": [],
         "emitter_labels": [],
         "grid_plot_linestyle": "dashed", 
@@ -60,6 +83,13 @@ experiment_dicts = {
         "emitter_labels": [],
         "grid_plot_linestyle": "dotted"
     },
+    
+    "map_elites_energy": {
+        "label": "MAP-Elites (Sum)",
+        "emitter_names": [],
+        "emitter_labels": [],
+        "grid_plot_linestyle": "dashdot"
+    },
 }
 
 
@@ -73,8 +103,8 @@ env_dicts = {
         "exceptions": [],
     },
     
-    "S": {
-        "label": "S",
+    "Si": {
+        "label": "Si",
         "reward_labels": ["Energy", "Magmom"],
         "reference_point": [0, 0],
         "exceptions": [],
@@ -121,21 +151,22 @@ if __name__ == "__main__":
         env_dicts=env_dicts,
         experiment_names=experiment_names,
         experiment_dicts=experiment_dicts,
-        num_replications=4,
-        num_iterations=250,
-        episode_length=1000,
-        batch_size=20
+        num_replications=5,
+        num_iterations=50,
+        episode_length=0,
+        batch_size=100
     )
     
     # Metrics to plot in grid plot
     grid_plot_metrics_list = [
         "moqd_score", 
-        "energy_qd_score",
-        "magmom_qd_score",
-        # "max_energy_fitness",
-        # "max_magmom_fitness",
-        # "global_hypervolume", 
+        # "energy_qd_score",
+        # "magmom_qd_score",
+        "max_energy_fitness",
+        "max_magmom_fitness",
+        "global_hypervolume", 
         # "max_sum_scores",
+        "num_solutions",
         # "coverage"
     ]
 
@@ -147,6 +178,7 @@ if __name__ == "__main__":
         "max_magmom_fitness": "Max Magmom Fitness",
         "global_hypervolume": "Global Hypervolume", 
         "max_sum_scores": "Max Sum Scores",
+        "num_solutions": "Number of Solutions",
         "coverage": "Coverage",
     }
 
@@ -158,8 +190,9 @@ if __name__ == "__main__":
 
     grid_plot_metrics_list = [
         "moqd_score", 
-        "max_energy_fitness",
-        "max_magmom_fitness",
+        # "max_energy_fitness",
+        # "max_magmom_fitness",
+        # "num_solutions",
         # "global_hypervolume", 
         # "max_sum_scores",
         # "coverage"
@@ -168,12 +201,13 @@ if __name__ == "__main__":
     analysis_helper.plot_grid(
         grid_plot_metrics_list,
         grid_plot_metrics_labels,
+        x_axis_evaluations=True
     )
 
-    analysis_helper.calculate_wilcoxon(
-        p_value_metrics_list
-    )
+    # analysis_helper.calculate_wilcoxon(
+    #     p_value_metrics_list
+    # )
     
-    analysis_helper.sparsity_analysis()
+    # analysis_helper.sparsity_analysis()
 
     # analysis_helper.plot_final_pfs()
