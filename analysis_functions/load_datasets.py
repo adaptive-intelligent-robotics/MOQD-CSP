@@ -8,7 +8,10 @@ sns.set_palette("muted")
 from typing import Dict, List, Tuple
 
 
-def get_metrics(dirname: str, experiment_name: str) -> pd.DataFrame:
+def get_metrics(
+    dirname: str,
+    experiment_name: str,
+    num_replications) -> pd.DataFrame:
     """
     Read in specific metrics for given experiment
     """
@@ -18,6 +21,9 @@ def get_metrics(dirname: str, experiment_name: str) -> pd.DataFrame:
     for experiment_replication in os.scandir(os.path.join(dirname, experiment_name)):
         metrics_df = pd.read_csv(os.path.join(experiment_replication, "metrics_history.csv"), nrows=50)
         experiment_metrics_list.append(metrics_df)
+        
+    if len(experiment_metrics_list) != num_replications:
+        print(f"WARNING: {experiment_name} has {len(experiment_metrics_list)} replications, not {num_replications}")
 
     experiment_metrics_concat = pd.concat(experiment_metrics_list)
     experiment_metrics = experiment_metrics_concat.groupby(experiment_metrics_concat.index)
@@ -28,6 +34,7 @@ def calculate_quartile_metrics(parent_dirname: str,
     env_names: List[str],
     env_dicts: List[Dict],
     experiment_names: List[str],
+    num_replications: int,
 )-> Tuple[Dict, Dict, Dict, Dict]:
 
     """
@@ -71,7 +78,7 @@ def calculate_quartile_metrics(parent_dirname: str,
                 print("\n")
                 print(f" EXP: {experiment_name}")
                 
-                experiment_metrics = get_metrics(dirname, experiment_name)
+                experiment_metrics = get_metrics(dirname, experiment_name, num_replications)
                 median_metrics = experiment_metrics.median(numeric_only=True)
                 median_metrics.to_csv(f"{_median_metrics_dir}{experiment_name}_median_metrics")
                 lq_metrics = experiment_metrics.apply(lambda x: x.quantile(0.25))

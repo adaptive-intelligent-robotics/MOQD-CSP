@@ -56,6 +56,7 @@ class MOQD_Analysis(
             self.env_names,
             self.env_dicts,
             self.experiment_names,
+            self.num_replications,
         )
         
         return all_metrics, all_medians, all_lqs, all_uqs

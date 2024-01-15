@@ -9,30 +9,25 @@ parent_dirname = "results/"
 experiment_names = [
     # main
     # "mome"
-    # "mome_biased",
     "mome_biased",
-    "mome_biased_addition",
+    # "mome_biased",
+    # "mome_biased_addition",
     # "mome_biased_selection",
 
     # baselines
+    "map_elites_sum",
     "map_elites_energy",
-    # "map_elites_magmom",
-    # "map_elites_sum",
+    "map_elites_magmom",
 
 ]
 
 # Directory names of environments
 env_names=[
-    # "C",
-    # "S",
-    # "SiC",
-    # "SiO2",
-    # "TiO2",
+    "C",
+    "Si",
     "SiC",
-    "SiC",
-    "SiC",
-    "SiC",
-    "SiC",
+    "SiO2",
+    "TiO2",
 ]
 
 
@@ -41,7 +36,7 @@ experiment_dicts = {
     ## MAIN
     
     "mome_biased": {
-        "label": "MOME-Crowding",
+        "label": "MOME-X",
         "emitter_names": [],
         "emitter_labels": [],
         "grid_plot_linestyle": "solid",
@@ -84,7 +79,7 @@ experiment_dicts = {
         "grid_plot_linestyle": "dotted"
     },
     
-    "map_elites_energy": {
+    "map_elites_sum": {
         "label": "MAP-Elites (Sum)",
         "emitter_names": [],
         "emitter_labels": [],
@@ -151,7 +146,7 @@ if __name__ == "__main__":
         env_dicts=env_dicts,
         experiment_names=experiment_names,
         experiment_dicts=experiment_dicts,
-        num_replications=5,
+        num_replications=10,
         num_iterations=50,
         episode_length=0,
         batch_size=100
@@ -160,13 +155,13 @@ if __name__ == "__main__":
     # Metrics to plot in grid plot
     grid_plot_metrics_list = [
         "moqd_score", 
-        # "energy_qd_score",
-        # "magmom_qd_score",
-        "max_energy_fitness",
-        "max_magmom_fitness",
-        "global_hypervolume", 
+        "energy_qd_score",
+        "magmom_qd_score",
+        # "max_energy_fitness",
+        # "max_magmom_fitness",
+        # "global_hypervolume", 
         # "max_sum_scores",
-        "num_solutions",
+        # "num_solutions",
         # "coverage"
     ]
 
@@ -186,22 +181,6 @@ if __name__ == "__main__":
     analysis_helper.plot_grid(
         grid_plot_metrics_list,
         grid_plot_metrics_labels,
-    )
-
-    grid_plot_metrics_list = [
-        "moqd_score", 
-        # "max_energy_fitness",
-        # "max_magmom_fitness",
-        # "num_solutions",
-        # "global_hypervolume", 
-        # "max_sum_scores",
-        # "coverage"
-    ]
-
-    analysis_helper.plot_grid(
-        grid_plot_metrics_list,
-        grid_plot_metrics_labels,
-        x_axis_evaluations=True
     )
 
     analysis_helper.calculate_wilcoxon(
