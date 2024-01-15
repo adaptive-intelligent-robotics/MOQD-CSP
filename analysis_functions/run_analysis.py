@@ -1,9 +1,10 @@
+import numpy as np
 import os
-
+import pandas as pd
 from typing import Any, List, Dict, Tuple
 
 # from analysis_functions.compute_sparsity_metrics import calculate_sparsity_metrics
-from analysis_functions.load_datasets import calculate_quartile_metrics
+from analysis_functions.load_datasets import calculate_quartile_metrics, get_gold_matching_metrics
 # from analysis_functions.plot_final_pfs import plot_pfs
 from analysis_functions.plot_grid import plot_experiments_grid
 from analysis_functions.print_min_max_rewards import print_env_min_max_rewards
@@ -147,6 +148,50 @@ class MOQD_Analysis(
     
     
 
+    def analyse_gold_matches(self):
+        print("--------------------------------------------------")
+        print("         Calculating final gold matches p-values        ")
+        print("-------------------------------------------------")
+                
+        _analysis_dir = os.path.join(self.parent_dirname, "analysis/")
+        _final_metrics_dir = os.path.join(_analysis_dir, "final_metrics/")
+        _wilcoxon_dir = os.path.join(_analysis_dir, "wilcoxon_tests/")
+
+        os.makedirs(_analysis_dir, exist_ok=True)
+        os.makedirs(_wilcoxon_dir, exist_ok=True)
+        os.makedirs(_final_metrics_dir, exist_ok=True)
+
+        for env in self.env_names:
+
+            dirname = os.path.join(self.parent_dirname, env)
+            
+
+            print("\n")
+            print(f"     ENV: {env}   ")
+
+            all_gold_matches = {}
+
+            for experiment in self.experiment_names:
+                print("Experiment: ", experiment)
+                if experiment not in self.env_dicts[env]["exceptions"]:
+                    experiment_final_scores = get_gold_matching_metrics(dirname, experiment, self.num_replications)
+                    print("Median: ", np.median(experiment_final_scores))
+                    print("Mean: ", np.mean(experiment_final_scores))
+                    if len(experiment_final_scores) < self.num_replications:
+                        experiment_final_scores = np.pad(experiment_final_scores, (0, self.num_replications - len(experiment_final_scores)))
+                    all_gold_matches[experiment] = experiment_final_scores[:self.num_replications]
+
+            all_gold_matches = pd.DataFrame(all_gold_matches)
+            all_gold_matches.to_csv(f"{_final_metrics_dir}/{env}__gold_matches_final_metric.csv")
+
+            # pvalue_df, corrected_p_value_df = pairwise_wilcoxon_analysis(all_final_metrics)
+            
+            # Save final metrics and p-values
+
+            # pvalue_df.to_csv(f"{_wilcoxon_dir}/{env}_gold_matches.csv")
+            # corrected_p_value_df.to_csv(f"{_wilcoxon_dir}/corrected_{env}_gold_matches.csv")
+            
+            
     def plot_final_pfs(
         self,
     )-> None:

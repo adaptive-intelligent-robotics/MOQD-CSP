@@ -7,27 +7,29 @@ from typing import List, Any, Dict
 
 
 # CHANGE THESE TO ADJUST APPEARANCE OF PLOT
-FIG_WIDTH = 24
-FIG_HEIGHT = 4
+FIG_WIDTH = 36
+FIG_HEIGHT = 12
 FIGURE_DPI = 200
 
 # ---- font sizes and weights ------
-BIG_GRID_FONT_SIZE  = 14
+BIG_GRID_FONT_SIZE  = 30
+LEFT_AXIS_FONT_SIZE = 18
 SMALL_GRID_FONT_SIZE = 14
 TITLE_FONT_WEIGHT = 'heavy' # Can be: ['normal' | 'bold' | 'heavy' | 'light' | 'ultrabold' | 'ultralight']
-LEGEND_FONT_SIZE = 'x-large'
-LEGEND_FONT_WEIGHT = 'normal'
+LEGEND_FONT_SIZE = 20
+LEGEND_FONT_WEIGHT = 'bold'
 
-# ----- colour palettes ------
-COLOUR_PALETTE = "colorblind"
+# ----- colour palette
+# s ------
+COLOUR_PALETTE = sns.color_palette("muted", 4)
 
 # ----  spacing -----
 LEFTSPACING = 0.13   # the left side of the subplots of the figure
 RIGHTSPACING = 0.9   # the right side of the subplots of the figure
-BOTTOMSPACING = 0.25  # the bottom of the subplots of the figure
+BOTTOMSPACING = 0.12  # the bottom of the subplots of the figure
 TOPSPACING = 0.87   # the top of the subplots of the figure
 WIDTHSPACING = 0.1  # the proportion of width reserved for blank space between subplots
-HEIGHTSPACING = 0.1  # the proportion of height reserved for blank space between subplots
+HEIGHTSPACING = 0.2  # the proportion of height reserved for blank space between subplots
 
 
 
@@ -141,7 +143,7 @@ def plot_experiments_grid(parent_dirname: str,
 
             if col == 0:
                 ax.ravel()[fig_num].set_ylabel(f"{grid_plot_metrics_labels[metric]}"+ " (%)", 
-                    fontsize=BIG_GRID_FONT_SIZE,
+                    fontsize=LEFT_AXIS_FONT_SIZE,
                     fontweight=TITLE_FONT_WEIGHT
                 )
                 #ax.ravel()[fig_num].spines["left"].set_visible(True)

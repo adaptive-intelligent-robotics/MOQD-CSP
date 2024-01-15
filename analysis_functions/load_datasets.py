@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import os
 import pandas as pd
@@ -113,3 +114,25 @@ def get_final_metrics(dirname: str,
 
     return np.array(experiment_final_scores)
 
+
+def get_gold_matching_metrics(dirname: str, 
+    experiment_name: str,
+    num_replications: str) -> np.array:
+    """
+    Load in final score of experiment across all replications for given metric
+    """
+
+    experiment_gold_matches_scores = []
+
+    for experiment_replication in os.scandir(os.path.join(dirname, experiment_name)):
+        file_path = os.path.join(experiment_replication, "ind_report_summary.json")
+        if os.path.isfile(file_path):
+            with open(file_path, 'r') as j:
+                matches_dict = json.loads(j.read())
+            gold_matches = np.array(matches_dict["number_gold"])
+            experiment_gold_matches_scores.append(gold_matches)
+
+    if len(experiment_gold_matches_scores) != num_replications:
+        print(f"!!!WARNING!!!: {experiment_name} has {len(experiment_gold_matches_scores)} matches stats, not {num_replications}")
+
+    return np.array(experiment_gold_matches_scores)

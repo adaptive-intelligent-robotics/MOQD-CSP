@@ -8,7 +8,7 @@ parent_dirname = "results/"
 # Directory names of experiments
 experiment_names = [
     # main
-    # "mome"
+    # "mome",
     "mome_biased",
     # "mome_biased",
     # "mome_biased_addition",
@@ -69,7 +69,7 @@ experiment_dicts = {
         "label": "MAP-Elites (Energy)",
         "emitter_names": [],
         "emitter_labels": [],
-        "grid_plot_linestyle": "dashdot"
+        "grid_plot_linestyle": "dashed"
     },
     
     "map_elites_magmom": {
@@ -178,15 +178,19 @@ if __name__ == "__main__":
     }
 
 
-    analysis_helper.plot_grid(
-        grid_plot_metrics_list,
-        grid_plot_metrics_labels,
-    )
+    # analysis_helper.plot_grid(
+    #     grid_plot_metrics_list,
+    #     grid_plot_metrics_labels,
+    # )
+    
+    analysis_helper.analyse_gold_matches()
+    
+    # analysis_helper.plot_final_pfs()
 
-    analysis_helper.calculate_wilcoxon(
-        p_value_metrics_list
-    )
+
+    # analysis_helper.calculate_wilcoxon(
+    #     p_value_metrics_list
+    # )
     
     # analysis_helper.sparsity_analysis()
 
-    # analysis_helper.plot_final_pfs()
