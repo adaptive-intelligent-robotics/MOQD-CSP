@@ -269,6 +269,169 @@ def plot_2d_map_elites_repertoire_marta(
     return fig, ax
 
 
+def plot_2d_map_elites_repertoire_grid(
+    centroids: np.ndarray,
+    repertoire_fitnesses: np.ndarray,
+    minval: np.ndarray,
+    maxval: np.ndarray,
+    repertoire_descriptors: Optional[np.ndarray] = None,
+    ax: Optional[plt.Axes] = None,
+    ax_number: int = 0,
+    subplot_title: str = "",
+    max_axis_number: int = 1,
+    vmin: Optional[float] = None,
+    vmax: Optional[float] = None,
+    target_centroids: Optional[np.ndarray] = None,
+    directory_string: Optional[str] = None,
+    filename: Optional[str] = "cvt_plot",
+    axis_labels: List[str] = ["Band Gap, eV", "Shear Modulus, GPa"],
+    annotations: Optional[Union[List[str], np.ndarray]] = None,
+    annotate: bool = True,
+    x_axis_limits: Optional[Tuple[float, float]] = None,
+    y_axis_limits: Optional[Tuple[float, float]] = None,
+) -> Tuple[Optional[Figure], Axes]:
+    """Function adapted from QDAX
+    Plot a visual representation of a 2d map elites repertoire.
+
+    function is very specific to repertoires.
+
+    Args:
+        centroids: the centroids of the repertoire
+        repertoire_fitnesses: the fitness of the repertoire
+        minval: minimum values for the descritors
+        maxval: maximum values for the descriptors
+        repertoire_descriptors: the descriptors. Defaults to None.
+        ax: a matplotlib axe for the figure to plot. Defaults to None.
+        vmin: minimum value for the fitness. Defaults to None. If not given,
+            the value will be set to the minimum fitness in the repertoire.
+        vmax: maximum value for the fitness. Defaults to None. If not given,
+            the value will be set to the maximum fitness in the repertoire.
+
+    Raises:
+        NotImplementedError: does not work for descriptors dimension different
+        from 2.
+
+    Returns:
+        A figure and axes object, corresponding to the visualisation of the
+        repertoire.
+    """
+    grid_empty = repertoire_fitnesses == -np.inf
+    num_descriptors = centroids.shape[1]
+    if num_descriptors != 2:
+        raise NotImplementedError("Grid plot supports 2 descriptors only for now.")
+
+    my_cmap = cm.viridis
+
+    fitnesses = repertoire_fitnesses
+    if vmin is None:
+        vmin = float(np.min(fitnesses[~grid_empty]))
+    if vmax is None:
+        vmax = float(np.max(fitnesses[~grid_empty]))
+
+    params = {"figure.figsize": [3.5, 3.5]}
+    mpl.rcParams.update(params)
+
+    # create the plot object
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(facecolor="white", edgecolor="white")
+
+    assert (
+        len(np.array(minval).shape) < 2
+    ), f"minval : {minval} should be float or couple of floats"
+    assert (
+        len(np.array(maxval).shape) < 2
+    ), f"maxval : {maxval} should be float or couple of floats"
+
+    if len(np.array(minval).shape) == 0 and len(np.array(maxval).shape) == 0:
+        ax.set_xlim(minval, maxval)
+        ax.set_ylim(minval, maxval)
+    else:
+        ax.set_xlim(minval[0], maxval[0])
+        ax.set_ylim(minval[1], maxval[1])
+
+    ax.set(adjustable="box", aspect="equal")
+
+    # create the regions and vertices from centroids
+    regions, vertices = get_voronoi_finite_polygons_2d(centroids)
+
+    norm = Normalize(vmin=vmin, vmax=vmax)
+
+    # fill the plot with contours
+    for i, region in enumerate(regions):
+        polygon = vertices[region]
+        ax.fill(*zip(*polygon), alpha=0.05, edgecolor="black", facecolor="white", lw=1)
+        if target_centroids is not None:
+            if centroids[i] in np.array(target_centroids):
+                ax.fill(
+                    *zip(*polygon),
+                    edgecolor=mcolors.CSS4_COLORS["salmon"],
+                    facecolor="none",
+                    lw=1,
+                )
+    # fill the plot with the colors
+    for idx, fitness in enumerate(fitnesses):
+        if fitness > -np.inf:
+            region = regions[idx]
+            polygon = vertices[region]
+            ax.fill(*zip(*polygon), alpha=0.8, color=my_cmap(norm(fitness)))
+            # if target_centroids is not None:
+            #     if centroids[idx] in np.array(target_centroids):
+            #         ax.fill(*zip(*polygon), edgecolor="orange", facecolor="none", lw=2, alpha=0.8)
+
+    for i, region in enumerate(regions):
+        polygon = vertices[region]
+        if target_centroids is not None:
+            if centroids[i] in np.array(target_centroids):
+                ax.fill(
+                    *zip(*polygon),
+                    edgecolor=mcolors.CSS4_COLORS["salmon"],
+                    facecolor="none",
+                    lw=1,
+                    alpha=1,
+                )
+
+    np.set_printoptions(2)
+    # if descriptors are specified, add points location
+    if repertoire_descriptors is not None:
+        descriptors = repertoire_descriptors[~grid_empty]
+        ax.scatter(
+            descriptors[:, 0],
+            descriptors[:, 1],
+            c="black",
+            # c=fitnesses[~grid_empty],
+            # cmap=my_cmap,
+            s=1,
+            zorder=0,
+        )
+        for i in range(len(fitnesses)):
+            if annotate:
+                if annotations is None:
+                    annotations = np.around(fitnesses, decimals=3)
+                if isinstance(annotations[i], str) and annotations[i] != "-inf":
+                    ax.annotate(annotations[i], (centroids[i, 0], centroids[i, 1]))
+                elif isinstance(annotations[i], float) and annotations[i] != -np.inf:
+                    ax.annotate(
+                        annotations[i], (centroids[i, 0], centroids[i, 1]), fontsize=4
+                    )
+    # aesthetic
+    
+    ax.set_title(subplot_title, size=20)
+    ax.set_xticks([])
+    
+    if ax_number != 0: 
+        ax.set_yticks([])
+
+    if directory_string is None:
+        plt.show()
+    else:
+        if annotate:
+            plt.savefig(f"{directory_string}/{filename}_annotated.png", format="png")
+        else:
+            plt.savefig(f"{directory_string}/{filename}.png", format="png")
+    return fig, ax
+
+
 def plot_numbered_centroids(
     centroids: np.ndarray,
     minval: np.ndarray,

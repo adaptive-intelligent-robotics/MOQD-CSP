@@ -77,6 +77,38 @@ class MOArchive(Archive):
     #         else None,
     #     )
 
+    def create_mo_archive_dict(
+        self,
+        all_centroids: np.ndarray
+    ):
+        mo_archive_dict = {}
+        
+        energies_for_plotting = np.full((len(all_centroids)), -np.inf)
+        magmoms_for_plotting = np.full((len(all_centroids)), -np.inf)
+        descriptors_for_plotting = np.full(
+            (len(all_centroids), len(self.descriptors[0])), -np.inf
+        )
+        labels_for_plotting = np.full((len(all_centroids)), -np.inf)
+        labels_for_plotting = labels_for_plotting.astype(str)
+
+        for i in range(len(self.centroids)):
+            present_centroid = np.argwhere(all_centroids == self.centroids[i])[0][0]
+            individual = {
+                "centroid_index": present_centroid,
+                "centroid": self.centroids[i],
+                "energy": self.energies[i],
+                "magmom": self.magmoms[i],
+                "descriptor": self.descriptors[i],
+                "individual": self.individuals[i],
+                "label": self.labels[i] if self.labels is not None else "None"
+            }
+            if present_centroid in mo_archive_dict:
+                mo_archive_dict[present_centroid].append(individual)
+            else:
+                mo_archive_dict[present_centroid] = [individual]
+                
+        return mo_archive_dict
+            
 
     def convert_fitness_and_descriptors_to_plotting_format(
         self, all_centroids: np.ndarray
