@@ -106,11 +106,16 @@ def get_final_metrics(dirname: str,
     """
 
     experiment_final_scores = []
+    experiment_replications = []
 
     for experiment_replication in os.scandir(os.path.join(dirname, experiment_name)):
         metrics_df = pd.read_csv(os.path.join(experiment_replication, "metrics_history.csv"), nrows=50)
         final_score = np.array(metrics_df[metric])[-1]
         experiment_final_scores.append(final_score)
+        experiment_replications.append(experiment_replication.name)
+    
+    if experiment_name == "mome_biased" and metric == "moqd_score":
+        print("Median replication for mome_biased moqd_score: ", experiment_replications[np.argmax(experiment_final_scores)])
 
     return np.array(experiment_final_scores)
 
