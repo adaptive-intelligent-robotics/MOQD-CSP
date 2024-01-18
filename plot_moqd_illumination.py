@@ -66,7 +66,7 @@ class MOQDIllumination:
             
     def plot_all_archives(
         self,
-        percentages_list: List[float] = [0, 0.25, 0.5, 0.75, 1],
+        percentages_list: List[float] = [0, 0.85, 0.9, 0.95, 1],
         save_dir: str = "results/analysis/illumination_plots/",
     ):
         
@@ -144,7 +144,9 @@ class MOQDIllumination:
         ):
             
         magmoms_for_plotting = np.full((len(self.reference_centroids)), -np.inf)
-        
+        # threshold = self.archive_min_energy + (self.archive_max_energy - self.archive_min_energy)*interpolation_percentage
+        threshold = self.archive_max_energy*interpolation_percentage
+
         for cell in self.archive_dict.keys():
     
         # for cell in [34]:
@@ -154,7 +156,7 @@ class MOQDIllumination:
             # print("MAGMOMS:", [i["magmom"] for i in self.archive_dict[cell]])
             # print("ENERGIES:", [i["energy"] for i in self.archive_dict[cell]])
             # print("VALID MAGMOMS", [i["magmom"] for i in self.archive_dict[cell] if i["energy"]>=self.max_energy_per_cell_dict[cell]*percentage_of_max])
-            threshold = self.min_energy_per_cell_dict[cell] + (self.max_energy_per_cell_dict[cell] - self.min_energy_per_cell_dict[cell])*interpolation_percentage
+            # threshold = self.min_energy_per_cell_dict[cell] + (self.max_energy_per_cell_dict[cell] - self.min_energy_per_cell_dict[cell])*interpolation_percentage
 
             valid_magmoms = [i["magmom"] for i in self.archive_dict[cell] if i["energy"]>=threshold]
             
