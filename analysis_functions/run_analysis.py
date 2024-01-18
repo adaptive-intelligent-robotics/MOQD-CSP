@@ -8,7 +8,7 @@ from analysis_functions.load_datasets import calculate_quartile_metrics, get_gol
 # from analysis_functions.plot_final_pfs import plot_pfs
 from analysis_functions.plot_grid import plot_experiments_grid
 from analysis_functions.print_min_max_rewards import print_env_min_max_rewards
-from analysis_functions.wilcoxon_analysis import wilcoxon_analysis, pairwise_wilcoxon_analysis
+from analysis_functions.wilcoxon_analysis import wilcoxon_analysis, pairwise_wilcoxon_analysis, gold_matches_wilcoxon_analysis
 
 
 class MOQD_Analysis(
@@ -115,6 +115,14 @@ class MOQD_Analysis(
             self.env_dicts,
             self.experiment_names,
             p_value_metrics_list,
+            self.num_replications,
+        )
+        
+        gold_matches_wilcoxon_analysis(
+            self.parent_dirname,
+            self.env_names,
+            self.env_dicts,
+            self.experiment_names,
             self.num_replications,
         )
         return

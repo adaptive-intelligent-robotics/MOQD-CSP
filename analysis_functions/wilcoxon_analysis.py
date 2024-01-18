@@ -2,7 +2,7 @@ import numpy as np
 import os
 import pandas as pd
 from scipy.stats import wilcoxon
-from analysis_functions.load_datasets import get_final_metrics
+from analysis_functions.load_datasets import get_final_metrics, get_gold_matching_metrics
 
 from typing import List, Dict, Tuple
 
@@ -83,7 +83,6 @@ def pairwise_wilcoxon_analysis(all_final_metrics: dict)-> None:
 
     return p_value_df, corrected_p_value_df
 
-
 def holm_bonf_correction(p_values):
 
     # remove nans
@@ -112,3 +111,46 @@ def holm_bonf_correction(p_values):
         corrected_p_values = np.insert(corrected_p_values, index, np.nan)    
 
     return corrected_p_values
+
+
+
+def gold_matches_wilcoxon_analysis(
+    parent_dirname: str,
+    env_names: List[str],
+    env_dicts: Dict,
+    experiment_names: List[str],
+    num_replications: int
+):
+
+    print("--------------------------------------------------")
+    print("         Calculating final metric p-values        ")
+    print("-------------------------------------------------")
+
+    _analysis_dir = os.path.join(parent_dirname, "analysis/")
+    _final_metrics_dir = os.path.join(_analysis_dir, "final_metrics/")
+    _wilcoxon_dir = os.path.join(_analysis_dir, "wilcoxon_tests/")
+
+    os.makedirs(_analysis_dir, exist_ok=True)
+    os.makedirs(_wilcoxon_dir, exist_ok=True)
+    os.makedirs(_final_metrics_dir, exist_ok=True)
+
+    for env in env_names:
+
+        dirname = os.path.join(parent_dirname, env)
+
+        print("\n")
+        print(f"     ENV: {env}     METRIC: gold matches          ")
+
+        all_final_metrics = {}
+
+        for experiment in experiment_names:
+            if experiment not in env_dicts[env]["exceptions"]:
+                experiment_final_scores = get_gold_matching_metrics(dirname, experiment, num_replications)
+                all_final_metrics[experiment] = experiment_final_scores[:num_replications]
+
+        pvalue_df, corrected_p_value_df = pairwise_wilcoxon_analysis(all_final_metrics)
+        
+        # Save final metrics and p-values
+
+        pvalue_df.to_csv(f"{_wilcoxon_dir}/{env}_gold_matches.csv")
+        corrected_p_value_df.to_csv(f"{_wilcoxon_dir}/corrected_{env}_gold_matches.csv")
