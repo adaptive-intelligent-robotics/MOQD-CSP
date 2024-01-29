@@ -67,10 +67,9 @@ singularity build --fakeroot --force singularity/[FINAL CONTAINER NAME].sif sing
 where you can replace '[FINAL CONTAINER NAME]' by your desired file name. When you get the final image, you can execute it via:
 
 ```bash
-singularity -d run --app [APPNAME] --cleanenv --containall --no-home --nv [FINAL CONTAINER NAME].sif [EXTRA ARGUMENTS]
+singularity -d run --cleanenv --containall --no-home --nv [FINAL CONTAINER NAME].sif [EXTRA ARGUMENTS]
 ```
 
 where 
 - [FINAL CONTAINER NAME].sif is the final image built
-- [APPNAME] is the name of the experiment you want to run, as specified by `%apprun` in the `singularity/singularity.def` file. There is a specific `%apprun` for each of the algorithms, ablations and baselines mentioned in the paper.
 - [EXTRA ARGUMENTS] is a list of any futher arguments that you want to add. For example, you may want to change the random seed or Brax environment.
