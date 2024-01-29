@@ -1,135 +1,76 @@
-# QD4CSP: Quality Diversity for Crystal Structure Prediction
+# MOQD-CSP: Multi-Objective Quality-Diversity for Crystal Structure Prediction
 
-`QD4CSP` is the first of its kind implementation combining the strengths of Quality Diversity algorithms
-for inorganic crystal structure prediction. 
+`MOQD-CSP` contains the code for the [Multi-Objective Quality-Diversity for Crystal Structure Prediction]() paper. This builds on top of the [QD4CSP repo]() in order to apply Quality-Diversity Algorithms to Crystal Structure Prediction. This method (illustrated below) uses domain-specific mutations and surrogate models for evaluation in order to generate a diverse collection of crystal structures that achieve different trade-offs on objectives:
 
-This project is the result of the _MSc Thesis_ project completed as part of the _MSc Artificial Intelligence_.
-It was supervised by Dr Antoine Cully, with expert materials science input provided by Professor Aron Walsh, 
-Chair of Materials Design at the Department of Materials at Imperial College London. 
+![method](https://github.com/adaptive-intelligent-robotics/MOQD-CSP/assets/49594227/52c63b87-9525-451d-8d41-689d79006dda)
 
 
-### Getting started with the package
-To get started with this package clone this repo:
+## Installation
+
+To run this code, you need to install the necessary libraries as listed in `requirements.txt` via:
 
 ```bash
-git clone https://gitlab.doc.ic.ac.uk/AIRL/students_projects/2022-2023/marta_wolinska/csp-elites.git
+pip install -r requirements.txt
 ```
-Then enter the correct directory on your machine:
+
+However, we recommend using a containerised environment such as Docker, Singularity or conda to use the repository. Further details are provided in the last section. 
+
+## Basic API Usage
+
+To run the MOME-X algorithm, or any other baseline algorithm mentioned in the paper, you just need to run the `main.py` script and specify the algorithm and system you wish to run. For example, to run MOME-X on Carbon, you can run:
+
 ```bash
-cd csp-elites
+python3 main.py -—algo=mome-x –system=C
 ```
 
-We provide two installation methods, one using poetry (preferred) and using standard `requirements.txt`.
+The hyperparameters of the algorithms can be modified by changing their values in the `configs` directory of the repository. Alternatively, they can be modified directly in the command line. For example, to decrease the `pareto_front_max_length` parameter from 50 to 20 in MOME-P2C, you can run:
 
-#### Poetry
-This package uses [poetry](https://python-poetry.org) dependency manager. 
-To install all dependencies run:
 ```bash
-poetry install
-```
-
-#### Python virtual environments
-Once you have cloned the repository, create and activate your virtual environment:
-```shell
-python3 -m venv ./venv
-source venv/bin/activate
-```
-Then install the requirements:
-```shell script
-pip3 install -r requirements.txt
-```
-### Using the package
-To run a demo experiment run:
-```shell
- python3 csp_scripts/experiment_from_config.py experiment_configs/demo.json
-```
-This will run a very simple demo with 2 TiO2 structures. All results will be saved under the `experiments_folder`.
-
-Experiments are most conveniently defined using a configuration file. These files can be generated individually or in batches using the directions below 
-
-## Generating Configuration Files
-To generate a configuration file for your experiment simply run 
-
-```shell
-python3 csp_scripts/generate_pre_filled_config.py <config_filename> <config_folder>
-```
-Passing the `<config_folder>` parameter will create a subfolder within `experiment_configs`.
-If it is not passed the config file will save directly within `experiment_configs`.
-
-This will be filled with some default values and the resulting json should then be updated directly.
-
-### Mass generating configs
-However, if you are running many experiments the above is not suitable. 
-Therefore, you can generate multiple config files from a csv file. 
-This method will also generate hpc scripts required to run batch jobs
-
-You can generate multiple config files at a time for an array job on the hpc by running 
-```shell
-python3 csp_scripts/automation/generate_configs_from_csv.py
-```
-
-By default, this will create the framework for an array job with 5 experiments.
-It will read from `automation_scripts/experiment_list.csv` to produce 5 configuration files
-saved within the folder with the dat and time.
-It will also create a folder with the same and `_scripts` which will have the required jobs scripts for the hpc. 
-The templates are stored within `automation_scripts/hpc/job_templates`
-
-To add a new template, create a new file in this repository. 
-Then add a new Enum to `JobsEnum` class within `csp_elites/utils/csv_loading.py`
-
-To copy the desired_folders to the home directory of the hpc amend the `automation_scripts/hpc/copy_configs_and_scripts.sh`
-with the desired folders. 
-Then run
-```shell
-bash automation_scripts/hpc/copy_configs_and_scripts.sh
-```
-
-## Running an Experiment 
-You can run an experiment from a configuration file or directly from a file. 
-The latter is recommended for debugging new features. 
-
-### Running from a configuration file
-To run your job simply run
-
-```shell
-python3 csp_scripts/experiment_from_config.py configs/<your-config-name>.json
-```
-
-Or if you prefer to change parameters directly in a python script you can amend them in `csp_scripts/`
-### Running Feature Debugging Script
-
-```shell
-python3 csp_scripts/run_experiment.py  
+python3 main.py --algo=mome-x pareto_front_max_length=20
 ```
 
 
-### Configuring cython to use fast algorithm conversion in \texttt{CHGNet}
-As guidelines were not available on the package at the time of writing we provide our method to ensure
-cython is set up correctly to be used with \texttt{CHGNet}
+## Analysis 
 
+Running each algorithm automatically saves metrics, visualisations and plots of performance into a `results` directory. However, you can compare performance between algorithms once they have been run using the `analysis.py` script. To do this, you need to edit the list of the algorithms and environments you wish to compare and the metrics you wish to compute (at the bottom of `analysis.py`). Then, the relevant plots and performance metrics will be computed by running:
 
-First clone the CHGNet repository and enter the folder
-```shell
-git clone https://github.com/CederGroupHub/chgnet.git
-cd chgnet
-```
-Then run:
-```shell
-python3 setup.py build_ext --inplace
-```
-Now we will need to copy the generated filed into our virtual environment 
-
-```shell
-cd chgnet/graph
-copy *.c venv/lib/chgnet/graph
-copy *.pyx venv/lib/chgnet/graph
+```bash
+python3 analysis.py
 ```
 
-You can verify this by running a script containing the following:
-```python
-from chgnet.model import CHGNet
+Similarly, you can run:
 
-if __name__ == '__main__':
-    model = CHGNet.load()
-    print(model.graph_converter.algorithm)
+```bash
+python3 plot_moqd_illumination.py
 ```
+
+Or:
+```bash
+python3 plot_reference_illumination.py
+```
+
+To generate additional visualisation plots of the final results.
+
+
+## Generating Reference Data
+By default, this repo contains the data for *Carbon, Silicon, Silicon Carbide, Silicon Dioxide* and *Titanium Dioxide*. However, you can generate reference data for other systems by modifying the `reference_data/prepare_reference_data.py` scrupt and then running it.
+
+
+## Singularity Usage
+
+To build a final container (an executable file) using Singularity make sure you are in the root of the repository and then run:
+
+```bash
+singularity build --fakeroot --force singularity/[FINAL CONTAINER NAME].sif singularity/singularity.def
+```
+
+where you can replace '[FINAL CONTAINER NAME]' by your desired file name. When you get the final image, you can execute it via:
+
+```bash
+singularity -d run --app [APPNAME] --cleanenv --containall --no-home --nv [FINAL CONTAINER NAME].sif [EXTRA ARGUMENTS]
+```
+
+where 
+- [FINAL CONTAINER NAME].sif is the final image built
+- [APPNAME] is the name of the experiment you want to run, as specified by `%apprun` in the `singularity/singularity.def` file. There is a specific `%apprun` for each of the algorithms, ablations and baselines mentioned in the paper.
+- [EXTRA ARGUMENTS] is a list of any futher arguments that you want to add. For example, you may want to change the random seed or Brax environment.
