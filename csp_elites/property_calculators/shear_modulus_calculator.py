@@ -2,6 +2,7 @@ from typing import Optional, Tuple, List
 
 import dgl
 import numpy as np
+import os
 import tensorflow as tf
 import torch
 
@@ -11,6 +12,7 @@ from matgl.graph.compute import compute_pair_vector_and_distance
 from megnet.utils.models import load_model as megnet_load_model
 from mp_api.client import MPRester
 from pymatgen.core import Structure
+MP_API_KEY=os.environ.get("MP_API_KEY")
 
 from csp_elites.property_calculators.bond_converter import BondConverterTorch
 from csp_elites.utils.utils import normalise_between_0_and_1
@@ -256,7 +258,7 @@ class ShearModulusCalculator:
 if __name__ == "__main__":
     shear_calculator = ShearModulusCalculator()
 
-    with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
+    with MPRester(api_key=MP_API_KEY) as mpr:
         structure = mpr.get_structure_by_material_id("mp-1840", final=True)
     shear_no_grad, _ = shear_calculator.compute(structure, compute_gradients=False)
     shear_with_grad, gradient = shear_calculator.compute(

@@ -1,11 +1,14 @@
 from typing import Optional, Tuple
 
 import matgl
+import os
 import torch
 from matgl.ext.pymatgen import Structure2Graph
 from matgl.graph.compute import compute_pair_vector_and_distance
 from mp_api.client import MPRester
 from pymatgen.core import Structure
+
+MP_API_KEY=os.environ.get("MP_API_KEY")
 
 from csp_elites.utils.utils import normalise_between_0_and_1
 
@@ -95,7 +98,7 @@ class BandGapCalculator:
 if __name__ == "__main__":
     shear_calculator = BandGapCalculator()
 
-    with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
+    with MPRester(api_key=MP_API_KEY) as mpr:
         structure = mpr.get_structure_by_material_id("mp-1840", final=True)
     bg_no_grad, _ = shear_calculator.compute(
         structure, compute_gradients=False, band_gap_type=torch.tensor([3])

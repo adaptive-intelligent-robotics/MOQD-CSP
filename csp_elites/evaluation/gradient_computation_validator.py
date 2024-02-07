@@ -1,12 +1,13 @@
 import pathlib
 from typing import Tuple, List, Optional
-
+import os
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from mp_api.client import MPRester
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
+MP_API_KEY=os.environ.get("MP_API_KEY")
 
 
 from csp_elites.crystal.materials_data_model import MaterialProperties
@@ -70,7 +71,7 @@ class GradientComputationValidator:
         self.starting_value = None
 
     def _get_test_structure(self, test_structure_index: int = 0):
-        with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
+        with MPRester(api_key=MP_API_KEY) as mpr:
             structure = mpr.get_structure_by_material_id(
                 self._test_structure_mp_references[test_structure_index], final=True
             )

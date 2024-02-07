@@ -1,5 +1,7 @@
+import os
 from mp_api.client import MPRester
 from pymatgen.io.ase import AseAtomsAdaptor
+MP_API_KEY=os.environ.get("MP_API_KEY")
 
 
 def get_all_materials_with_formula(formula: str):
@@ -8,7 +10,7 @@ def get_all_materials_with_formula(formula: str):
     For more information on querying data from materials project visit:
     https://docs.materialsproject.org/downloading-data/using-the-api/querying-data
     """
-    with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
+    with MPRester(api_key=MP_API_KEY) as mpr:
         docs = mpr.summary.search(
             formula=formula,
             # band_gap=(0.5, 1.0),

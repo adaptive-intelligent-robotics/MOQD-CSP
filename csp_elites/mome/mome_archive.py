@@ -1,6 +1,7 @@
 import pathlib
 import pickle
 from typing import List, Optional, Tuple
+import os 
 
 import numpy as np
 import pandas as pd
@@ -8,6 +9,8 @@ from ase import Atoms
 from chgnet.model import CHGNet
 from mp_api.client import MPRester
 from pymatgen.io.ase import AseAtomsAdaptor
+MP_API_KEY=os.environ.get("MP_API_KEY")
+
 
 from csp_elites.map_elites.archive import Archive
 from csp_elites.utils.asign_target_values_to_centroids import (
@@ -214,7 +217,7 @@ class MOArchive(Archive):
             normalise_bd_values=None,
         )
 
-        with MPRester(api_key="4nB757V2Puue49BqPnP3bjRPksr4J9y0") as mpr:
+        with MPRester(api_key=MP_API_KEY) as mpr:
             data_mp_api_data = mpr.materials.search(
                 material_ids=labels, fields=["structure"]
             )
